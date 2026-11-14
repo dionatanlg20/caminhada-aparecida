@@ -490,7 +490,7 @@ function initMap() {
     if (typeof L === 'undefined') $('map').innerHTML = '<p class="card">Sem internet para carregar o mapa agora.</p>';
     return;
   }
-  map = L.map('map', { zoomControl: true });
+  map = L.map('map', { zoomControl: true, zoomSnap: 0.25 });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: '&copy; OpenStreetMap',
