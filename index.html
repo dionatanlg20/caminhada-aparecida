@@ -4,211 +4,147 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Caminhada a Aparecida</title>
-<meta name="description" content="Acompanhe sua caminhada até o Santuário Nacional de Aparecida: mapa, etapas, distância e checklist do peregrino.">
-<meta name="theme-color" content="#1d3f72">
+<meta name="description" content="Trajeto a pé até o Santuário Nacional de Aparecida pela Rota da Luz: ponto de saída, instruções passo a passo, mapa e satélite.">
+<meta name="theme-color" content="#0f2a4f">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<style>
-  :root {
-    --bg: #f5f3ee;
-    --card: #ffffff;
-    --text: #1f2430;
-    --muted: #667085;
-    --line: #e4e0d6;
-    --brand: #1d3f72;
-    --brand-2: #c9a227;
-    --ok: #2e7d4f;
-    --warn: #b54708;
-    --radius: 14px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #11151c;
-      --card: #1a2029;
-      --text: #e8eaee;
-      --muted: #98a2b3;
-      --line: #2a313c;
-      --brand: #6f9be0;
-      --brand-2: #e0bb4a;
-      --ok: #5cc28a;
-      --warn: #f0a050;
-    }
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
-  }
-  header {
-    background: var(--brand);
-    color: #fff;
-    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
-  }
-  @media (prefers-color-scheme: dark) { header { background: #1d3f72; } }
-  header h1 { margin: 0; font-size: 1.2rem; }
-  header p { margin: 2px 0 0; opacity: .85; font-size: .9rem; }
-  main { max-width: 720px; margin: 0 auto; padding: 16px; }
-  section[hidden] { display: none; }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 14px;
-  }
-  .card h2 { margin: 0 0 10px; font-size: 1.05rem; }
-  .big { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
-  .muted { color: var(--muted); font-size: .9rem; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .stat { text-align: center; }
-  .stat b { display: block; font-size: 1.35rem; }
-  .stat span { color: var(--muted); font-size: .8rem; }
-  .bar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 10px 0 4px; }
-  .bar > i { display: block; height: 100%; width: 0; background: var(--brand-2); transition: width .4s; }
-  button {
-    font: inherit; border: 0; border-radius: 10px; padding: 12px 16px;
-    background: var(--brand); color: #fff; font-weight: 600; cursor: pointer;
-  }
-  @media (prefers-color-scheme: dark) { button { color: #0e1420; } }
-  button.secondary { background: transparent; color: var(--brand); border: 1px solid var(--line); }
-  button.danger { background: transparent; color: var(--warn); border: 1px solid var(--line); }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .row > button { flex: 1 1 140px; }
-  #map { height: 62vh; min-height: 320px; border-radius: var(--radius); border: 1px solid var(--line); }
-  ul.list { list-style: none; margin: 0; padding: 0; }
-  ul.list li {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 12px 0; border-bottom: 1px solid var(--line);
-  }
-  ul.list li:last-child { border-bottom: 0; }
-  ul.list input[type=checkbox] { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--ok); flex: none; }
-  ul.list .t { font-weight: 600; }
-  ul.list li.done .t { text-decoration: line-through; color: var(--muted); }
-  .km { margin-left: auto; color: var(--muted); font-size: .85rem; white-space: nowrap; }
-  select {
-    font: inherit; width: 100%; padding: 10px; border-radius: 10px;
-    border: 1px solid var(--line); background: var(--card); color: var(--text);
-  }
-  .note { font-size: .82rem; color: var(--muted); }
-  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; background: var(--line); font-size: .8rem; }
-  nav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    background: var(--card); border-top: 1px solid var(--line);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  nav button {
-    background: transparent; color: var(--muted); border-radius: 0;
-    padding: 10px 4px; font-size: .78rem; font-weight: 500;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-  }
-  nav button .ic { font-size: 1.3rem; line-height: 1; }
-  nav button[aria-current="page"] { color: var(--brand); font-weight: 700; }
-  .leaflet-container { font: inherit; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>Caminhada a Aparecida</h1>
-  <p id="routeName">Rumo ao Santuário Nacional</p>
-</header>
 
-<main>
-  <!-- PAINEL -->
-  <section id="tab-painel">
-    <div class="card">
-      <h2>Distância até o Santuário</h2>
-      <div class="big" id="distSantuario">--</div>
-      <div class="muted" id="distInfo">Toque em "Ativar GPS" para saber onde você está.</div>
-      <div class="bar"><i id="progressBar"></i></div>
-      <div class="muted" id="progressTxt">0% do percurso</div>
-    </div>
+<!-- CAMINHADA (mapa + navegação) -->
+<section id="tab-caminhada" class="tab">
+  <div id="map"></div>
 
-    <div class="card">
-      <h2>Minha caminhada</h2>
-      <div class="grid">
-        <div class="stat"><b id="kmAndados">0,0</b><span>km andados</span></div>
-        <div class="stat"><b id="tempo">0:00</b><span>tempo andando</span></div>
-        <div class="stat"><b id="ritmo">--</b><span>km/h médio</span></div>
+  <div class="map-top">
+    <div id="navCard" class="nav-card">
+      <div class="nav-icon" id="navIcon">⛪</div>
+      <div class="nav-text">
+        <div class="nav-dist" id="navDist">Rota da Luz</div>
+        <div class="nav-instr" id="navInstr">Defina seu ponto de saída para começar.</div>
       </div>
-      <div class="row" style="margin-top:14px">
-        <button id="btnWalk">Iniciar caminhada</button>
-        <button id="btnGps" class="secondary">Ativar GPS</button>
+    </div>
+    <div id="alertCard" class="alert-card" hidden></div>
+  </div>
+
+  <div class="map-tools">
+    <button class="fab" id="btnLayer" aria-label="Alternar mapa e satélite" title="Mapa / Satélite"><span id="layerIcon">🛰️</span></button>
+    <button class="fab" id="btnFollow" aria-label="Centralizar em mim" title="Centralizar em mim">◎</button>
+    <button class="fab" id="btnFit" aria-label="Ver trajeto inteiro" title="Ver trajeto inteiro">⤢</button>
+  </div>
+
+  <div class="sheet">
+    <div class="stats">
+      <div><b id="sFalta">--</b><span>faltam</span></div>
+      <div><b id="sAndado">0,0 km</b><span>andados</span></div>
+      <div><b id="sTempo">0:00</b><span>tempo</span></div>
+      <div><b id="sChegada">--</b><span>chegada</span></div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="row">
+      <button class="btn primary" id="btnWalk">Iniciar caminhada</button>
+    </div>
+    <p class="tiny" id="gpsStatus">O GPS liga quando você inicia a caminhada. Sua localização fica só no celular.</p>
+  </div>
+</section>
+
+<!-- TRAJETO -->
+<section id="tab-trajeto" class="tab page" hidden>
+  <header class="page-head">
+    <h1>Trajeto</h1>
+    <p>Rota da Luz · até o Santuário Nacional</p>
+  </header>
+
+  <div class="card">
+    <div class="card-label">1 · Ponto de saída</div>
+    <div id="startBox" class="start-box">
+      <div class="pin">A</div>
+      <div>
+        <div class="start-title" id="startTitle">Ainda não definido</div>
+        <div class="muted" id="startSub">Onde o carro vai te deixar.</div>
       </div>
-      <p class="note" id="gpsStatus">O GPS só é usado neste aparelho. Nada é enviado para a internet.</p>
     </div>
 
-    <div class="card">
-      <h2>Próxima parada</h2>
-      <div id="nextStop" class="muted">Marque as etapas concluídas ou ative o GPS.</div>
-    </div>
-  </section>
+    <form id="searchForm" class="search">
+      <input id="searchInput" type="search" placeholder="Digite o endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
+      <button class="btn" type="submit">Buscar</button>
+    </form>
+    <ul id="searchResults" class="results" hidden></ul>
 
-  <!-- MAPA -->
-  <section id="tab-mapa" hidden>
-    <div id="map"></div>
-    <div class="row" style="margin-top:10px">
-      <button id="btnCenterMe" class="secondary">Minha posição</button>
-      <button id="btnCenterRoute" class="secondary">Ver rota inteira</button>
+    <div class="chips">
+      <button class="chip" id="btnStartHere">📍 Estou aqui agora</button>
+      <button class="chip" id="btnStartMap">👆 Escolher no mapa</button>
+      <button class="chip" id="btnStartPinda">Centro de Pindamonhangaba</button>
     </div>
-    <p class="note" id="mapNote"></p>
-  </section>
 
-  <!-- ETAPAS -->
-  <section id="tab-etapas" hidden>
-    <div class="card">
-      <h2>Percurso</h2>
-      <select id="routeSelect"></select>
-      <p class="note" id="routeDesc"></p>
-    </div>
-    <div class="card">
-      <h2>Traçado do caminho</h2>
-      <p class="note" id="trackStatus"></p>
+    <div class="driver" id="driverBox" hidden>
+      <div class="card-label">Para o motorista</div>
       <div class="row">
-        <button id="btnGpx" class="secondary">Carregar trilha GPX/KML</button>
-        <button id="btnAutoTrack" class="secondary">Usar caminho automático</button>
+        <a class="btn" id="lnkGmaps" target="_blank" rel="noopener">Abrir no Google Maps</a>
+        <a class="btn" id="lnkWaze" target="_blank" rel="noopener">Abrir no Waze</a>
       </div>
-      <input type="file" id="trackFile" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" hidden>
     </div>
-    <div class="card">
-      <h2>Etapas <span class="pill" id="stagesCount"></span></h2>
-      <ul class="list" id="stagesList"></ul>
-      <p class="note">O km de cada parada é medido ao longo do traçado mostrado no mapa.</p>
-    </div>
-  </section>
+  </div>
 
-  <!-- CHECKLIST -->
-  <section id="tab-check" hidden>
-    <div class="card">
-      <h2>Mochila do peregrino <span class="pill" id="checkCount"></span></h2>
-      <ul class="list" id="checkList"></ul>
+  <div class="card">
+    <div class="card-label">2 · Resumo</div>
+    <div class="summary">
+      <div><b id="sumDist">--</b><span>distância a pé</span></div>
+      <div><b id="sumTime">--</b><span>tempo andando (4,5 km/h)</span></div>
     </div>
-    <div class="card">
-      <h2>Dicas de segurança</h2>
-      <ul class="list">
-        <li><span>Caminhe sempre de frente para o trânsito e use colete ou roupa refletiva.</span></li>
-        <li><span>Evite caminhar à noite. Se precisar, use lanterna e pisca-pisca.</span></li>
-        <li><span>Beba água a cada 30 minutos, mesmo sem sede.</span></li>
-        <li><span>Prefira andar em grupo e avise alguém do seu trajeto do dia.</span></li>
-        <li><span>Emergência: SAMU <b>192</b> · Polícia <b>190</b> · Bombeiros <b>193</b>.</span></li>
-      </ul>
+    <p class="note" id="trackInfo"></p>
+    <div class="official">
+      <b>Rota da Luz:</b> a Associação dos Amigos da Rota da Luz indica Pindamonhangaba como saída para um trajeto de cerca de 35 km. Confirme com eles o ponto oficial de partida e peça o arquivo da trilha (GPX ou KML).
+      <a href="https://www.amigosdarotadaluz.org" target="_blank" rel="noopener">amigosdarotadaluz.org</a>
     </div>
     <div class="row">
-      <button id="btnReset" class="danger">Zerar dados da caminhada</button>
+      <button class="btn" id="btnGpx">Carregar trilha oficial (GPX/KML)</button>
+      <button class="btn ghost" id="btnAuto" hidden>Voltar ao trajeto automático</button>
     </div>
-  </section>
-</main>
+    <input type="file" id="trackFile" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" hidden>
+  </div>
 
-<nav>
-  <button data-tab="painel" aria-current="page"><span class="ic">🏠</span>Painel</button>
-  <button data-tab="mapa"><span class="ic">🗺️</span>Mapa</button>
-  <button data-tab="etapas"><span class="ic">📍</span>Etapas</button>
-  <button data-tab="check"><span class="ic">✅</span>Checklist</button>
+  <div class="card">
+    <div class="card-label">3 · Passo a passo</div>
+    <ol id="steps" class="steps"></ol>
+  </div>
+</section>
+
+<!-- CHECKLIST -->
+<section id="tab-check" class="tab page" hidden>
+  <header class="page-head">
+    <h1>Preparação</h1>
+    <p>Mochila e segurança</p>
+  </header>
+  <div class="card">
+    <div class="card-label">Mochila <span id="checkCount"></span></div>
+    <ul id="checkList" class="checks"></ul>
+  </div>
+  <div class="card">
+    <div class="card-label">Segurança</div>
+    <ul class="tips">
+      <li>Caminhe de frente para o trânsito e use colete ou roupa refletiva.</li>
+      <li>Prefira caminhar de dia. À noite, use lanterna e pisca-pisca.</li>
+      <li>Beba água a cada 30 minutos, mesmo sem sede.</li>
+      <li>Avise alguém do seu trajeto e horário previsto de chegada.</li>
+    </ul>
+    <div class="sos">
+      <a href="tel:192" class="btn">SAMU 192</a>
+      <a href="tel:190" class="btn">Polícia 190</a>
+      <a href="tel:193" class="btn">Bombeiros 193</a>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn danger" id="btnReset">Zerar caminhada</button>
+  </div>
+</section>
+
+<nav class="tabs">
+  <button data-tab="caminhada" aria-current="page"><span>🧭</span>Caminhada</button>
+  <button data-tab="trajeto"><span>🗺️</span>Trajeto</button>
+  <button data-tab="check"><span>🎒</span>Preparação</button>
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

@@ -1,8 +1,11 @@
-// Guarda os arquivos do app para abrir mesmo sem internet (o mapa precisa de conexão).
-const CACHE = 'caminhada-v8';
-const FILES = ['./', 'index.html', 'app.js', 'manifest.json', 'icon.svg',
+// Guarda os arquivos do app para abrir mesmo sem internet.
+// Mapas, satélite, rotas e busca de endereço sempre vêm da internet.
+const CACHE = 'caminhada-v9';
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.json', 'icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'];
+const SEMPRE_ONLINE = ['tile.openstreetmap.org', 'basemaps.cartocdn.com', 'arcgisonline.com',
+  'routing.openstreetmap.de', 'nominatim.openstreetmap.org'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -12,7 +15,7 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('tile.openstreetmap.org') || e.request.url.includes('routing.openstreetmap.de')) return;
+  if (e.request.method !== 'GET' || SEMPRE_ONLINE.some((h) => e.request.url.includes(h))) return;
   e.respondWith(
     fetch(e.request).then((r) => {
       const copy = r.clone();

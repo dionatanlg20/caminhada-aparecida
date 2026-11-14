@@ -1,58 +1,16 @@
 'use strict';
 
-// ---------- Dados ----------
-const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', lat: -22.8519, lng: -45.2337 };
+// =====================================================================
+// Caminhada a Aparecida — Rota da Luz
+// Ponto de saída → Santuário Nacional, com instruções passo a passo.
+// =====================================================================
 
-const ROUTES = {
-  luz: {
-    nome: 'Rota da Luz: Pindamonhangaba → Aparecida',
-    desc: 'Trecho final da Rota da Luz, com cerca de 35 km pelo caminho, segundo a Associação dos Amigos da Rota da Luz. O caminho segue estradas rurais, por isso é mais longo que a linha reta.',
-    site: 'https://www.amigosdarotadaluz.org',
-    kmReal: 35,
-    stops: [
-      ['Pindamonhangaba', -22.9246, -45.4613],
-    ],
-  },
-  sp: {
-    nome: 'São Paulo → Aparecida (Via Dutra)',
-    desc: 'Saída da Praça da Sé, seguindo o eixo da Via Dutra pelo Vale do Paraíba.',
-    stops: [
-      ['São Paulo (Praça da Sé)', -23.5505, -46.6340],
-      ['Guarulhos', -23.4628, -46.5333],
-      ['Arujá', -23.3965, -46.3200],
-      ['Santa Isabel', -23.3156, -46.2236],
-      ['Jacareí', -23.3053, -45.9658],
-      ['São José dos Campos', -23.1794, -45.8869],
-      ['Caçapava', -23.1008, -45.7069],
-      ['Taubaté', -23.0264, -45.5553],
-      ['Pindamonhangaba', -22.9246, -45.4613],
-      ['Roseira', -22.8978, -45.3070],
-    ],
-  },
-  rj: {
-    nome: 'Rio de Janeiro → Aparecida (Via Dutra)',
-    desc: 'Saída do centro do Rio, subindo a Serra das Araras e seguindo pelo Vale do Paraíba.',
-    stops: [
-      ['Rio de Janeiro (Centro)', -22.9010, -43.1770],
-      ['Nova Iguaçu', -22.7590, -43.4510],
-      ['Piraí', -22.6290, -43.8980],
-      ['Volta Redonda', -22.5230, -44.1040],
-      ['Barra Mansa', -22.5440, -44.1710],
-      ['Resende', -22.4690, -44.4470],
-      ['Itatiaia', -22.4960, -44.5640],
-      ['Queluz', -22.5370, -44.7750],
-      ['Cruzeiro', -22.5760, -44.9630],
-      ['Cachoeira Paulista', -22.6650, -45.0090],
-      ['Lorena', -22.7310, -45.1240],
-      ['Guaratinguetá', -22.8160, -45.1920],
-    ],
-  },
-  gps: {
-    nome: 'Da minha localização',
-    desc: 'Usa o ponto onde você ativou o GPS como saída, em linha reta até o Santuário.',
-    stops: [],
-  },
-};
+const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', p: [-22.8519, -45.2337] };
+const PINDA = { nome: 'Centro de Pindamonhangaba', sub: 'Ponto provisório · confirme a saída oficial com a Associação', p: [-22.9246, -45.4613] };
+const VELOCIDADE = 4.5;          // km/h de caminhada
+const FORA_DO_CAMINHO = 0.06;    // km (60 m)
+const ROUTER = 'https://routing.openstreetmap.de/routed-foot';
+const GEOCODER = 'https://nominatim.openstreetmap.org';
 
 const CHECKLIST = [
   'Tênis já amaciado (nunca novo)',
@@ -62,7 +20,7 @@ const CHECKLIST = [
   'Capa de chuva',
   'Colete ou faixa refletiva',
   'Lanterna',
-  'Esparadrapo, curativo para bolhas e vaselina',
+  'Curativo para bolhas, esparadrapo e vaselina',
   'Remédios de uso pessoal',
   'Documento com foto e cartão do SUS',
   'Carregador portátil para o celular',
@@ -70,278 +28,295 @@ const CHECKLIST = [
   'Terço ou intenção da promessa 🙏',
 ];
 
-// ---------- Estado ----------
-const KEY = 'caminhada-aparecida-v1';
-const defaultState = () => ({
-  route: 'luz',
-  done: {},          // { routeId: [indices concluídos] }
-  check: [],         // índices marcados
-  km: 0,             // km andados
-  ms: 0,             // tempo andando (ms)
+// ---------------------------------------------------------------------
+// Estado (salvo só no celular)
+// ---------------------------------------------------------------------
+const KEY = 'caminhada-aparecida-v2';
+const blank = () => ({
+  start: null,      // { p:[lat,lng], title, sub }
+  route: null,      // { pts:[[lat,lng]], steps:[...], dist, src:'osm'|'gpx', key }
+  check: [],
+  km: 0,
+  ms: 0,
   walking: false,
-  startedAt: null,   // timestamp do trecho atual
-  gpsStart: null,    // [lat, lng] para rota "gps"
+  startedAt: null,
+  layer: 'mapa',
 });
-
 let state = load();
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return Object.assign(defaultState(), JSON.parse(raw));
-  } catch (e) { /* armazenamento indisponível */ }
-  return defaultState();
+    if (raw) return Object.assign(blank(), JSON.parse(raw));
+  } catch (e) { /* sem armazenamento */ }
+  return blank();
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
 }
 
-// ---------- Geometria ----------
-const R = 6371;
+// ---------------------------------------------------------------------
+// Utilidades
+// ---------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
 const rad = (d) => d * Math.PI / 180;
 function dist(a, b) {
-  const dLat = rad(b[0] - a[0]);
-  const dLng = rad(b[1] - a[1]);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+  const h = Math.sin(rad(b[0] - a[0]) / 2) ** 2 +
+    Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(rad(b[1] - a[1]) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
-
-function routePoints() {
-  const r = ROUTES[state.route];
-  let stops = r.stops.map(([n, la, ln]) => ({ nome: n, p: [la, ln] }));
-  if (state.route === 'gps') {
-    stops = state.gpsStart ? [{ nome: 'Ponto de partida', p: state.gpsStart }] : [];
-  }
-  stops.push({ nome: SANTUARIO.nome, p: [SANTUARIO.lat, SANTUARIO.lng] });
-  return stops;
+const km1 = (km) => km.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function fmtDist(km) {
+  if (km < 1) return `${Math.max(10, Math.round(km * 100) * 10)} m`;
+  return `${km1(km)} km`;
 }
-
-// ---------- Traçado do caminho ----------
-// Caminho real (a pé pelo OpenStreetMap ou trilha GPX) guardado no aparelho.
-const TRACK_KEY = 'caminhada-aparecida-tracks-v1';
-let tracks = {};
-try { tracks = JSON.parse(localStorage.getItem(TRACK_KEY) || '{}'); } catch (e) { tracks = {}; }
-function saveTracks() {
-  try { localStorage.setItem(TRACK_KEY, JSON.stringify(tracks)); } catch (e) { /* ignora */ }
+function fmtDur(h) {
+  const m = Math.round(h * 60);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
 }
-function trackId() {
-  return state.route === 'gps' ? `gps:${(state.gpsStart || []).map((n) => n.toFixed(3)).join(',')}` : state.route;
+function fmtClock(ms) {
+  const m = Math.floor(ms / 60000);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
-
-function cumulativeLine(line) {
+function cumulative(pts) {
   const acc = [0];
-  for (let i = 1; i < line.length; i++) acc.push(acc[i - 1] + dist(line[i - 1], line[i]));
+  for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + dist(pts[i - 1], pts[i]));
   return acc;
 }
-
-// Projeta a posição na linha: km percorridos ao longo dela e distância até ela.
-function projectOnLine(pos, line, acc) {
-  if (line.length < 2) return null;
+// Projeta a posição na linha do trajeto → km já percorridos e distância até a linha.
+function project(pos, pts, acc) {
   let best = { d: Infinity, along: 0 };
   const k = Math.cos(rad(pos[0]));
-  for (let i = 0; i < line.length - 1; i++) {
-    const a = line[i], b = line[i + 1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
     const ax = a[1] * k, ay = a[0], bx = b[1] * k, by = b[0], px = pos[1] * k, py = pos[0];
     const dx = bx - ax, dy = by - ay;
-    const len2 = dx * dx + dy * dy || 1e-12;
-    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
-    const q = [ay + t * dy, (ax + t * dx) / k];
-    const d = dist(pos, q);
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1e-12)));
+    const d = dist(pos, [ay + t * dy, (ax + t * dx) / k]);
     if (d < best.d) best = { d, along: acc[i] + t * (acc[i + 1] - acc[i]) };
   }
   return best;
 }
+const round6 = (p) => [+p[0].toFixed(6), +p[1].toFixed(6)];
+const sameP = (a, b) => a && b && Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-// Junta paradas + traçado: linha, km acumulados, km de cada parada e de onde veio o traçado.
-function geometry() {
-  const stops = routePoints();
-  const t = tracks[trackId()];
-  const line = t && t.pts.length > 1 ? t.pts : stops.map((s) => s.p);
-  const src = t && t.pts.length > 1 ? t.src : 'reta';
-  const acc = cumulativeLine(line);
-  let total = acc[acc.length - 1] || 0;
-  let stopAlong;
-  if (src === 'reta') {
-    stopAlong = acc.slice();
-  } else {
-    let prev = 0;
-    stopAlong = stops.map((s, i) => {
-      if (i === 0) return 0;
-      if (i === stops.length - 1) return total;
-      const pr = projectOnLine(s.p, line, acc);
-      prev = Math.max(prev, pr ? pr.along : prev);
-      return prev;
-    });
-  }
-  // sem traçado real, usa a distância informada pela organização da rota
-  const kmReal = ROUTES[state.route].kmReal;
-  // Se a organização da rota informa a distância oficial, ela vale para os km mostrados,
-  // até o usuário carregar a trilha oficial (GPX/KML), que já tem a distância exata.
-  const f = src !== 'gpx' && kmReal && total > 0 ? kmReal / total : 1;
-  return { stops, line, acc, total, stopAlong, src, f };
-}
-
-const SRC_LABEL = {
-  osm: 'pelo caminho a pé',
-  gpx: 'pela trilha carregada',
-  reta: 'em linha reta',
+// ---------------------------------------------------------------------
+// Instruções em português (a partir das manobras do roteador)
+// ---------------------------------------------------------------------
+const VIRA = {
+  left: ['Vire à esquerda', '⬅️'],
+  right: ['Vire à direita', '➡️'],
+  'slight left': ['Mantenha-se à esquerda', '↖️'],
+  'slight right': ['Mantenha-se à direita', '↗️'],
+  'sharp left': ['Vire bem à esquerda', '↙️'],
+  'sharp right': ['Vire bem à direita', '↘️'],
+  straight: ['Siga em frente', '⬆️'],
+  uturn: ['Faça o retorno', '↩️'],
 };
+const via = (name) => (name ? ` na ${name}` : ' na estrada sem nome');
+function instruction(step, i, all) {
+  const m = step.maneuver || {};
+  const name = step.name || step.ref || '';
+  const [vira, ic] = VIRA[m.modifier] || ['Siga', '⬆️'];
+  switch (m.type) {
+    case 'depart': return { text: `Comece a caminhar${name ? ` pela ${name}` : ''}`, ic: '🚶' };
+    case 'arrive': return { text: i === all.length - 1 ? 'Chegada ao Santuário Nacional de Aparecida' : 'Ponto intermediário', ic: '⛪' };
+    case 'roundabout': case 'rotary': case 'roundabout turn':
+      return { text: `Na rotatória, pegue a ${m.exit || 1}ª saída${name ? ` para a ${name}` : ''}`, ic: '🔄' };
+    case 'fork': return { text: `Na bifurcação, ${vira.toLowerCase()}${name ? `, pela ${name}` : ''}`, ic };
+    case 'end of road': return { text: `No fim da via, ${vira.toLowerCase()}${via(name)}`, ic };
+    case 'continue': case 'new name':
+      return m.modifier && m.modifier !== 'straight'
+        ? { text: `${vira}${via(name)}`, ic }
+        : { text: `Continue${name ? ` pela ${name}` : ' em frente'}`, ic: '⬆️' };
+    default:
+      return { text: `${vira}${via(name)}`, ic };
+  }
+}
+// Junta trechos repetidos ("continue pela mesma rua") para a lista ficar limpa.
+function buildSteps(osrmSteps, pts, acc) {
+  const out = [];
+  osrmSteps.forEach((s, i) => {
+    const ins = instruction(s, i, osrmSteps);
+    const loc = [s.maneuver.location[1], s.maneuver.location[0]];
+    const along = i === 0 ? 0 : project(loc, pts, acc).along;
+    const prev = out[out.length - 1];
+    const straightOn = ['continue', 'new name'].includes(s.maneuver.type) &&
+      (!s.maneuver.modifier || s.maneuver.modifier === 'straight');
+    if (prev && straightOn && (s.name || '') === prev.name) { prev.len += s.distance / 1000; return; }
+    out.push({ text: ins.text, ic: ins.ic, name: s.name || '', p: loc, along, len: s.distance / 1000 });
+  });
+  return out;
+}
 
-let fetching = null;
-async function fetchTrack() {
-  const id = trackId();
-  const stops = routePoints();
-  if (tracks[id] || stops.length < 2 || fetching === id || !navigator.onLine) return;
-  fetching = id;
-  setTrackStatus('Buscando o caminho a pé pelas ruas e estradas…');
-  const coords = stops.map((s) => `${s.p[1].toFixed(5)},${s.p[0].toFixed(5)}`).join('%3B'); // ';' codificado: alguns proxies bloqueiam ';' na URL
+// ---------------------------------------------------------------------
+// Rede: roteador a pé e busca de endereço
+// ---------------------------------------------------------------------
+async function getJSON(url) {
+  const r = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+let routing = false;
+async function computeRoute() {
+  if (!state.start || routing) return;
+  const key = state.start.p.join(',');
+  if (state.route && (state.route.src === 'gpx' || state.route.key === key)) return;
+  routing = true;
+  refreshAll();
+  // ';' vai codificado (%3B): alguns proxies bloqueiam ';' na URL
+  const c = [state.start.p, SANTUARIO.p].map(([la, ln]) => `${ln.toFixed(6)},${la.toFixed(6)}`).join('%3B');
   try {
-    const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson`);
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    const pts = j.routes[0].geometry.coordinates.map(([ln, la]) => [+la.toFixed(5), +ln.toFixed(5)]);
-    if (pts.length < 2) throw new Error('vazio');
-    tracks[id] = { src: 'osm', pts };
-    saveTracks();
-    drawRoute();
-    render();
+    const j = await getJSON(`${ROUTER}/route/v1/foot/${c}?overview=full&geometries=geojson&steps=true`);
+    const r = j.routes[0];
+    const pts = r.geometry.coordinates.map(([ln, la]) => round6([la, ln]));
+    const acc = cumulative(pts);
+    if (state.start && state.start.p.join(',') === key) {
+      state.route = { pts, steps: buildSteps(r.legs[0].steps, pts, acc), dist: acc[acc.length - 1], src: 'osm', key };
+      save();
+    }
+    routeError = false;
   } catch (e) {
-    setTrackStatus('Não foi possível buscar o caminho a pé agora. Mostrando linha reta; o app tenta de novo na próxima vez que abrir com internet.');
+    routeError = true;
   } finally {
-    fetching = null;
+    routing = false;
+    refreshAll();
+    if (state.start && (!state.route || state.route.key !== state.start.p.join(',')) && !routeError) computeRoute();
+  }
+}
+let routeError = false;
+function searchAddress(q) {
+  // Prioriza a região entre Pindamonhangaba e Aparecida
+  return getJSON(`${GEOCODER}/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=br&accept-language=pt-BR` +
+    `&viewbox=-45.75,-22.70,-45.10,-23.05&q=${encodeURIComponent(q)}`);
+}
+async function reverseAddress(p) {
+  try {
+    const j = await getJSON(`${GEOCODER}/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=pt-BR&lat=${p[0]}&lon=${p[1]}`);
+    if (j && j.address) return labelFromAddress(j);
+    throw new Error('sem endereço');
+  } catch (e) {
+    // alternativa: nome da rua mais próxima pelo próprio roteador
+    try {
+      const j = await getJSON(`${ROUTER}/nearest/v1/foot/${p[1].toFixed(6)},${p[0].toFixed(6)}`);
+      const n = j.waypoints && j.waypoints[0] && j.waypoints[0].name;
+      if (n) return { title: n, sub: 'Rua mais próxima do ponto escolhido' };
+    } catch (e2) { /* ignora */ }
+    return { title: 'Ponto escolhido no mapa', sub: `${p[0].toFixed(5)}, ${p[1].toFixed(5)}` };
+  }
+}
+function labelFromAddress(j) {
+  const a = j.address || {};
+  const rua = a.road || a.pedestrian || a.footway || a.path || a.neighbourhood || j.name || 'Ponto escolhido';
+  const title = a.house_number ? `${rua}, ${a.house_number}` : rua;
+  const cidade = a.city || a.town || a.village || a.municipality || '';
+  const sub = [a.suburb || a.neighbourhood, cidade].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(' · ');
+  return { title, sub: sub || 'Endereço encontrado' };
+}
+
+// ---------------------------------------------------------------------
+// Ponto de saída
+// ---------------------------------------------------------------------
+async function setStart(p, label) {
+  const rp = round6(p);
+  const lbl = label || { title: 'Buscando endereço…', sub: '' };
+  state.start = { p: rp, title: lbl.title, sub: lbl.sub };
+  if (state.route && state.route.src !== 'gpx') state.route = null;
+  routeError = false;
+  save();
+  refreshAll();
+  computeRoute();
+  if (!label) {
+    const l = await reverseAddress(rp);
+    if (state.start && sameP(state.start.p, rp)) {
+      state.start.title = l.title;
+      state.start.sub = l.sub;
+      save();
+      refreshAll();
+    }
   }
 }
 
-function setTrackStatus(msg) {
-  const el = $('trackStatus');
-  if (el) el.textContent = msg;
-}
-
-function describeTrack(src) {
-  const kmReal = ROUTES[state.route].kmReal;
-  if (src === 'osm' && kmReal) return `Os km seguem a distância oficial de ${kmReal} km. A linha no mapa é um caminho a pé aproximado, pelas estradas do OpenStreetMap, e serve para mostrar onde você está; pode não ser exatamente o traçado sinalizado. Para ver a trilha oficial no mapa, carregue o arquivo GPX ou KML da Associação abaixo.`;
-  if (src === 'osm') return 'Caminho a pé calculado pelas ruas e estradas do OpenStreetMap, evitando rodovias. Pode não ser exatamente o traçado oficial sinalizado. Se tiver a trilha oficial em arquivo GPX ou KML, carregue abaixo.';
-  if (src === 'gpx') return 'Usando a trilha do arquivo que você carregou.';
-  return 'Ainda sem o caminho real: mostrando linha reta entre as paradas.';
-}
-
-// Lê um arquivo GPX ou KML e devolve a lista de pontos [lat, lng].
+// ---------------------------------------------------------------------
+// Trilha oficial (GPX/KML)
+// ---------------------------------------------------------------------
 function parseTrackFile(text) {
   const xml = new DOMParser().parseFromString(text, 'application/xml');
   let pts = [...xml.querySelectorAll('trkpt, rtept')].map((n) => [+n.getAttribute('lat'), +n.getAttribute('lon')]);
   if (pts.length < 2) {
     pts = [];
-    xml.querySelectorAll('LineString coordinates, coordinates').forEach((c) => {
+    xml.querySelectorAll('coordinates').forEach((c) => {
       c.textContent.trim().split(/\s+/).forEach((t) => {
         const [ln, la] = t.split(',').map(Number);
-        if (!isNaN(la) && !isNaN(ln)) pts.push([la, ln]);
+        if (isFinite(la) && isFinite(ln)) pts.push([la, ln]);
       });
     });
   }
   pts = pts.filter(([la, ln]) => isFinite(la) && isFinite(ln));
-  // reduz para no máximo ~4000 pontos
-  const step = Math.ceil(pts.length / 4000);
-  return pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map(([la, ln]) => [+la.toFixed(5), +ln.toFixed(5)]);
+  const step = Math.ceil(pts.length / 5000) || 1;
+  return pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map(round6);
 }
-
 function loadTrackFile(file) {
   const reader = new FileReader();
   reader.onload = () => {
     let pts = [];
     try { pts = parseTrackFile(reader.result); } catch (e) { pts = []; }
-    if (pts.length < 2) {
-      alert('Não encontrei uma trilha nesse arquivo. Use um arquivo GPX ou KML.');
-      return;
-    }
-    // garante que a trilha termina perto do Santuário
-    const toSant = (p) => dist(p, [SANTUARIO.lat, SANTUARIO.lng]);
-    if (toSant(pts[0]) < toSant(pts[pts.length - 1])) pts.reverse();
-    tracks[trackId()] = { src: 'gpx', pts };
-    saveTracks();
-    drawRoute();
-    render();
+    if (pts.length < 2) { alert('Não encontrei uma trilha nesse arquivo. Use um arquivo GPX ou KML.'); return; }
+    if (dist(pts[0], SANTUARIO.p) < dist(pts[pts.length - 1], SANTUARIO.p)) pts.reverse();
+    const acc = cumulative(pts);
+    state.route = { pts, steps: [], dist: acc[acc.length - 1], src: 'gpx', key: 'gpx' };
+    save();
+    setStart(pts[0]);
   };
   reader.readAsText(file);
 }
 
-function useAutoTrack() {
-  delete tracks[trackId()];
-  saveTracks();
-  drawRoute();
-  render();
-  fetchTrack();
-}
-
-// ---------- Formatação ----------
-const fmtKm = (km) => km.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-function fmtTime(ms) {
-  const m = Math.floor(ms / 60000);
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-}
-const $ = (id) => document.getElementById(id);
-
-// ---------- GPS ----------
-let me = null;           // [lat, lng]
-let lastFix = null;      // última posição usada para somar km
-let watchId = null;
+// ---------------------------------------------------------------------
+// GPS e caminhada
+// ---------------------------------------------------------------------
+let me = null, meAcc = null, lastFix = null, watchId = null;
+let follow = true, offRouteWarned = false, pickingOnMap = false, pendingStartHere = false;
 
 function startGps() {
-  if (!('geolocation' in navigator)) {
-    $('gpsStatus').textContent = 'Este aparelho não tem GPS disponível no navegador.';
-    return;
-  }
+  if (!('geolocation' in navigator)) { setGps('Este aparelho não oferece GPS ao navegador.'); return; }
   if (watchId !== null) return;
-  $('gpsStatus').textContent = 'Procurando sinal de GPS…';
+  setGps('Procurando sinal de GPS…');
   watchId = navigator.geolocation.watchPosition(onPos, (err) => {
     if (err.code === 1) {
-      // permissão negada: o GPS para de vez
-      $('gpsStatus').textContent = 'Permissão de localização negada. Libere nas configurações do navegador.';
+      setGps('Permissão de localização negada. Libere a localização para este site nas configurações do navegador.');
       navigator.geolocation.clearWatch(watchId);
       watchId = null;
-      $('btnGps').textContent = 'Ativar GPS';
     } else {
-      // sinal fraco ou demorado: o GPS continua tentando sozinho
-      $('gpsStatus').textContent = 'Sinal de GPS fraco. Continuando a procurar… Tente ficar em local aberto.';
+      setGps('Sinal de GPS fraco. Continuando a procurar… fique em local aberto.');
     }
-  }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
-  $('btnGps').textContent = 'GPS ativo';
+  }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
 }
+function setGps(t) { $('gpsStatus').textContent = t; }
 
-function onPos(p) {
-  const { latitude, longitude, accuracy } = p.coords;
+function onPos(pos) {
+  const { latitude, longitude, accuracy } = pos.coords;
   me = [latitude, longitude];
-  $('gpsStatus').textContent = `GPS ativo · precisão de ${Math.round(accuracy)} m`;
-  $('btnGps').textContent = 'GPS ativo';
-
-  if (state.route === 'gps' && !state.gpsStart) {
-    state.gpsStart = me;
-    save();
-    drawRoute();
-    fetchTrack();
-  }
-
+  meAcc = accuracy;
+  setGps(`GPS ativo · precisão de ${Math.round(accuracy)} m`);
   if (state.walking && accuracy <= 50) {
     if (lastFix) {
       const d = dist(lastFix.p, me);
-      const hours = (p.timestamp - lastFix.t) / 3600000;
-      const speed = hours > 0 ? d / hours : 0;
+      const h = (pos.timestamp - lastFix.t) / 3600000;
+      const v = h > 0 ? d / h : 0;
       // ignora ruído (< 8 m) e saltos impossíveis a pé (> 12 km/h)
-      if (d >= 0.008 && speed <= 12) {
-        state.km += d;
-        lastFix = { p: me, t: p.timestamp };
-        save();
-      } else if (speed > 12) {
-        lastFix = { p: me, t: p.timestamp };
-      }
+      if (d >= 0.008 && v <= 12) { state.km += d; lastFix = { p: me, t: pos.timestamp }; save(); }
+      else if (v > 12) lastFix = { p: me, t: pos.timestamp };
     } else {
-      lastFix = { p: me, t: p.timestamp };
+      lastFix = { p: me, t: pos.timestamp };
     }
   }
-  updateMeMarker();
-  render();
+  if (pendingStartHere) { pendingStartHere = false; setStart(me); }
+  drawMe();
+  refreshAll();
 }
 
-// ---------- Caminhada ----------
 function toggleWalk() {
+  if (!state.start || !state.route) { showTab('trajeto'); return; }
   if (state.walking) {
     state.ms += Date.now() - state.startedAt;
     state.walking = false;
@@ -350,136 +325,183 @@ function toggleWalk() {
   } else {
     state.walking = true;
     state.startedAt = Date.now();
+    follow = true;
+    $('btnFollow').classList.add('on');
     startGps();
   }
   save();
-  render();
+  refreshAll();
 }
+const elapsed = () => state.ms + (state.walking ? Date.now() - state.startedAt : 0);
 
-function elapsed() {
-  return state.ms + (state.walking ? Date.now() - state.startedAt : 0);
-}
-
-// ---------- Render ----------
-function render() {
-  const g = geometry();
-  const { stops, total, stopAlong, src, f } = g;
-  const done = state.done[state.route] || [];
-  const label = src !== 'gpx' && f !== 1 ? 'pela Rota da Luz' : SRC_LABEL[src];
-
-  $('routeName').textContent = ROUTES[state.route].nome;
-  if (fetching !== trackId()) setTrackStatus(describeTrack(src));
-  const mapNote = $('mapNote');
-  if (mapNote) {
-    mapNote.textContent = src === 'reta'
-      ? 'Linha reta provisória entre as paradas. Abra o app com internet para carregar o caminho a pé.'
-      : 'Siga sempre a sinalização do caminho e caminhe de frente para o trânsito.';
+// ---------------------------------------------------------------------
+// Navegação: onde estou, próxima instrução, alertas
+// ---------------------------------------------------------------------
+function navInfo() {
+  const r = state.route;
+  if (!state.start) return { kind: 'nostart' };
+  if (!r) return { kind: routeError ? 'offline' : 'loading' };
+  const acc = cumulative(r.pts);
+  const total = acc[acc.length - 1];
+  if (!me) return { kind: 'nogps', total, along: 0, rest: total };
+  const pr = project(me, r.pts, acc);
+  const rest = Math.max(0, total - pr.along);
+  if (dist(me, SANTUARIO.p) < 0.08 || rest < 0.03) return { kind: 'arrived', total, along: total, rest: 0 };
+  // ainda não chegou ao ponto de saída
+  if (pr.along < 0.05 && dist(me, state.start.p) > 0.08) {
+    return { kind: 'tostart', total, along: 0, rest: total, toStart: dist(me, state.start.p) };
   }
+  const idx = r.steps.findIndex((s, i) => i > 0 && s.along > pr.along + 0.015);
+  const next = idx >= 0 ? r.steps[idx] : null;
+  return {
+    kind: pr.d > FORA_DO_CAMINHO ? 'off' : 'on',
+    total, along: pr.along, rest, off: pr.d,
+    next, nextIdx: idx, toNext: next ? next.along - pr.along : rest,
+  };
+}
 
-  // distância e progresso
-  let progress = 0;
-  let nextIdx = stops.findIndex((_, i) => !done.includes(i) && i > 0);
-  if (me) {
-    const dS = dist(me, [SANTUARIO.lat, SANTUARIO.lng]);
-    const pr = projectOnLine(me, g.line, g.acc);
-    if (pr && total > 0 && pr.d <= 3) {
-      progress = pr.along / total;
-      nextIdx = stopAlong.findIndex((k, i) => i > 0 && k > pr.along + 0.05);
-      $('distSantuario').textContent = `${fmtKm((total - pr.along) * f)} km`;
-      $('distInfo').textContent = `Distância que falta ${label}. Em linha reta são ${fmtKm(dS)} km.`;
-    } else {
-      $('distSantuario').textContent = `${fmtKm(dS)} km`;
-      $('distInfo').textContent = pr
-        ? `Em linha reta. Você está a ${fmtKm(pr.d)} km do percurso escolhido.`
-        : 'Distância em linha reta até o Santuário.';
-    }
+function refreshNav(n) {
+  if (pickingOnMap) return;
+  const icon = $('navIcon'), d = $('navDist'), t = $('navInstr'), alertEl = $('alertCard');
+  alertEl.hidden = true;
+  switch (n.kind) {
+    case 'nostart':
+      icon.textContent = '📍'; d.textContent = 'Ponto de saída';
+      t.textContent = 'Abra "Trajeto" e informe onde o carro vai te deixar.';
+      break;
+    case 'loading':
+      icon.textContent = '⏳'; d.textContent = 'Calculando…';
+      t.textContent = 'Montando o trajeto a pé até o Santuário.';
+      break;
+    case 'offline':
+      icon.textContent = '📶'; d.textContent = 'Sem internet';
+      t.textContent = 'O trajeto será calculado assim que houver conexão.';
+      break;
+    case 'nogps':
+      icon.textContent = '🚶'; d.textContent = `${fmtDist(n.total)} até o Santuário`;
+      t.textContent = `Saída: ${state.start.title}. Toque em "Iniciar caminhada" quando estiver lá.`;
+      break;
+    case 'tostart':
+      icon.textContent = '📍'; d.textContent = `${fmtDist(n.toStart)} até a saída`;
+      t.textContent = `Vá até o ponto de saída: ${state.start.title}.`;
+      break;
+    case 'arrived':
+      icon.textContent = '⛪'; d.textContent = 'Você chegou!';
+      t.textContent = 'Bem-vindo ao Santuário Nacional de Aparecida. 🙏';
+      break;
+    default:
+      if (n.next) {
+        icon.textContent = n.next.ic; d.textContent = `Em ${fmtDist(n.toNext)}`;
+        t.textContent = n.next.text;
+      } else {
+        icon.textContent = '⬆️'; d.textContent = fmtDist(n.rest);
+        t.textContent = state.route.src === 'gpx' ? 'Siga a trilha oficial até o Santuário.' : 'Siga em frente até o Santuário.';
+      }
+      if (n.kind === 'off') {
+        alertEl.hidden = false;
+        alertEl.textContent = `⚠️ Você saiu do caminho. Volte cerca de ${fmtDist(n.off)} até a linha azul.`;
+        if (!offRouteWarned && navigator.vibrate) navigator.vibrate([300, 150, 300]);
+        offRouteWarned = true;
+      } else {
+        offRouteWarned = false;
+      }
+  }
+}
+
+function refreshStats(n) {
+  const rest = n.rest != null ? n.rest : null;
+  $('sFalta').textContent = rest != null ? fmtDist(rest) : '--';
+  $('sAndado').textContent = state.km < 0.01 ? '0,0 km' : fmtDist(state.km);
+  $('sTempo').textContent = fmtClock(elapsed());
+  if (rest != null && rest > 0) {
+    const t = new Date(Date.now() + rest / VELOCIDADE * 3600000);
+    $('sChegada').textContent = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
   } else {
-    const lastDone = Math.max(0, ...done.filter((i) => i < stops.length));
-    progress = total > 0 ? stopAlong[lastDone] / total : 0;
-    const rest = total - stopAlong[lastDone];
-    $('distSantuario').textContent = total > 0 ? `${fmtKm(rest * f)} km` : '--';
-    $('distInfo').textContent = total > 0
-      ? 'Estimativa pelas etapas concluídas. Ative o GPS para mais precisão.'
-      : 'Ative o GPS para definir seu ponto de partida.';
+    $('sChegada').textContent = n.kind === 'arrived' ? 'agora' : '--';
   }
-  progress = Math.max(0, Math.min(1, progress));
-  $('progressBar').style.width = `${(progress * 100).toFixed(1)}%`;
-  $('progressTxt').textContent = `${Math.round(progress * 100)}% do percurso · total de ${fmtKm(total * f)} km ${label}`;
-
-  // próxima parada
-  if (nextIdx > 0 && nextIdx < stops.length) {
-    const s = stops[nextIdx];
-    const extra = me ? `${fmtKm(dist(me, s.p))} km daqui em linha reta` : `km ${fmtKm(stopAlong[nextIdx] * f)} do percurso`;
-    $('nextStop').innerHTML = `<b></b><br><span class="muted">${extra}</span>`;
-    $('nextStop').querySelector('b').textContent = s.nome;
-  } else if (total > 0) {
-    $('nextStop').innerHTML = '<b>Você chegou! Bem-vindo ao Santuário. 🙏</b>';
-  }
-
-  // caminhada
-  const ms = elapsed();
-  $('kmAndados').textContent = fmtKm(state.km);
-  $('tempo').textContent = fmtTime(ms);
-  $('ritmo').textContent = ms > 60000 && state.km > 0 ? fmtKm(state.km / (ms / 3600000)) : '--';
-  $('btnWalk').textContent = state.walking ? 'Pausar caminhada' : (state.ms > 0 ? 'Continuar caminhada' : 'Iniciar caminhada');
-
-  renderStages(stops, stopAlong.map((k) => k * f), done);
-  renderChecklist();
+  const pct = n.total ? Math.min(100, Math.max(0, n.along / n.total * 100)) : 0;
+  $('bar').style.width = `${pct.toFixed(1)}%`;
+  const b = $('btnWalk');
+  b.classList.toggle('stop', !!state.walking);
+  if (!state.start) b.textContent = 'Definir ponto de saída';
+  else if (!state.route) b.textContent = 'Aguardando o trajeto…';
+  else if (state.walking) b.textContent = 'Pausar caminhada';
+  else b.textContent = state.ms > 0 ? 'Continuar caminhada' : 'Iniciar caminhada';
 }
 
-function renderStages(stops, acc, done) {
-  const ul = $('stagesList');
-  ul.innerHTML = '';
-  stops.forEach((s, i) => {
+// ---------------------------------------------------------------------
+// Tela Trajeto
+// ---------------------------------------------------------------------
+function refreshTrajeto(n) {
+  const s = state.start, r = state.route;
+  $('startTitle').textContent = s ? s.title : 'Ainda não definido';
+  $('startSub').textContent = s ? (s.sub || '') : 'Onde o carro vai te deixar.';
+  $('driverBox').hidden = !s;
+  if (s) {
+    const [la, ln] = s.p;
+    $('lnkGmaps').href = `https://www.google.com/maps/dir/?api=1&destination=${la},${ln}&travelmode=driving`;
+    $('lnkWaze').href = `https://waze.com/ul?ll=${la},${ln}&navigate=yes`;
+  }
+  $('sumDist').textContent = r ? fmtDist(r.dist) : '--';
+  $('sumTime').textContent = r ? fmtDur(r.dist / VELOCIDADE) : '--';
+  $('btnAuto').hidden = !(r && r.src === 'gpx');
+  let info;
+  if (!s) info = 'Informe o ponto de saída para calcular o trajeto.';
+  else if (!r) info = routeError ? 'Sem internet para calcular o trajeto. Ele será calculado assim que houver conexão.' : 'Calculando o trajeto a pé…';
+  else if (r.src === 'gpx') info = 'Usando a trilha oficial carregada do arquivo. O app avisa se você sair dela.';
+  else info = 'Trajeto a pé calculado pelas ruas e estradas do mapa (OpenStreetMap), evitando rodovias. Pode não ser exatamente o traçado sinalizado da Rota da Luz.';
+  $('trackInfo').textContent = info;
+
+  const ol = $('steps');
+  ol.innerHTML = '';
+  if (!r) return;
+  if (r.src === 'gpx') {
+    ol.innerHTML = '<li><div class="ic">〰️</div><div><div class="t">Siga a linha azul da trilha oficial</div><div class="d">Arquivos de trilha não trazem instruções de curva. O app avisa se você sair do caminho.</div></div></li>';
+    return;
+  }
+  const navigating = n.kind === 'on' || n.kind === 'off';
+  r.steps.forEach((st, i) => {
     const li = document.createElement('li');
-    const isDone = i === 0 || done.includes(i);
-    if (isDone && i > 0) li.className = 'done';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = isDone;
-    cb.disabled = i === 0;
-    cb.setAttribute('aria-label', `Concluí ${s.nome}`);
-    cb.addEventListener('change', () => {
-      const list = new Set(state.done[state.route] || []);
-      cb.checked ? list.add(i) : list.delete(i);
-      state.done[state.route] = [...list];
-      save();
-      render();
+    if (navigating) {
+      if (i < n.nextIdx || n.nextIdx < 0) li.className = 'passed';
+      else if (i === n.nextIdx) li.className = 'current';
+    }
+    li.innerHTML = '<div class="ic"></div><div><div class="t"></div><div class="d"></div></div>';
+    li.querySelector('.ic').textContent = st.ic;
+    li.querySelector('.t').textContent = st.text;
+    li.querySelector('.d').textContent = i === r.steps.length - 1
+      ? `km ${km1(r.dist)}`
+      : `km ${km1(st.along)} · depois siga ${fmtDist(st.len)}`;
+    li.addEventListener('click', () => {
+      showTab('caminhada');
+      follow = false;
+      $('btnFollow').classList.remove('on');
+      if (map) setTimeout(() => map.setView(st.p, 17), 60);
     });
-    const txt = document.createElement('div');
-    const leg = i > 0 ? `+${fmtKm(acc[i] - acc[i - 1])} km desde a anterior` : 'Saída';
-    txt.innerHTML = `<div class="t"></div><div class="muted">${leg}</div>`;
-    txt.querySelector('.t').textContent = s.nome;
-    const km = document.createElement('span');
-    km.className = 'km';
-    km.textContent = `km ${fmtKm(acc[i])}`;
-    li.append(cb, txt, km);
-    ul.append(li);
+    ol.append(li);
   });
-  const n = stops.length - 1;
-  $('stagesCount').textContent = n > 0 ? `${done.filter((i) => i > 0 && i <= n).length}/${n}` : '';
 }
 
-function renderChecklist() {
+// ---------------------------------------------------------------------
+// Checklist
+// ---------------------------------------------------------------------
+function refreshChecklist() {
   const ul = $('checkList');
   if (ul.childElementCount !== CHECKLIST.length) {
     ul.innerHTML = '';
     CHECKLIST.forEach((item, i) => {
       const li = document.createElement('li');
       const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.id = `ck${i}`;
+      cb.type = 'checkbox'; cb.id = `ck${i}`;
       cb.addEventListener('change', () => {
         const s = new Set(state.check);
         cb.checked ? s.add(i) : s.delete(i);
         state.check = [...s];
         save();
-        renderChecklist();
+        refreshChecklist();
       });
       const lb = document.createElement('label');
-      lb.htmlFor = cb.id;
-      lb.className = 't';
-      lb.textContent = item;
+      lb.htmlFor = cb.id; lb.textContent = item;
       li.append(cb, lb);
       ul.append(li);
     });
@@ -489,162 +511,192 @@ function renderChecklist() {
     li.querySelector('input').checked = on;
     li.classList.toggle('done', on);
   });
-  $('checkCount').textContent = `${state.check.length}/${CHECKLIST.length}`;
+  $('checkCount').textContent = `· ${state.check.length}/${CHECKLIST.length}`;
 }
 
-// ---------- Mapa ----------
-let map = null, routeLayer = null, meMarker = null;
-
+// ---------------------------------------------------------------------
+// Mapa (moderno + satélite)
+// ---------------------------------------------------------------------
+let map = null, routeLayer = null, meMarker = null, meCircle = null, tileErrors = 0;
+const layers = {};
 function initMap() {
-  if (map || typeof L === 'undefined') {
-    if (typeof L === 'undefined') $('map').innerHTML = '<p class="card">Sem internet para carregar o mapa agora.</p>';
-    return;
-  }
-  map = L.map('map', { zoomControl: true, zoomSnap: 0.25 });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; OpenStreetMap',
-  }).addTo(map);
-  drawRoute();
+  if (typeof L === 'undefined') { $('map').innerHTML = '<p style="padding:150px 16px">Sem internet para carregar o mapa agora.</p>'; return; }
+  map = L.map('map', { zoomControl: false, zoomSnap: 0.25 }).setView(PINDA.p, 11);
+  layers.mapa = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO',
+  });
+  layers.satelite = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics',
+    }),
+    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.9 }),
+    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+  ]);
+  layers.reserva = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+  // se o mapa moderno não carregar, troca para o mapa padrão do OpenStreetMap
+  layers.mapa.on('tileerror', () => {
+    tileErrors++;
+    if (tileErrors === 6 && state.layer === 'mapa') applyLayer();
+  });
+  applyLayer();
+  map.on('dragstart', () => { follow = false; $('btnFollow').classList.remove('on'); });
+  map.on('click', (e) => {
+    if (!pickingOnMap) return;
+    map.closePopup();
+    pickingOnMap = false;
+    setStart([e.latlng.lat, e.latlng.lng]);
+    setTimeout(() => showTab('trajeto'), 300);
+  });
 }
-
+function applyLayer() {
+  if (!map) return;
+  Object.values(layers).forEach((l) => { if (map.hasLayer(l)) map.removeLayer(l); });
+  const base = state.layer === 'satelite' ? layers.satelite : (tileErrors >= 6 ? layers.reserva : layers.mapa);
+  base.addTo(map);
+  $('layerIcon').textContent = state.layer === 'satelite' ? '🗺️' : '🛰️';
+  $('btnLayer').title = state.layer === 'satelite' ? 'Ver mapa' : 'Ver satélite';
+  $('btnLayer').classList.toggle('on', state.layer === 'satelite');
+}
+const pinIcon = (cls, txt) => L.divIcon({ className: '', html: `<div class="mk ${cls}">${txt}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
 function drawRoute() {
   if (!map) return;
   if (routeLayer) routeLayer.remove();
-  const g = geometry();
-  const stops = g.stops;
   routeLayer = L.layerGroup().addTo(map);
-  const done = state.done[state.route] || [];
-  if (g.line.length > 1) {
-    const style = g.src === 'reta'
-      ? { color: '#c9a227', weight: 4, opacity: .8, dashArray: '8 8' }
-      : { color: '#d4351c', weight: 5, opacity: .85 };
-    L.polyline(g.line, style).addTo(routeLayer);
+  const r = state.route;
+  if (r) {
+    L.polyline(r.pts, { color: '#ffffff', weight: 9, opacity: 0.95 }).addTo(routeLayer);
+    L.polyline(r.pts, { color: '#1a73e8', weight: 5, opacity: 1, className: 'route-line' }).addTo(routeLayer);
   }
-  stops.forEach((s, i) => {
-    const last = i === stops.length - 1;
-    L.circleMarker(s.p, {
-      radius: last ? 10 : 7,
-      color: '#fff', weight: 2,
-      fillColor: last ? '#1d3f72' : (i === 0 || done.includes(i) ? '#2e7d4f' : '#c9a227'),
-      fillOpacity: 1,
-    }).bindPopup(`<b>${s.nome}</b>`).addTo(routeLayer);
-  });
-  fitRoute();
+  if (state.start) L.marker(state.start.p, { icon: pinIcon('a', 'A'), interactive: false, keyboard: false }).addTo(routeLayer); // não bloqueia o toque ao escolher o ponto no mapa
+  L.marker(SANTUARIO.p, { icon: pinIcon('b', '⛪'), bubblingMouseEvents: true }).bindPopup(`<b>${SANTUARIO.nome}</b>`).addTo(routeLayer);
 }
-
-function fitRoute() {
-  if (!map) return;
-  const pts = geometry().line.slice();
-  if (me) pts.push(me);
-  if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
-  else map.setView(pts[0], 12);
-}
-
-function updateMeMarker() {
+function drawMe() {
   if (!map || !me) return;
   if (!meMarker) {
-    meMarker = L.circleMarker(me, { radius: 9, color: '#fff', weight: 3, fillColor: '#2f80ed', fillOpacity: 1 })
-      .bindPopup('Você está aqui').addTo(map);
+    meCircle = L.circle(me, { radius: meAcc || 20, color: '#1a73e8', weight: 1, fillOpacity: 0.08 }).addTo(map);
+    meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me-dot"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: 1000 }).addTo(map);
   } else {
     meMarker.setLatLng(me);
+    meCircle.setLatLng(me).setRadius(meAcc || 20);
   }
+  if (follow && state.walking) map.setView(me, Math.max(map.getZoom(), 16));
+}
+function fitRoute() {
+  if (!map) return;
+  const pts = state.route ? state.route.pts.slice() : [SANTUARIO.p, state.start ? state.start.p : PINDA.p];
+  map.fitBounds(pts, { paddingTopLeft: [20, 130], paddingBottomRight: [72, 200] });
 }
 
-// ---------- Navegação ----------
-function showTab(name) {
-  document.querySelectorAll('main > section').forEach((s) => { s.hidden = s.id !== `tab-${name}`; });
-  document.querySelectorAll('nav button').forEach((b) => {
-    if (b.dataset.tab === name) b.setAttribute('aria-current', 'page');
-    else b.removeAttribute('aria-current');
-  });
-  if (name === 'mapa') {
-    const first = !map;
-    initMap();
-    setTimeout(() => {
-      if (!map) return;
-      map.invalidateSize();
-      updateMeMarker();
-      if (first) fitRoute(); // enquadra só depois que o mapa tem tamanho na tela
-    }, 50);
+// ---------------------------------------------------------------------
+// Atualização geral e abas
+// ---------------------------------------------------------------------
+let lastRouteKey = null, lastStartKey = null;
+function refreshAll() {
+  const n = navInfo();
+  refreshNav(n);
+  refreshStats(n);
+  refreshTrajeto(n);
+  refreshChecklist();
+  const rk = state.route ? `${state.route.src}:${state.route.key}:${state.route.pts.length}` : 'none';
+  const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
+  if (rk !== lastRouteKey || sk !== lastStartKey) {
+    const routeChanged = rk !== lastRouteKey;
+    lastRouteKey = rk; lastStartKey = sk;
+    drawRoute();
+    if (routeChanged && state.route) fitRoute();
   }
-  try { sessionStorage.setItem('tab', name); } catch (e) { /* ignora */ }
+}
+// os créditos do mapa ficam logo acima do painel de baixo, sem cobrir os números
+function fitSheet() {
+  const h = document.querySelector('.sheet').offsetHeight;
+  if (h) document.documentElement.style.setProperty('--sheet-h', `${h}px`);
+}
+window.addEventListener('resize', fitSheet);
+let currentTab = 'caminhada';
+function showTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach((s) => { s.hidden = s.id !== `tab-${name}`; });
+  document.querySelectorAll('.tabs button').forEach((b) => {
+    if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  if (name === 'caminhada' && map) setTimeout(() => { fitSheet(); map.invalidateSize(); }, 30);
   window.scrollTo(0, 0);
 }
 
-function showDesc() {
-  const r = ROUTES[state.route];
-  const el = $('routeDesc');
-  el.textContent = r.desc + ' ';
-  if (r.site) {
-    const a = document.createElement('a');
-    a.href = r.site;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.textContent = 'Onde dormir, comer, mapas e passaporte: amigosdarotadaluz.org';
-    el.append(a);
-  }
-}
-
-// ---------- Início ----------
+// ---------------------------------------------------------------------
+// Início
+// ---------------------------------------------------------------------
 function init() {
-  const sel = $('routeSelect');
-  Object.entries(ROUTES).forEach(([id, r]) => {
-    const o = document.createElement('option');
-    o.value = id;
-    o.textContent = r.nome;
-    sel.append(o);
-  });
-  sel.value = state.route;
-  showDesc();
-  sel.addEventListener('change', () => {
-    state.route = sel.value;
-    showDesc();
-    if (state.route === 'gps' && !state.gpsStart) startGps();
-    save();
-    drawRoute();
-    render();
-    fetchTrack();
-  });
-
-  $('trackFile').addEventListener('change', (e) => {
-    if (e.target.files[0]) loadTrackFile(e.target.files[0]);
-    e.target.value = '';
-  });
-  $('btnGpx').addEventListener('click', () => $('trackFile').click());
-  $('btnAutoTrack').addEventListener('click', useAutoTrack);
-  window.addEventListener('online', fetchTrack);
-
-  document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  initMap();
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
   $('btnWalk').addEventListener('click', toggleWalk);
-  $('btnGps').addEventListener('click', startGps);
-  $('btnCenterMe').addEventListener('click', () => {
+  $('btnLayer').addEventListener('click', () => { state.layer = state.layer === 'satelite' ? 'mapa' : 'satelite'; save(); applyLayer(); });
+  $('btnFollow').addEventListener('click', () => {
+    follow = true; $('btnFollow').classList.add('on');
     startGps();
-    if (map && me) map.setView(me, 15);
+    if (me && map) map.setView(me, 17);
   });
-  $('btnCenterRoute').addEventListener('click', fitRoute);
+  $('btnFit').addEventListener('click', () => { follow = false; $('btnFollow').classList.remove('on'); fitRoute(); });
+
+  $('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = $('searchInput').value.trim();
+    const ul = $('searchResults');
+    if (!q) return;
+    ul.hidden = false;
+    ul.innerHTML = '<li>Buscando…</li>';
+    try {
+      const res = await searchAddress(q);
+      ul.innerHTML = '';
+      if (!res.length) { ul.innerHTML = '<li>Nenhum endereço encontrado. Inclua o número e a cidade, ou escolha no mapa.</li>'; return; }
+      res.forEach((r) => {
+        const lbl = labelFromAddress(r);
+        const li = document.createElement('li');
+        li.innerHTML = '<b></b><br><span class="muted"></span>';
+        li.querySelector('b').textContent = lbl.title;
+        li.querySelector('span').textContent = lbl.sub;
+        li.addEventListener('click', () => {
+          ul.hidden = true;
+          $('searchInput').value = '';
+          setStart([+r.lat, +r.lon], lbl);
+        });
+        ul.append(li);
+      });
+    } catch (err) {
+      ul.innerHTML = '<li>Não foi possível buscar agora. Verifique a internet ou escolha o ponto no mapa.</li>';
+    }
+  });
+  $('btnStartHere').addEventListener('click', () => {
+    if (me) setStart(me);
+    else { pendingStartHere = true; startGps(); $('trackInfo').textContent = 'Aguardando o GPS para marcar sua posição…'; }
+  });
+  $('btnStartMap').addEventListener('click', () => {
+    pickingOnMap = true;
+    showTab('caminhada');
+    $('alertCard').hidden = true;
+    $('navIcon').textContent = '👆';
+    $('navDist').textContent = 'Escolha no mapa';
+    $('navInstr').textContent = 'Toque no local exato onde o carro vai te deixar.';
+    if (map) setTimeout(() => map.setView(state.start ? state.start.p : PINDA.p, 15), 60);
+  });
+  $('btnStartPinda').addEventListener('click', () => setStart(PINDA.p, { title: PINDA.nome, sub: PINDA.sub }));
+  $('btnGpx').addEventListener('click', () => $('trackFile').click());
+  $('trackFile').addEventListener('change', (e) => { if (e.target.files[0]) loadTrackFile(e.target.files[0]); e.target.value = ''; });
+  $('btnAuto').addEventListener('click', () => { state.route = null; save(); computeRoute(); });
   $('btnReset').addEventListener('click', () => {
-    if (!confirm('Apagar km andados, tempo, etapas e checklist?')) return;
-    state = defaultState();
-    save();
-    $('routeSelect').value = state.route;
-    showDesc();
-    drawRoute();
-    render();
+    if (!confirm('Zerar km andados e tempo? O ponto de saída e o trajeto continuam salvos.')) return;
+    state.km = 0; state.ms = 0; state.walking = false; state.startedAt = null; lastFix = null;
+    save(); refreshAll();
   });
+  window.addEventListener('online', () => { routeError = false; computeRoute(); });
 
   if (state.walking) startGps();
-  setInterval(() => { if (state.walking) render(); }, 15000);
+  setInterval(() => { if (state.walking) refreshAll(); }, 10000);
+  refreshAll();
+  if (state.route) fitRoute();
+  computeRoute();
+  showTab(state.start ? 'caminhada' : 'trajeto');
 
-  let tab = 'painel';
-  try { tab = sessionStorage.getItem('tab') || 'painel'; } catch (e) { /* ignora */ }
-  showTab(tab);
-  render();
-  fetchTrack();
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-
 init();
