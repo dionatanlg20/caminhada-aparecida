@@ -1065,6 +1065,12 @@ function showTab(name) {
 // Início
 // ---------------------------------------------------------------------
 function init() {
+  // página antiga em cache com código novo: recarrega uma vez buscando a versão nova
+  if (!document.getElementById('acompInfo') || !document.getElementById('shareCard')) {
+    let ja = false;
+    try { ja = sessionStorage.getItem('recarregou') === '1'; sessionStorage.setItem('recarregou', '1'); } catch (e) { /* ignora */ }
+    if (!ja) { location.replace(`${location.pathname}?r=${Date.now()}${location.hash}`); return; }
+  }
   if (MODO_ACOMP) { initAcompanhante(); return; }
   initMap();
   document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
