@@ -549,8 +549,14 @@ function showTab(name) {
     else b.removeAttribute('aria-current');
   });
   if (name === 'mapa') {
+    const first = !map;
     initMap();
-    setTimeout(() => { if (map) { map.invalidateSize(); updateMeMarker(); } }, 50);
+    setTimeout(() => {
+      if (!map) return;
+      map.invalidateSize();
+      updateMeMarker();
+      if (first) fitRoute(); // enquadra só depois que o mapa tem tamanho na tela
+    }, 50);
   }
   try { sessionStorage.setItem('tab', name); } catch (e) { /* ignora */ }
   window.scrollTo(0, 0);
