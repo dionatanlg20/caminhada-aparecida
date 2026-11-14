@@ -1,5 +1,5 @@
 // Guarda os arquivos do app para abrir mesmo sem internet (o mapa precisa de conexão).
-const CACHE = 'caminhada-v3';
+const CACHE = 'caminhada-v4';
 const FILES = ['./', 'index.html', 'app.js', 'manifest.json', 'icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'];

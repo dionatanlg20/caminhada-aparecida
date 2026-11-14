@@ -191,7 +191,7 @@ async function fetchTrack() {
   if (tracks[id] || stops.length < 2 || fetching === id || !navigator.onLine) return;
   fetching = id;
   setTrackStatus('Buscando o caminho a pé pelas ruas e estradas…');
-  const coords = stops.map((s) => `${s.p[1].toFixed(5)},${s.p[0].toFixed(5)}`).join(';');
+  const coords = stops.map((s) => `${s.p[1].toFixed(5)},${s.p[0].toFixed(5)}`).join('%3B'); // ';' codificado: alguns proxies bloqueiam ';' na URL
   try {
     const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson`);
     if (!r.ok) throw new Error(r.status);
