@@ -4,6 +4,15 @@
 const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', lat: -22.8519, lng: -45.2337 };
 
 const ROUTES = {
+  luz: {
+    nome: 'Rota da Luz: Pindamonhangaba → Aparecida',
+    desc: 'Trecho final da Rota da Luz, com cerca de 35 km pelo caminho, segundo a Associação dos Amigos da Rota da Luz. O caminho segue estradas rurais sinalizadas, por isso é mais longo que a linha reta.',
+    site: 'https://www.amigosdarotadaluz.org',
+    kmReal: 35,
+    stops: [
+      ['Pindamonhangaba', -22.9246, -45.4613],
+    ],
+  },
   sp: {
     nome: 'São Paulo → Aparecida (Via Dutra)',
     desc: 'Saída da Praça da Sé, seguindo o eixo da Via Dutra pelo Vale do Paraíba.',
@@ -64,7 +73,7 @@ const CHECKLIST = [
 // ---------- Estado ----------
 const KEY = 'caminhada-aparecida-v1';
 const defaultState = () => ({
-  route: 'sp',
+  route: 'luz',
   done: {},          // { routeId: [indices concluídos] }
   check: [],         // índices marcados
   km: 0,             // km andados
@@ -218,6 +227,10 @@ function render() {
   const acc = cumulative(stops);
   const total = acc[acc.length - 1] || 0;
   const done = state.done[state.route] || [];
+  // fator para converter linha reta em km pelo caminho, quando a distância real é conhecida
+  const kmReal = ROUTES[state.route].kmReal;
+  const f = kmReal && total > 0 ? kmReal / total : 1;
+  const pelo = kmReal ? 'pelo caminho' : 'pelo percurso, em linha reta';
 
   $('routeName').textContent = ROUTES[state.route].nome;
 
@@ -233,7 +246,7 @@ function render() {
       nextIdx = pr.seg + 1;
       $('distInfo').textContent = pr.d > 3
         ? `Em linha reta. Você está a ${fmtKm(pr.d)} km do percurso escolhido.`
-        : `Em linha reta. Faltam cerca de ${fmtKm(total - pr.along)} km pelo percurso.`;
+        : `Em linha reta. Faltam cerca de ${fmtKm((total - pr.along) * f)} km ${pelo}.`;
     } else {
       $('distInfo').textContent = 'Distância em linha reta até o Santuário.';
     }
@@ -241,14 +254,14 @@ function render() {
     const lastDone = Math.max(0, ...done.filter((i) => i < stops.length));
     progress = total > 0 ? acc[lastDone] / total : 0;
     const rest = total - acc[lastDone];
-    $('distSantuario').textContent = total > 0 ? `${fmtKm(rest)} km` : '--';
+    $('distSantuario').textContent = total > 0 ? `${fmtKm(rest * f)} km` : '--';
     $('distInfo').textContent = total > 0
       ? 'Estimativa pelas etapas concluídas. Ative o GPS para mais precisão.'
       : 'Ative o GPS para definir seu ponto de partida.';
   }
   progress = Math.max(0, Math.min(1, progress));
   $('progressBar').style.width = `${(progress * 100).toFixed(1)}%`;
-  $('progressTxt').textContent = `${Math.round(progress * 100)}% do percurso · total de ${fmtKm(total)} km`;
+  $('progressTxt').textContent = `${Math.round(progress * 100)}% do percurso · total de ${fmtKm(total * f)} km ${kmReal ? 'pelo caminho' : 'em linha reta'}`;
 
   // próxima parada
   if (nextIdx > 0 && nextIdx < stops.length) {
@@ -266,7 +279,7 @@ function render() {
   $('ritmo').textContent = ms > 60000 && state.km > 0 ? fmtKm(state.km / (ms / 3600000)) : '--';
   $('btnWalk').textContent = state.walking ? 'Pausar caminhada' : (state.ms > 0 ? 'Continuar caminhada' : 'Iniciar caminhada');
 
-  renderStages(stops, acc, done);
+  renderStages(stops, acc.map((k) => k * f), done);
   renderChecklist();
 }
 
@@ -405,6 +418,20 @@ function showTab(name) {
   window.scrollTo(0, 0);
 }
 
+function showDesc() {
+  const r = ROUTES[state.route];
+  const el = $('routeDesc');
+  el.textContent = r.desc + ' ';
+  if (r.site) {
+    const a = document.createElement('a');
+    a.href = r.site;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = 'Onde dormir, comer, mapas e passaporte: amigosdarotadaluz.org';
+    el.append(a);
+  }
+}
+
 // ---------- Início ----------
 function init() {
   const sel = $('routeSelect');
@@ -415,10 +442,10 @@ function init() {
     sel.append(o);
   });
   sel.value = state.route;
-  $('routeDesc').textContent = ROUTES[state.route].desc;
+  showDesc();
   sel.addEventListener('change', () => {
     state.route = sel.value;
-    $('routeDesc').textContent = ROUTES[state.route].desc;
+    showDesc();
     if (state.route === 'gps' && !state.gpsStart) startGps();
     save();
     drawRoute();
@@ -438,7 +465,7 @@ function init() {
     state = defaultState();
     save();
     $('routeSelect').value = state.route;
-    $('routeDesc').textContent = ROUTES[state.route].desc;
+    showDesc();
     drawRoute();
     render();
   });
