@@ -573,17 +573,42 @@ function focusOn(p) {
 const ALERT_KEY = 'caminhada-aparecida-alertas';
 let alertas = null;
 try { alertas = JSON.parse(localStorage.getItem(ALERT_KEY) || 'null'); } catch (e) { alertas = null; }
+// assinatura do conteúdo: muda quando um alerta é incluído, removido ou alterado
+const assinatura = (a) => (a ? JSON.stringify(a.alertas.map((x) => [x.id, x.nivel, x.titulo, x.texto])) : '');
+let alertaNovo = null;   // aviso de atualização mostrado no mapa
 async function loadAlertas() {
   try {
     const r = await fetch(`alertas.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
-    alertas = await r.json();
+    const novo = await r.json();
+    const antes = assinatura(alertas);
+    if (alertas && antes !== assinatura(novo)) avisarMudanca(alertas, novo);
+    alertas = novo;
     try { localStorage.setItem(ALERT_KEY, JSON.stringify(alertas)); } catch (e) { /* ignora */ }
   } catch (e) { /* sem internet: usa a última cópia */ }
   refreshAlertas();
 }
-const fmtData = (iso) => iso ? iso.split('-').reverse().join('/') : '';
-const NIVEL = { ok: ['ok', 'sem bloqueio'], atencao: ['warn', 'atenção'], info: ['info', 'informação'] };
+// Avisa o caminhante: aviso na tela, vibração e notificação do celular (se permitida)
+function avisarMudanca(velho, novo) {
+  const ids = new Set(velho.alertas.map((x) => `${x.id}|${x.nivel}|${x.texto}`));
+  const mudou = novo.alertas.filter((x) => !ids.has(`${x.id}|${x.nivel}|${x.texto}`) && (x.rota === state.via || x.rota === 'todas'));
+  const lista = mudou.length ? mudou : novo.alertas.filter((x) => !ids.has(`${x.id}|${x.nivel}|${x.texto}`));
+  const top = lista.sort((a, b) => (NIVEL_ORDEM[a.nivel] ?? 9) - (NIVEL_ORDEM[b.nivel] ?? 9))[0];
+  if (!top) return;
+  alertaNovo = top;
+  if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]);
+  if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker) {
+    navigator.serviceWorker.ready.then((reg) => reg.showNotification(`Alerta: ${top.titulo}`, {
+      body: top.texto, tag: 'alerta-caminhada', renotify: true, icon: 'icon.svg', badge: 'icon.svg',
+    })).catch(() => {});
+  }
+}
+const fmtData = (iso) => iso ? iso.slice(0, 10).split('-').reverse().join('/') : '';
+const fmtQuando = (a) => a.atualizado
+  ? `Atualizado em ${fmtData(a.atualizado)} às ${a.atualizado.slice(11, 16)}`
+  : `Verificado em ${fmtData(a.verificado)}`;
+const NIVEL_ORDEM = { urgente: 0, atencao: 1, ok: 2, info: 3 };
+const NIVEL = { urgente: ['bad', 'urgente'], ok: ['ok', 'sem bloqueio'], atencao: ['warn', 'atenção'], info: ['info', 'informação'] };
 const ROTA_NOME = { luz: 'Rota da Luz', dutra: 'Via Dutra', todas: 'Todas as rotas' };
 function alertCard(a) {
   const div = document.createElement('div');
@@ -611,9 +636,9 @@ function refreshAlertas() {
     $('alertBadge').hidden = true; $('alertChip').hidden = true;
     return;
   }
-  $('alertasSub').textContent = `Verificado em ${fmtData(alertas.verificado)} · para a caminhada de ${alertas.para}`;
+  $('alertasSub').textContent = `${fmtQuando(alertas)} · para a caminhada de ${alertas.para}`;
   const rel = (a) => a.rota === state.via || a.rota === 'todas';
-  const ordem = { atencao: 0, ok: 1, info: 2 };
+  const ordem = NIVEL_ORDEM;
   const meus = alertas.alertas.filter(rel).sort((a, b) => ordem[a.nivel] - ordem[b.nivel]);
   const outros = alertas.alertas.filter((a) => !rel(a));
   const h = document.createElement('div');
@@ -629,14 +654,26 @@ function refreshAlertas() {
     list.append(h2);
     outros.forEach((a) => list.append(alertCard(a)));
   }
-  const n = meus.filter((a) => a.nivel === 'atencao').length;
+  const n = meus.filter((a) => a.nivel === 'atencao' || a.nivel === 'urgente').length;
+  const urg = meus.find((a) => a.nivel === 'urgente');
   $('alertBadge').hidden = !n;
   $('alertBadge').textContent = n;
   const chip = $('alertChip');
   const ok = meus.find((a) => a.nivel === 'ok');
-  if (n) { chip.hidden = false; chip.textContent = `⚠️ ${n} ${n > 1 ? 'alertas' : 'alerta'} para este caminho · ver`; chip.className = 'alert-chip'; }
+  if (alertaNovo) { chip.hidden = false; chip.textContent = `🔔 Alerta atualizado: ${alertaNovo.titulo} · ver`; chip.className = `alert-chip ${alertaNovo.nivel === 'urgente' ? 'bad' : ''}`; }
+  else if (urg) { chip.hidden = false; chip.textContent = `⛔ ${urg.titulo} · ver`; chip.className = 'alert-chip bad'; }
+  else if (n) { chip.hidden = false; chip.textContent = `⚠️ ${n} ${n > 1 ? 'alertas' : 'alerta'} para este caminho · ver`; chip.className = 'alert-chip'; }
   else if (ok) { chip.hidden = false; chip.textContent = `✅ ${ok.titulo} · ver`; chip.className = 'alert-chip okc'; }
   else chip.hidden = true;
+}
+
+function refreshNotif(perm) {
+  const p = perm || ('Notification' in window ? Notification.permission : 'unsupported');
+  const b = $('btnNotif'), t = $('notifInfo');
+  if (p === 'granted') { b.hidden = true; t.textContent = '✅ Notificações ativadas. Com o app aberto, ele confere os alertas a cada 5 minutos e avisa quando algo mudar.'; }
+  else if (p === 'denied') { b.hidden = true; t.textContent = 'Notificações bloqueadas no navegador. Os avisos ainda aparecem na tela e o celular vibra. Para liberar: configurações do site no navegador → Notificações.'; }
+  else if (p === 'unsupported') { b.hidden = true; t.textContent = 'Este navegador não permite notificações. Os avisos aparecem na tela e o celular vibra.'; }
+  else { b.hidden = false; t.textContent = 'Com o app aberto, ele confere os alertas a cada 5 minutos. Ative as notificações para ser avisado também quando estiver em outra tela.'; }
 }
 
 // ---------------------------------------------------------------------
@@ -846,7 +883,16 @@ function init() {
     refreshAll();
     computeRoute();
   }));
-  $('alertChip').addEventListener('click', () => showTab('alertas'));
+  $('alertChip').addEventListener('click', () => { alertaNovo = null; showTab('alertas'); refreshAlertas(); });
+  $('btnNotif').addEventListener('click', async () => {
+    if (!('Notification' in window)) { $('notifInfo').textContent = 'Este navegador não permite notificações. Os avisos aparecem na tela e o celular vibra.'; return; }
+    const r = await Notification.requestPermission();
+    refreshNotif(r);
+  });
+  refreshNotif();
+  // confere os alertas a cada 5 minutos e sempre que o app volta para a tela
+  setInterval(loadAlertas, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadAlertas(); });
   $('btnAlertas').addEventListener('click', () => { $('alertasSub').textContent = 'Atualizando…'; loadAlertas(); });
   $('btnStartHere').addEventListener('click', () => {
     if (me) setStart(me);

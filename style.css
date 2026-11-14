@@ -207,3 +207,7 @@ body {
 .ic-wrap { position: relative; }
 .badge { position: absolute; top: -4px; right: -10px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--warn); color: #fff; font-size: 10px; font-style: normal; font-weight: 800; display: grid; place-items: center; padding: 0 4px; }
 .alert-chip.okc { background: #e6f4ea; color: #137333; border-color: #b7e1c1; }
+.tag.bad { background: #fce8e6; color: #c5221f; }
+.alerta.urgente { border-left-color: var(--warn); background: #fff8f7; }
+@media (prefers-color-scheme: dark) { .alerta.urgente { background: #2a1717; } }
+.alert-chip.bad { background: #fce8e6; color: #c5221f; border-color: #f4c7c3; }

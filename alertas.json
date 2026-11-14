@@ -1,5 +1,6 @@
 {
   "verificado": "2026-11-14",
+  "atualizado": "2026-11-14T16:30",
   "para": "19/11/2026",
   "alertas": [
     {
@@ -9,8 +10,14 @@
       "titulo": "Rota da Luz: nenhum bloqueio anunciado",
       "texto": "Até 14/11 não encontramos comunicado de interdição no trecho Pindamonhangaba → Moreira César → Roseira → Aparecida (Estrada Municipal Pinhão do Borba, SP-062 / Rodovia Vereador Abel Fabrício Dias e Avenida Itaguaçu). Confirme na véspera com a Associação dos Amigos da Rota da Luz pelo WhatsApp.",
       "fontes": [
-        { "nome": "Associação dos Amigos da Rota da Luz", "url": "https://www.amigosdarotadaluz.org/rotadaluz-mapas" },
-        { "nome": "Rota da Luz é alternativa da RioSP aos romeiros", "url": "https://penaestrada.com.br/rota-luz-alternativa-riosp-romeiros/" }
+        {
+          "nome": "Associação dos Amigos da Rota da Luz",
+          "url": "https://www.amigosdarotadaluz.org/rotadaluz-mapas"
+        },
+        {
+          "nome": "Rota da Luz é alternativa da RioSP aos romeiros",
+          "url": "https://penaestrada.com.br/rota-luz-alternativa-riosp-romeiros/"
+        }
       ]
     },
     {
@@ -20,9 +27,18 @@
       "titulo": "Dutra: faixa para romeiros não está confirmada no dia 19",
       "texto": "O fechamento da terceira faixa para romeiros e as tendas de apoio na Dutra fizeram parte da operação Romaria Segura, de 30/09 a 18/10. Não encontramos comunicado de faixa bloqueada para romeiros em novembro. No dia 19, conte com trânsito normal ao lado do acostamento. Use a Dutra só se a Rota da Luz estiver bloqueada.",
       "fontes": [
-        { "nome": "Romaria Segura 2026 (NetCampos)", "url": "https://www.netcampos.com/noticias/2026/09/romaria-segura-2026-dutra-aparecida-sao-jose-vidoca.html" },
-        { "nome": "RioSP sobre o fechamento da terceira faixa (Folha do Aço)", "url": "https://folhadoaco.com.br/2026/10/10/romeiros-de-volta-redonda-e-barra-mansa-reclamam-de-falta-de-interdicao-de-faixa-na-via-dutra-riosp-afirma-que-programou-acoes-de-seguranca/" },
-        { "nome": "29 pontos de apoio na romaria (Meon)", "url": "https://www.meon.com.br/noticias/vale-do-paraiba-regiao/aparecida/romaria-para-aparecida-2026-tera-29-pontos-de-apoio-para-peregrinos-veja-detalhes" }
+        {
+          "nome": "Romaria Segura 2026 (NetCampos)",
+          "url": "https://www.netcampos.com/noticias/2026/09/romaria-segura-2026-dutra-aparecida-sao-jose-vidoca.html"
+        },
+        {
+          "nome": "RioSP sobre o fechamento da terceira faixa (Folha do Aço)",
+          "url": "https://folhadoaco.com.br/2026/10/10/romeiros-de-volta-redonda-e-barra-mansa-reclamam-de-falta-de-interdicao-de-faixa-na-via-dutra-riosp-afirma-que-programou-acoes-de-seguranca/"
+        },
+        {
+          "nome": "29 pontos de apoio na romaria (Meon)",
+          "url": "https://www.meon.com.br/noticias/vale-do-paraiba-regiao/aparecida/romaria-para-aparecida-2026-tera-29-pontos-de-apoio-para-peregrinos-veja-detalhes"
+        }
       ]
     },
     {
@@ -32,9 +48,18 @@
       "titulo": "Obras na Dutra entre Pindamonhangaba e Aparecida",
       "texto": "Depois das romarias, a RioSP retomou obras de recuperação do pavimento no Vale do Paraíba, com interdições pontuais de faixas (por exemplo, no km 81, em Roseira). As obras da 3ª e da 4ª faixa entre Pindamonhangaba e Aparecida seguem cronograma próprio. Em trecho de obra, o acostamento pode estar estreito ou desviado. Confirme com a RioSP: 0800 017 35 36.",
       "fontes": [
-        { "nome": "Obras de pavimento após a romaria; km 81 em Roseira (Vale360)", "url": "https://www.vale360news.com.br/via-dutra-tera-obras-de-recuperacao-do-pavimento-apos-romaria-km-81-em-roseira-tera-interdicoes/" },
-        { "nome": "Dutra retoma obras após as romarias (012 News)", "url": "https://www.012news.com.br/vale-do-paraiba-via-dutra-retoma-obras-de-pavimentacao-apos-periodo-de-romarias/" },
-        { "nome": "Via Dutra terá obras no Vale após romarias (OVALE)", "url": "https://sampi.net.br/ovale/noticias/3011591/vale-do-paraiba/2026/10/via-dutra-tera-obras-no-vale-apos-periodo-de-romarias" }
+        {
+          "nome": "Obras de pavimento após a romaria; km 81 em Roseira (Vale360)",
+          "url": "https://www.vale360news.com.br/via-dutra-tera-obras-de-recuperacao-do-pavimento-apos-romaria-km-81-em-roseira-tera-interdicoes/"
+        },
+        {
+          "nome": "Dutra retoma obras após as romarias (012 News)",
+          "url": "https://www.012news.com.br/vale-do-paraiba-via-dutra-retoma-obras-de-pavimentacao-apos-periodo-de-romarias/"
+        },
+        {
+          "nome": "Via Dutra terá obras no Vale após romarias (OVALE)",
+          "url": "https://sampi.net.br/ovale/noticias/3011591/vale-do-paraiba/2026/10/via-dutra-tera-obras-no-vale-apos-periodo-de-romarias"
+        }
       ]
     },
     {
@@ -44,7 +69,10 @@
       "titulo": "Na Dutra, siga o Caminho Consciente",
       "texto": "Mapa oficial da CCR RioSP, PRF, ANTT e MPF: caminhe de frente para os carros, respeite a sinalização, use roupa clara e colete refletivo, caminhe de dia e se hidrate. Travessias seguras neste trecho: km 99 (Pindamonhangaba) e Ponte do Exército Brasileiro, no km 82 (Roseira). Emergência na rodovia: PRF 191.",
       "fontes": [
-        { "nome": "Novo mapa de percurso para romeiros (MPF)", "url": "https://www.mpf.mp.br/o-mpf/unidades/pr-sp/noticias/apos-atuacao-do-mpf-romeiros-ganham-novo-mapa-de-percurso-ate-santuario-de-nossa-senhora-aparecida-em-sp" }
+        {
+          "nome": "Novo mapa de percurso para romeiros (MPF)",
+          "url": "https://www.mpf.mp.br/o-mpf/unidades/pr-sp/noticias/apos-atuacao-do-mpf-romeiros-ganham-novo-mapa-de-percurso-ate-santuario-de-nossa-senhora-aparecida-em-sp"
+        }
       ]
     },
     {
@@ -54,7 +82,10 @@
       "titulo": "Operação Romeiros da PM segue até 29/11",
       "texto": "A Polícia Militar mantém a Operação Romeiros no Circuito da Fé até 29 de novembro, com policiamento reforçado na região de Aparecida.",
       "fontes": [
-        { "nome": "10 milhões de romeiros esperados no Vale (OVALE)", "url": "https://sampi.net.br/ovale/noticias/3002245/vale-do-paraiba/2026/09/aparecida-e-regiao-10-milhoes-de-romeiros-sao-esperados-no-vale-" }
+        {
+          "nome": "10 milhões de romeiros esperados no Vale (OVALE)",
+          "url": "https://sampi.net.br/ovale/noticias/3002245/vale-do-paraiba/2026/09/aparecida-e-regiao-10-milhoes-de-romeiros-sao-esperados-no-vale-"
+        }
       ]
     },
     {
@@ -64,7 +95,10 @@
       "titulo": "20/11 é feriado nacional",
       "texto": "Dia Nacional de Zumbi e da Consciência Negra. Espere mais movimento nas estradas e em Aparecida a partir da noite do dia 19.",
       "fontes": [
-        { "nome": "Lei 14.759/2023", "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm" }
+        {
+          "nome": "Lei 14.759/2023",
+          "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm"
+        }
       ]
     }
   ]
