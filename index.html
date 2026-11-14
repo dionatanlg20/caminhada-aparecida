@@ -10,7 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
@@ -44,6 +44,20 @@
       <div><b id="sChegada">--</b><span>chegada</span></div>
     </div>
     <div class="bar"><i id="bar"></i></div>
+    <div class="etapas" id="etapas" hidden>
+      <div class="etapa" id="etapa1">
+        <span class="num" id="et1num">1</span>
+        <div class="et-txt"><b>De carro até o ponto de saída</b><small id="et1sub"></small></div>
+      </div>
+      <div class="row et-links" id="et1links">
+        <a class="btn" id="et1gm" target="_blank" rel="noopener">🚗 Google Maps</a>
+        <a class="btn" id="et1wz" target="_blank" rel="noopener">🚗 Waze</a>
+      </div>
+      <div class="etapa" id="etapa2">
+        <span class="num">2</span>
+        <div class="et-txt"><b>A pé até a Praça da Fé</b><small id="et2sub"></small></div>
+      </div>
+    </div>
     <div class="row">
       <button class="btn primary" id="btnWalk">Iniciar caminhada</button>
     </div>
@@ -210,8 +224,8 @@
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="rota-oficial.js?v=14"></script>
-<script src="rota-dutra.js?v=14"></script>
-<script src="app.js?v=14"></script>
+<script src="rota-oficial.js?v=16"></script>
+<script src="rota-dutra.js?v=16"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

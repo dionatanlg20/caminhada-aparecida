@@ -14,6 +14,7 @@ const KM_PADRAO = 35;            // km até o término, pedido para a caminhada
 const VELOCIDADE = 4.5;          // km/h de caminhada
 const FORA_DO_CAMINHO = 0.06;    // km (60 m)
 const FORA_NA_DUTRA = 0.12;      // na rodovia o traçado segue o centro da pista: tolerância maior
+const NO_PONTO = 0.15;            // até 150 m do ponto de saída = chegou de carro
 const NA_TRILHA = 0.08;          // até 80 m da trilha conta como "na trilha"
 const ROUTER = 'https://routing.openstreetmap.de/routed-foot';
 const GEOCODER = 'https://nominatim.openstreetmap.org';
@@ -409,7 +410,9 @@ function navInfo() {
   const pr = project(me, r.pts, acc);
   const rest = Math.max(0, total - pr.along);
   if (dist(me, FIM.p) < 0.06 || (rest < 0.03 && pr.d < FORA_DO_CAMINHO)) return { kind: 'arrived', total, along: total, rest: 0 };
-  if (pr.along < 0.05 && dist(me, state.start.p) > 0.08) {
+  // antes de começar a pé, longe do ponto de saída: a orientação é ir até ele (etapa 1, de carro)
+  const antesDeComecar = !state.walking && state.ms === 0;
+  if ((antesDeComecar && dist(me, state.start.p) > NO_PONTO) || (pr.along < 0.05 && dist(me, state.start.p) > 0.08)) {
     return { kind: 'tostart', total, along: 0, rest: total, toStart: dist(me, state.start.p) };
   }
   const idx = r.steps.findIndex((s, i) => i > 0 && s.along > pr.along + 0.015);
@@ -441,11 +444,11 @@ function refreshNav(n) {
       break;
     case 'nogps':
       icon.textContent = '🚶'; d.textContent = `${fmtDist(n.total)} até a ${FIM.nome}`;
-      t.textContent = `Saída: ${state.start.title}. Toque em "Iniciar caminhada" quando estiver lá.`;
+      t.textContent = 'Primeiro de carro até o ponto de saída. Depois, a pé.';
       break;
     case 'tostart':
-      icon.textContent = '📍'; d.textContent = `${fmtDist(n.toStart)} até a saída`;
-      t.textContent = `Vá até o ponto de saída: ${state.start.title}.`;
+      icon.textContent = state.walking ? '📍' : '🚗'; d.textContent = `${fmtDist(n.toStart)} até a saída`;
+      t.textContent = state.walking ? `Vá até o ponto de saída: ${state.start.title}.` : `Etapa 1: siga de carro até o ponto de saída (${state.start.title}). Use os botões Google Maps ou Waze abaixo.`;
       break;
     case 'arrived':
       icon.textContent = '⛪'; d.textContent = 'Você chegou!';
@@ -488,7 +491,33 @@ function refreshStats(n) {
   if (!state.start) b.textContent = 'Definir ponto de saída';
   else if (!state.route) b.textContent = 'Aguardando o trajeto…';
   else if (state.walking) b.textContent = 'Pausar caminhada';
-  else b.textContent = state.ms > 0 ? 'Continuar caminhada' : 'Iniciar caminhada';
+  else b.textContent = state.ms > 0 ? 'Continuar caminhada' : `Iniciar os ${fmtDist(state.route.dist)} a pé`;
+  refreshEtapas();
+}
+
+// Antes de começar: etapa 1 (de carro até o ponto de saída) e etapa 2 (a pé)
+function refreshEtapas() {
+  const mostrar = !!(state.start && state.route && !state.walking && state.ms === 0);
+  const box = $('etapas');
+  if (box.hidden === mostrar) {
+    box.hidden = !mostrar;
+    document.querySelector('.sheet').classList.toggle('pre', mostrar);
+    setTimeout(fitSheet, 0);
+  }
+  if (!mostrar) return;
+  const [la, ln] = state.start.p;
+  $('et1gm').href = `https://www.google.com/maps/dir/?api=1&destination=${la},${ln}&travelmode=driving`;
+  $('et1wz').href = `https://waze.com/ul?ll=${la},${ln}&navigate=yes`;
+  const d = me ? dist(me, state.start.p) : null;
+  const chegou = d != null && d <= NO_PONTO;
+  $('etapa1').className = `etapa ${chegou ? 'feita' : 'atual'}`;
+  $('etapa2').className = `etapa ${chegou ? 'atual' : ''}`;
+  $('et1num').textContent = chegou ? '✓' : '1';
+  $('et1links').hidden = chegou;
+  $('et1sub').textContent = chegou
+    ? `Você está no ponto de saída: ${state.start.title}`
+    : `${state.start.title}${d != null ? ` · você está a ${fmtDist(d)} daqui, em linha reta` : ''}`;
+  $('et2sub').textContent = `${fmtDist(state.route.dist)} · cerca de ${fmtDur(state.route.dist / VELOCIDADE)} andando${chegou ? ' · pode começar!' : ''}`;
 }
 
 // ---------------------------------------------------------------------
@@ -1010,7 +1039,8 @@ function drawMe() {
 function fitRoute() {
   if (!map) return;
   const pts = state.route ? state.route.pts.slice() : [FIM.p, state.start ? state.start.p : P35];
-  map.fitBounds(pts, { paddingTopLeft: [20, 130], paddingBottomRight: [72, 200] });
+  const sheetH = (document.querySelector('.sheet') || {}).offsetHeight || 200;
+  map.fitBounds(pts, { paddingTopLeft: [20, 150], paddingBottomRight: [72, sheetH + 20] });
 }
 
 // ---------------------------------------------------------------------
@@ -1040,9 +1070,13 @@ function refreshAll() {
   if (MODO_ACOMP) renderAcomp();
 }
 // os créditos do mapa ficam logo acima do painel de baixo, sem cobrir os números
+let lastSheetH = 0;
 function fitSheet() {
   const h = document.querySelector('.sheet').offsetHeight;
-  if (h) document.documentElement.style.setProperty('--sheet-h', `${h}px`);
+  if (!h) return;
+  document.documentElement.style.setProperty('--sheet-h', `${h}px`);
+  if (lastSheetH && Math.abs(h - lastSheetH) > 30 && map && !state.walking && state.route) fitRoute();
+  lastSheetH = h;
 }
 window.addEventListener('resize', fitSheet);
 function showTab(name) {

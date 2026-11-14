@@ -58,7 +58,7 @@ body {
   border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow);
 }
 .map-tools {
-  position: absolute; z-index: 500; right: 12px; top: 50%; transform: translateY(-50%);
+  position: absolute; z-index: 500; right: 12px; bottom: calc(var(--sheet-h, 210px) + 34px);
   display: grid; gap: 10px;
 }
 .fab {
@@ -227,3 +227,17 @@ body {
 .walker-dot { width: 22px; height: 22px; border-radius: 50%; background: #e37400; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(227,116,0,.25); }
 body.acomp .tabs, body.acomp #btnWalk, body.acomp #sharePill, body.acomp #gpsStatus, body.acomp #alertChip { display: none !important; }
 body.acomp #tab-caminhada { bottom: 0; }
+
+/* ---------- Etapas: carro + a pé ---------- */
+.etapas { display: grid; gap: 8px; margin-bottom: 10px; }
+.etapa { display: flex; gap: 12px; align-items: center; }
+.etapa .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .9rem; background: var(--bg); border: 2px solid var(--line); color: var(--muted); }
+.etapa.atual .num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.etapa.feita .num { background: var(--ok); border-color: var(--ok); color: #fff; }
+.et-txt { display: grid; line-height: 1.25; }
+.et-txt small { color: var(--muted); font-size: .8rem; }
+.etapa.feita .et-txt b { color: var(--muted); }
+.et-links { margin-left: 40px; }
+.et-links .btn { padding: 9px 10px; font-size: .9rem; flex: 1 1 100px; }
+.sheet.pre .stats, .sheet.pre .bar { display: none; }
+.sheet.pre .etapas { margin-top: 2px; }
