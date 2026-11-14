@@ -6,7 +6,7 @@ const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', lat: -22.8519, lng
 const ROUTES = {
   luz: {
     nome: 'Rota da Luz: Pindamonhangaba → Aparecida',
-    desc: 'Trecho final da Rota da Luz, com cerca de 35 km pelo caminho, segundo a Associação dos Amigos da Rota da Luz. O caminho segue estradas rurais sinalizadas, por isso é mais longo que a linha reta.',
+    desc: 'Trecho final da Rota da Luz, com cerca de 35 km pelo caminho, segundo a Associação dos Amigos da Rota da Luz. O caminho segue estradas rurais, por isso é mais longo que a linha reta.',
     site: 'https://www.amigosdarotadaluz.org',
     kmReal: 35,
     stops: [
@@ -115,28 +115,156 @@ function routePoints() {
   return stops;
 }
 
-function cumulative(stops) {
+// ---------- Traçado do caminho ----------
+// Caminho real (a pé pelo OpenStreetMap ou trilha GPX) guardado no aparelho.
+const TRACK_KEY = 'caminhada-aparecida-tracks-v1';
+let tracks = {};
+try { tracks = JSON.parse(localStorage.getItem(TRACK_KEY) || '{}'); } catch (e) { tracks = {}; }
+function saveTracks() {
+  try { localStorage.setItem(TRACK_KEY, JSON.stringify(tracks)); } catch (e) { /* ignora */ }
+}
+function trackId() {
+  return state.route === 'gps' ? `gps:${(state.gpsStart || []).map((n) => n.toFixed(3)).join(',')}` : state.route;
+}
+
+function cumulativeLine(line) {
   const acc = [0];
-  for (let i = 1; i < stops.length; i++) acc.push(acc[i - 1] + dist(stops[i - 1].p, stops[i].p));
+  for (let i = 1; i < line.length; i++) acc.push(acc[i - 1] + dist(line[i - 1], line[i]));
   return acc;
 }
 
-// Projeta a posição na rota: retorna km percorridos ao longo da rota e índice do segmento.
-function projectOnRoute(pos, stops, acc) {
-  if (stops.length < 2) return null;
-  let best = { d: Infinity, along: 0, seg: 0 };
+// Projeta a posição na linha: km percorridos ao longo dela e distância até ela.
+function projectOnLine(pos, line, acc) {
+  if (line.length < 2) return null;
+  let best = { d: Infinity, along: 0 };
   const k = Math.cos(rad(pos[0]));
-  for (let i = 0; i < stops.length - 1; i++) {
-    const a = stops[i].p, b = stops[i + 1].p;
+  for (let i = 0; i < line.length - 1; i++) {
+    const a = line[i], b = line[i + 1];
     const ax = a[1] * k, ay = a[0], bx = b[1] * k, by = b[0], px = pos[1] * k, py = pos[0];
     const dx = bx - ax, dy = by - ay;
     const len2 = dx * dx + dy * dy || 1e-12;
     const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
     const q = [ay + t * dy, (ax + t * dx) / k];
     const d = dist(pos, q);
-    if (d < best.d) best = { d, along: acc[i] + t * (acc[i + 1] - acc[i]), seg: i };
+    if (d < best.d) best = { d, along: acc[i] + t * (acc[i + 1] - acc[i]) };
   }
   return best;
+}
+
+// Junta paradas + traçado: linha, km acumulados, km de cada parada e de onde veio o traçado.
+function geometry() {
+  const stops = routePoints();
+  const t = tracks[trackId()];
+  const line = t && t.pts.length > 1 ? t.pts : stops.map((s) => s.p);
+  const src = t && t.pts.length > 1 ? t.src : 'reta';
+  const acc = cumulativeLine(line);
+  let total = acc[acc.length - 1] || 0;
+  let stopAlong;
+  if (src === 'reta') {
+    stopAlong = acc.slice();
+  } else {
+    let prev = 0;
+    stopAlong = stops.map((s, i) => {
+      if (i === 0) return 0;
+      if (i === stops.length - 1) return total;
+      const pr = projectOnLine(s.p, line, acc);
+      prev = Math.max(prev, pr ? pr.along : prev);
+      return prev;
+    });
+  }
+  // sem traçado real, usa a distância informada pela organização da rota
+  const kmReal = ROUTES[state.route].kmReal;
+  const f = src === 'reta' && kmReal && total > 0 ? kmReal / total : 1;
+  return { stops, line, acc, total, stopAlong, src, f };
+}
+
+const SRC_LABEL = {
+  osm: 'pelo caminho a pé',
+  gpx: 'pela trilha carregada',
+  reta: 'em linha reta',
+};
+
+let fetching = null;
+async function fetchTrack() {
+  const id = trackId();
+  const stops = routePoints();
+  if (tracks[id] || stops.length < 2 || fetching === id || !navigator.onLine) return;
+  fetching = id;
+  setTrackStatus('Buscando o caminho a pé pelas ruas e estradas…');
+  const coords = stops.map((s) => `${s.p[1].toFixed(5)},${s.p[0].toFixed(5)}`).join(';');
+  try {
+    const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson`);
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    const pts = j.routes[0].geometry.coordinates.map(([ln, la]) => [+la.toFixed(5), +ln.toFixed(5)]);
+    if (pts.length < 2) throw new Error('vazio');
+    tracks[id] = { src: 'osm', pts };
+    saveTracks();
+    drawRoute();
+    render();
+  } catch (e) {
+    setTrackStatus('Não foi possível buscar o caminho a pé agora. Mostrando linha reta; o app tenta de novo na próxima vez que abrir com internet.');
+  } finally {
+    fetching = null;
+  }
+}
+
+function setTrackStatus(msg) {
+  const el = $('trackStatus');
+  if (el) el.textContent = msg;
+}
+
+function describeTrack(src) {
+  if (src === 'osm') return 'Caminho a pé calculado pelas ruas e estradas do OpenStreetMap, evitando rodovias. Pode não ser exatamente o traçado oficial sinalizado. Se tiver a trilha oficial em arquivo GPX ou KML, carregue abaixo.';
+  if (src === 'gpx') return 'Usando a trilha do arquivo que você carregou.';
+  return 'Ainda sem o caminho real: mostrando linha reta entre as paradas.';
+}
+
+// Lê um arquivo GPX ou KML e devolve a lista de pontos [lat, lng].
+function parseTrackFile(text) {
+  const xml = new DOMParser().parseFromString(text, 'application/xml');
+  let pts = [...xml.querySelectorAll('trkpt, rtept')].map((n) => [+n.getAttribute('lat'), +n.getAttribute('lon')]);
+  if (pts.length < 2) {
+    pts = [];
+    xml.querySelectorAll('LineString coordinates, coordinates').forEach((c) => {
+      c.textContent.trim().split(/\s+/).forEach((t) => {
+        const [ln, la] = t.split(',').map(Number);
+        if (!isNaN(la) && !isNaN(ln)) pts.push([la, ln]);
+      });
+    });
+  }
+  pts = pts.filter(([la, ln]) => isFinite(la) && isFinite(ln));
+  // reduz para no máximo ~4000 pontos
+  const step = Math.ceil(pts.length / 4000);
+  return pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map(([la, ln]) => [+la.toFixed(5), +ln.toFixed(5)]);
+}
+
+function loadTrackFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let pts = [];
+    try { pts = parseTrackFile(reader.result); } catch (e) { pts = []; }
+    if (pts.length < 2) {
+      alert('Não encontrei uma trilha nesse arquivo. Use um arquivo GPX ou KML.');
+      return;
+    }
+    // garante que a trilha termina perto do Santuário
+    const toSant = (p) => dist(p, [SANTUARIO.lat, SANTUARIO.lng]);
+    if (toSant(pts[0]) < toSant(pts[pts.length - 1])) pts.reverse();
+    tracks[trackId()] = { src: 'gpx', pts };
+    saveTracks();
+    drawRoute();
+    render();
+  };
+  reader.readAsText(file);
+}
+
+function useAutoTrack() {
+  delete tracks[trackId()];
+  saveTracks();
+  drawRoute();
+  render();
+  fetchTrack();
 }
 
 // ---------- Formatação ----------
@@ -178,6 +306,7 @@ function onPos(p) {
     state.gpsStart = me;
     save();
     drawRoute();
+    fetchTrack();
   }
 
   if (state.walking && accuracy <= 50) {
@@ -223,37 +352,41 @@ function elapsed() {
 
 // ---------- Render ----------
 function render() {
-  const stops = routePoints();
-  const acc = cumulative(stops);
-  const total = acc[acc.length - 1] || 0;
+  const g = geometry();
+  const { stops, total, stopAlong, src, f } = g;
   const done = state.done[state.route] || [];
-  // fator para converter linha reta em km pelo caminho, quando a distância real é conhecida
-  const kmReal = ROUTES[state.route].kmReal;
-  const f = kmReal && total > 0 ? kmReal / total : 1;
-  const pelo = kmReal ? 'pelo caminho' : 'pelo percurso, em linha reta';
+  const label = src === 'reta' && f !== 1 ? 'pelo caminho (estimado)' : SRC_LABEL[src];
 
   $('routeName').textContent = ROUTES[state.route].nome;
+  if (fetching !== trackId()) setTrackStatus(describeTrack(src));
+  const mapNote = $('mapNote');
+  if (mapNote) {
+    mapNote.textContent = src === 'reta'
+      ? 'Linha reta provisória entre as paradas. Abra o app com internet para carregar o caminho a pé.'
+      : 'Siga sempre a sinalização do caminho e caminhe de frente para o trânsito.';
+  }
 
   // distância e progresso
   let progress = 0;
   let nextIdx = stops.findIndex((_, i) => !done.includes(i) && i > 0);
   if (me) {
     const dS = dist(me, [SANTUARIO.lat, SANTUARIO.lng]);
-    $('distSantuario').textContent = `${fmtKm(dS)} km`;
-    const pr = projectOnRoute(me, stops, acc);
-    if (pr && total > 0) {
+    const pr = projectOnLine(me, g.line, g.acc);
+    if (pr && total > 0 && pr.d <= 3) {
       progress = pr.along / total;
-      nextIdx = pr.seg + 1;
-      $('distInfo').textContent = pr.d > 3
-        ? `Em linha reta. Você está a ${fmtKm(pr.d)} km do percurso escolhido.`
-        : `Em linha reta. Faltam cerca de ${fmtKm((total - pr.along) * f)} km ${pelo}.`;
+      nextIdx = stopAlong.findIndex((k, i) => i > 0 && k > pr.along + 0.05);
+      $('distSantuario').textContent = `${fmtKm((total - pr.along) * f)} km`;
+      $('distInfo').textContent = `Distância que falta ${label}. Em linha reta são ${fmtKm(dS)} km.`;
     } else {
-      $('distInfo').textContent = 'Distância em linha reta até o Santuário.';
+      $('distSantuario').textContent = `${fmtKm(dS)} km`;
+      $('distInfo').textContent = pr
+        ? `Em linha reta. Você está a ${fmtKm(pr.d)} km do percurso escolhido.`
+        : 'Distância em linha reta até o Santuário.';
     }
   } else {
     const lastDone = Math.max(0, ...done.filter((i) => i < stops.length));
-    progress = total > 0 ? acc[lastDone] / total : 0;
-    const rest = total - acc[lastDone];
+    progress = total > 0 ? stopAlong[lastDone] / total : 0;
+    const rest = total - stopAlong[lastDone];
     $('distSantuario').textContent = total > 0 ? `${fmtKm(rest * f)} km` : '--';
     $('distInfo').textContent = total > 0
       ? 'Estimativa pelas etapas concluídas. Ative o GPS para mais precisão.'
@@ -261,13 +394,14 @@ function render() {
   }
   progress = Math.max(0, Math.min(1, progress));
   $('progressBar').style.width = `${(progress * 100).toFixed(1)}%`;
-  $('progressTxt').textContent = `${Math.round(progress * 100)}% do percurso · total de ${fmtKm(total * f)} km ${kmReal ? 'pelo caminho' : 'em linha reta'}`;
+  $('progressTxt').textContent = `${Math.round(progress * 100)}% do percurso · total de ${fmtKm(total * f)} km ${label}`;
 
   // próxima parada
   if (nextIdx > 0 && nextIdx < stops.length) {
     const s = stops[nextIdx];
-    const extra = me ? ` · ${fmtKm(dist(me, s.p))} km daqui` : ` · km ${fmtKm(acc[nextIdx])} do percurso`;
-    $('nextStop').innerHTML = `<b>${s.nome}</b><br><span class="muted">${extra.slice(3)}</span>`;
+    const extra = me ? `${fmtKm(dist(me, s.p))} km daqui em linha reta` : `km ${fmtKm(stopAlong[nextIdx] * f)} do percurso`;
+    $('nextStop').innerHTML = `<b></b><br><span class="muted">${extra}</span>`;
+    $('nextStop').querySelector('b').textContent = s.nome;
   } else if (total > 0) {
     $('nextStop').innerHTML = '<b>Você chegou! Bem-vindo ao Santuário. 🙏</b>';
   }
@@ -279,7 +413,7 @@ function render() {
   $('ritmo').textContent = ms > 60000 && state.km > 0 ? fmtKm(state.km / (ms / 3600000)) : '--';
   $('btnWalk').textContent = state.walking ? 'Pausar caminhada' : (state.ms > 0 ? 'Continuar caminhada' : 'Iniciar caminhada');
 
-  renderStages(stops, acc.map((k) => k * f), done);
+  renderStages(stops, stopAlong.map((k) => k * f), done);
   renderChecklist();
 }
 
@@ -367,11 +501,15 @@ function initMap() {
 function drawRoute() {
   if (!map) return;
   if (routeLayer) routeLayer.remove();
-  const stops = routePoints();
+  const g = geometry();
+  const stops = g.stops;
   routeLayer = L.layerGroup().addTo(map);
   const done = state.done[state.route] || [];
-  if (stops.length > 1) {
-    L.polyline(stops.map((s) => s.p), { color: '#c9a227', weight: 5, opacity: .9, dashArray: '8 8' }).addTo(routeLayer);
+  if (g.line.length > 1) {
+    const style = g.src === 'reta'
+      ? { color: '#c9a227', weight: 4, opacity: .8, dashArray: '8 8' }
+      : { color: '#d4351c', weight: 5, opacity: .85 };
+    L.polyline(g.line, style).addTo(routeLayer);
   }
   stops.forEach((s, i) => {
     const last = i === stops.length - 1;
@@ -387,7 +525,7 @@ function drawRoute() {
 
 function fitRoute() {
   if (!map) return;
-  const pts = routePoints().map((s) => s.p);
+  const pts = geometry().line.slice();
   if (me) pts.push(me);
   if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
   else map.setView(pts[0], 12);
@@ -450,7 +588,16 @@ function init() {
     save();
     drawRoute();
     render();
+    fetchTrack();
   });
+
+  $('trackFile').addEventListener('change', (e) => {
+    if (e.target.files[0]) loadTrackFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('btnGpx').addEventListener('click', () => $('trackFile').click());
+  $('btnAutoTrack').addEventListener('click', useAutoTrack);
+  window.addEventListener('online', fetchTrack);
 
   document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
   $('btnWalk').addEventListener('click', toggleWalk);
@@ -477,6 +624,7 @@ function init() {
   try { tab = sessionStorage.getItem('tab') || 'painel'; } catch (e) { /* ignora */ }
   showTab(tab);
   render();
+  fetchTrack();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});

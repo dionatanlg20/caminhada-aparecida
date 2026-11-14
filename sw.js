@@ -1,5 +1,5 @@
 // Guarda os arquivos do app para abrir mesmo sem internet (o mapa precisa de conexão).
-const CACHE = 'caminhada-v2';
+const CACHE = 'caminhada-v3';
 const FILES = ['./', 'index.html', 'app.js', 'manifest.json', 'icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'];
@@ -12,7 +12,7 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('tile.openstreetmap.org')) return;
+  if (e.request.method !== 'GET' || e.request.url.includes('tile.openstreetmap.org') || e.request.url.includes('routing.openstreetmap.de')) return;
   e.respondWith(
     fetch(e.request).then((r) => {
       const copy = r.clone();

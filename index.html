@@ -156,7 +156,7 @@
       <button id="btnCenterMe" class="secondary">Minha posição</button>
       <button id="btnCenterRoute" class="secondary">Ver rota inteira</button>
     </div>
-    <p class="note">A linha liga as cidades do percurso em linha reta. Siga sempre o acostamento ou trilha sinalizada.</p>
+    <p class="note" id="mapNote"></p>
   </section>
 
   <!-- ETAPAS -->
@@ -167,9 +167,18 @@
       <p class="note" id="routeDesc"></p>
     </div>
     <div class="card">
+      <h2>Traçado do caminho</h2>
+      <p class="note" id="trackStatus"></p>
+      <div class="row">
+        <button id="btnGpx" class="secondary">Carregar trilha GPX/KML</button>
+        <button id="btnAutoTrack" class="secondary">Usar caminho automático</button>
+      </div>
+      <input type="file" id="trackFile" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" hidden>
+    </div>
+    <div class="card">
       <h2>Etapas <span class="pill" id="stagesCount"></span></h2>
       <ul class="list" id="stagesList"></ul>
-      <p class="note">Distâncias aproximadas em linha reta entre as cidades. Na estrada, o trajeto real costuma ser 15% a 30% maior.</p>
+      <p class="note">O km de cada parada é medido ao longo do traçado mostrado no mapa.</p>
     </div>
   </section>
 
