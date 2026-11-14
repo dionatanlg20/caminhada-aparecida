@@ -211,3 +211,19 @@ body {
 .alerta.urgente { border-left-color: var(--warn); background: #fff8f7; }
 @media (prefers-color-scheme: dark) { .alerta.urgente { background: #2a1717; } }
 .alert-chip.bad { background: #fce8e6; color: #c5221f; border-color: #f4c7c3; }
+
+/* ---------- Acompanhamento ao vivo ---------- */
+.share-pill {
+  display: block; margin: 10px auto 0; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  background: var(--bg); color: var(--accent); border: 1px solid var(--line); border-radius: 99px; padding: 7px 14px;
+}
+.share-pill.on { background: #e6f4ea; color: #137333; border-color: #b7e1c1; }
+.share-status { font-weight: 700; margin: 0 0 12px; }
+.check-line { display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; margin: 12px 0; }
+.check-line input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+.acomp-info { text-align: center; font-size: .85rem; color: var(--muted); margin-top: 8px; }
+.acomp-info b { color: var(--text); }
+.acomp-info.stale { color: var(--warn); font-weight: 700; }
+.walker-dot { width: 22px; height: 22px; border-radius: 50%; background: #e37400; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(227,116,0,.25); }
+body.acomp .tabs, body.acomp #btnWalk, body.acomp #sharePill, body.acomp #gpsStatus, body.acomp #alertChip { display: none !important; }
+body.acomp #tab-caminhada { bottom: 0; }

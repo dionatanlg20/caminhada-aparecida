@@ -108,6 +108,7 @@ const blank = () => ({
   startedAt: null,
   layer: 'mapa',
   visto: false,
+  share: null,     // { id, on, awake } acompanhamento ao vivo
   via: 'luz',      // 'luz' (Rota da Luz oficial) ou 'dutra' (alternativa)
 });
 let state = load();
@@ -119,6 +120,7 @@ function load() {
   return blank();
 }
 function save() {
+  if (MODO_ACOMP) return; // o celular de quem acompanha não grava nada
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
 }
 
@@ -370,6 +372,7 @@ function onPos(pos) {
   if (pendingStartHere) { pendingStartHere = false; setStart(me); }
   drawMe();
   refreshAll();
+  enviarPosicao();
 }
 
 function toggleWalk() {
@@ -388,6 +391,8 @@ function toggleWalk() {
   }
   save();
   refreshAll();
+  enviarPosicao(true);
+  manterTela();
 }
 const elapsed = () => state.ms + (state.walking ? Date.now() - state.startedAt : 0);
 
@@ -677,6 +682,228 @@ function refreshNotif(perm) {
 }
 
 // ---------------------------------------------------------------------
+// Acompanhamento ao vivo
+// O caminhante publica a posição num endereço secreto do ntfy.sh;
+// quem tem o link (#acompanhar=<código>) recebe e vê no mapa.
+// ---------------------------------------------------------------------
+const RELAY = 'https://ntfy.sh';
+const ENVIO_MS = 20000;          // envia a posição a cada 20 s (ou antes, se andou 25 m)
+const SEM_SINAL_MS = 3 * 60000;  // acompanhante: aviso após 3 min sem atualização
+const MODO_ACOMP = (location.hash.match(/^#acompanhar=([a-z0-9]{16,64})$/) || [])[1] || null;
+
+function novoCodigo() {
+  const b = new Uint8Array(15);
+  crypto.getRandomValues(b);
+  return 'cam' + [...b].map((x) => x.toString(36).padStart(2, '0')).join('').slice(0, 26);
+}
+const shareLink = () => `${location.origin}${location.pathname}#acompanhar=${state.share.id}`;
+
+let ultimoEnvio = { t: 0, p: null, ok: null }, bateria = null, wakeLock = null;
+if (navigator.getBattery) navigator.getBattery().then((b) => { bateria = b; }).catch(() => {});
+
+async function enviarPosicao(forcar) {
+  const sh = state.share;
+  if (!sh || !sh.on || !me || MODO_ACOMP) return;
+  const agora = Date.now();
+  const andou = ultimoEnvio.p ? dist(ultimoEnvio.p, me) : Infinity;
+  if (!forcar && agora - ultimoEnvio.t < ENVIO_MS && !(andou > 0.025 && agora - ultimoEnvio.t > 5000)) return;
+  const n = navInfo();
+  const msg = {
+    lat: +me[0].toFixed(6), lng: +me[1].toFixed(6), acc: Math.round(meAcc || 0), t: agora,
+    al: n.along != null ? +n.along.toFixed(3) : null, r: n.rest != null ? +n.rest.toFixed(3) : null,
+    tot: n.total != null ? +n.total.toFixed(3) : null, k: n.kind,
+    km: +state.km.toFixed(3), w: !!state.walking, v: state.via,
+    s: state.start ? state.start.p : null, st: state.start ? state.start.title : '',
+    b: bateria ? Math.round(bateria.level * 100) : null,
+  };
+  ultimoEnvio = { t: agora, p: me, ok: ultimoEnvio.ok };
+  try {
+    const r = await fetch(`${RELAY}/${sh.id}`, { method: 'POST', body: JSON.stringify(msg) });
+    ultimoEnvio.ok = r.ok ? agora : false;
+  } catch (e) {
+    ultimoEnvio.ok = false;
+  }
+  refreshShare();
+}
+
+async function manterTela() {
+  const querer = state.walking && state.share && state.share.on && state.share.awake !== false;
+  try {
+    if (querer && !wakeLock && 'wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!querer && wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  } catch (e) { wakeLock = null; }
+}
+
+function refreshShare() {
+  if (MODO_ACOMP) return;
+  const sh = state.share, on = !!(sh && sh.on);
+  $('shareOff').hidden = on;
+  $('shareOnBox').hidden = !on;
+  const pill = $('sharePill');
+  pill.classList.toggle('on', on);
+  if (!on) { pill.textContent = '👥 Compartilhar minha caminhada'; return; }
+  $('chkAwake').checked = sh.awake !== false;
+  let st;
+  if (!me) st = '🟡 Link criado. A posição começa a ser enviada quando o GPS ligar (toque em "Iniciar caminhada").';
+  else if (ultimoEnvio.ok === false) st = '🔴 Sem internet no momento: a posição será enviada quando o sinal voltar.';
+  else if (ultimoEnvio.ok) st = `🟢 Enviando sua posição ao vivo · último envio às ${new Date(ultimoEnvio.ok).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  else st = '🟡 Preparando o envio da posição…';
+  $('shareStatus').textContent = st;
+  pill.textContent = ultimoEnvio.ok && ultimoEnvio.ok !== false ? '🟢 Compartilhando ao vivo' : '🟡 Compartilhamento ligado';
+}
+
+function ligarCompartilhamento() {
+  state.share = { id: novoCodigo(), on: true, awake: true };
+  save();
+  startGps();
+  refreshShare();
+  enviarPosicao(true);
+}
+function desligarCompartilhamento() {
+  if (!state.share) return;
+  const id = state.share.id;
+  fetch(`${RELAY}/${id}`, { method: 'POST', body: JSON.stringify({ fim: true, t: Date.now() }) }).catch(() => {});
+  state.share = null;
+  save();
+  manterTela();
+  refreshShare();
+}
+function enviarLink() {
+  const texto = `Acompanhe minha caminhada até Aparecida ao vivo: ${shareLink()}`;
+  if (navigator.share) navigator.share({ title: 'Caminhada a Aparecida', text: texto }).catch(() => {});
+  else window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+// ----------------------------- modo acompanhante -----------------------------
+let acomp = { pos: null, trilha: [], ids: new Set(), ultimo: 0, fim: false, rotaKey: null };
+let walkerMarker = null, trilhaLine = null, followWalker = true;
+
+function receberMsg(ev) {
+  if (!ev || ev.event !== 'message' || acomp.ids.has(ev.id)) return;
+  acomp.ids.add(ev.id);
+  let m;
+  try { m = JSON.parse(ev.message); } catch (e) { return; }
+  if (m.fim) { acomp.fim = true; renderAcomp(); return; }
+  if (typeof m.lat !== 'number') return;
+  acomp.fim = false;
+  if (!acomp.pos || m.t >= acomp.pos.t) acomp.pos = m;
+  acomp.trilha.push([m.lat, m.lng, m.t]);
+  acomp.trilha.sort((a, b) => a[2] - b[2]);
+  // desenha o mesmo trajeto que o caminhante escolheu
+  if (m.s) {
+    const key = `${m.v}:${m.s.join(',')}`;
+    if (key !== acomp.rotaKey) {
+      acomp.rotaKey = key;
+      state.start = { p: m.s, title: m.st || 'Ponto de saída', sub: '' };
+      state.via = m.v === 'dutra' ? 'dutra' : 'luz';
+      state.route = null;
+      computeRoute();
+    }
+  }
+  renderAcomp();
+}
+
+function renderAcomp() {
+  const p = acomp.pos;
+  const info = $('acompInfo');
+  if (!p) {
+    $('navIcon').textContent = '👥';
+    $('navDist').textContent = 'Aguardando a primeira posição';
+    $('navInstr').textContent = acomp.fim ? 'O compartilhamento foi encerrado.' : 'Assim que o celular do caminhante enviar a posição, ela aparece aqui.';
+    info.textContent = '';
+    return;
+  }
+  const idade = Date.now() - p.t;
+  const hora = new Date(p.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (acomp.fim) {
+    $('navIcon').textContent = '⏹️'; $('navDist').textContent = 'Compartilhamento encerrado';
+    $('navInstr').textContent = `Última posição recebida às ${hora}.`;
+  } else if (p.k === 'arrived' || (p.r != null && p.r < 0.05)) {
+    $('navIcon').textContent = '⛪'; $('navDist').textContent = 'Chegou à Praça da Fé!';
+    $('navInstr').textContent = `Chegada registrada às ${hora}. 🙏`;
+  } else if (p.k === 'tostart' || p.k === 'nogps' || !p.w) {
+    $('navIcon').textContent = '📍'; $('navDist').textContent = p.w ? 'Indo para o ponto de saída' : 'Caminhada ainda não iniciada';
+    $('navInstr').textContent = `Posição recebida às ${hora}. Faltam ${p.r != null ? fmtDist(p.r) : '--'} até a Praça da Fé.`;
+  } else {
+    $('navIcon').textContent = '🚶'; $('navDist').textContent = `Faltam ${p.r != null ? fmtDist(p.r) : '--'}`;
+    $('navInstr').textContent = p.k === 'off' ? 'Está um pouco fora da linha do trajeto.' : 'Caminhando pelo trajeto.';
+  }
+  // painel de baixo
+  $('sFalta').textContent = p.r != null ? fmtDist(p.r) : '--';
+  $('sAndado').textContent = p.al != null ? fmtDist(p.al) : '--';
+  $('sTempo').textContent = idade < 60000 ? 'agora' : `há ${Math.round(idade / 60000)} min`;
+  if (p.r != null && p.r > 0.05 && !acomp.fim) {
+    const eta = new Date(p.t + p.r / VELOCIDADE * 3600000);
+    $('sChegada').textContent = `${String(eta.getHours()).padStart(2, '0')}:${String(eta.getMinutes()).padStart(2, '0')}`;
+  } else $('sChegada').textContent = p.r != null && p.r <= 0.05 ? 'chegou' : '--';
+  $('bar').style.width = p.tot ? `${Math.min(100, (p.al || 0) / p.tot * 100).toFixed(1)}%` : '0%';
+  const partes = [`Última posição às <b>${hora}</b>`];
+  if (p.b != null) partes.push(`bateria <b>${p.b}%</b>`);
+  if (p.acc) partes.push(`precisão ${p.acc} m`);
+  info.innerHTML = partes.join(' · ');
+  const parado = idade > SEM_SINAL_MS && !acomp.fim && p.k !== 'arrived';
+  info.classList.toggle('stale', parado);
+  if (parado) info.innerHTML = `⚠️ Sem atualização há ${Math.round(idade / 60000)} min (última às ${hora}). O celular pode estar com a tela apagada ou sem sinal.${p.b != null ? ` Bateria: ${p.b}%.` : ''}`;
+  // mapa
+  if (map) {
+    if (!walkerMarker) {
+      walkerMarker = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div class="walker-dot"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: 1000 }).addTo(map);
+      trilhaLine = L.polyline([], { color: '#e37400', weight: 4, opacity: 0.8, dashArray: '2 8', interactive: false }).addTo(map);
+    }
+    walkerMarker.setLatLng([p.lat, p.lng]);
+    trilhaLine.setLatLngs(acomp.trilha.map((x) => [x[0], x[1]]));
+    if (followWalker) map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14));
+  }
+}
+
+let fonte = null, pollTimer = null;
+async function buscarHistorico() {
+  try {
+    const since = acomp.ultimoId || 'all';
+    const r = await fetch(`${RELAY}/${MODO_ACOMP}/json?poll=1&since=${since}`);
+    const txt = await r.text();
+    txt.split('\n').filter(Boolean).forEach((l) => {
+      try { const ev = JSON.parse(l); receberMsg(ev); if (ev.id) acomp.ultimoId = ev.id; } catch (e) { /* ignora */ }
+    });
+  } catch (e) { /* sem internet: tenta de novo */ }
+}
+function conectarAoVivo() {
+  if (!('EventSource' in window)) { pollTimer = setInterval(buscarHistorico, 15000); return; }
+  fonte = new EventSource(`${RELAY}/${MODO_ACOMP}/sse?since=all`);
+  fonte.onmessage = (e) => { try { const ev = JSON.parse(e.data); receberMsg(ev); if (ev.id && ev.event === 'message') acomp.ultimoId = ev.id; } catch (er) { /* ignora */ } };
+  // se a conexão ao vivo falhar, busca por consulta a cada 15 s
+  fonte.onerror = () => { if (!pollTimer) pollTimer = setInterval(buscarHistorico, 15000); };
+  fonte.onopen = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
+}
+
+function initAcompanhante() {
+  document.body.classList.add('acomp');
+  document.title = 'Acompanhando a caminhada';
+  state = blank();
+  initMap();
+  showTab('caminhada');
+  const labels = document.querySelectorAll('.stats span');
+  ['faltam', 'percorridos', 'atualizado', 'chegada'].forEach((t, i) => { if (labels[i]) labels[i].textContent = t; });
+  $('acompInfo').hidden = false;
+  $('btnLayer').addEventListener('click', () => { state.layer = state.layer === 'satelite' ? 'mapa' : 'satelite'; applyLayer(); });
+  $('btnFollow').classList.add('on');
+  $('btnFollow').addEventListener('click', () => { followWalker = true; $('btnFollow').classList.add('on'); if (acomp.pos && map) map.setView([acomp.pos.lat, acomp.pos.lng], 16); });
+  $('btnFit').addEventListener('click', () => { followWalker = false; $('btnFollow').classList.remove('on'); fitRoute(); });
+  if (map) map.on('dragstart', () => { followWalker = false; $('btnFollow').classList.remove('on'); });
+  refreshAll();
+  computeRoute();
+  renderAcomp();
+  conectarAoVivo();
+  setInterval(renderAcomp, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') buscarHistorico(); });
+}
+
+// ---------------------------------------------------------------------
 // Checklist
 // ---------------------------------------------------------------------
 function refreshChecklist() {
@@ -792,11 +1019,13 @@ function fitRoute() {
 let lastRouteKey = null, lastStartKey = null, pendingFit = false, currentTab = null;
 function refreshAll() {
   const n = navInfo();
-  refreshNav(n);
-  refreshStats(n);
-  refreshTrajeto(n);
-  refreshChecklist();
-  refreshAlertas();
+  if (!MODO_ACOMP) {
+    refreshNav(n);
+    refreshStats(n);
+    refreshTrajeto(n);
+    refreshChecklist();
+    refreshAlertas();
+  }
   const rk = state.route ? `${state.route.key}:${state.route.pts.length}` : 'none';
   const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
   if (rk !== lastRouteKey || sk !== lastStartKey) {
@@ -808,6 +1037,7 @@ function refreshAll() {
       if (currentTab === 'caminhada') fitRoute(); else pendingFit = true;
     }
   }
+  if (MODO_ACOMP) renderAcomp();
 }
 // os créditos do mapa ficam logo acima do painel de baixo, sem cobrir os números
 function fitSheet() {
@@ -835,6 +1065,7 @@ function showTab(name) {
 // Início
 // ---------------------------------------------------------------------
 function init() {
+  if (MODO_ACOMP) { initAcompanhante(); return; }
   initMap();
   document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
   $('btnWalk').addEventListener('click', toggleWalk);
@@ -883,6 +1114,21 @@ function init() {
     refreshAll();
     computeRoute();
   }));
+  $('btnShareOn').addEventListener('click', ligarCompartilhamento);
+  $('btnShareOff').addEventListener('click', () => { if (confirm('Parar de compartilhar sua localização? O link deixará de ser atualizado.')) desligarCompartilhamento(); });
+  $('btnShareSend').addEventListener('click', enviarLink);
+  $('btnShareCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(shareLink()); $('btnShareCopy').textContent = 'Link copiado ✓'; }
+    catch (e) { prompt('Copie o link:', shareLink()); }
+    setTimeout(() => { $('btnShareCopy').textContent = 'Copiar link'; }, 2500);
+  });
+  $('chkAwake').addEventListener('change', (e) => { if (state.share) { state.share.awake = e.target.checked; save(); manterTela(); } });
+  $('sharePill').addEventListener('click', () => { showTab('trajeto'); setTimeout(() => $('shareCard').scrollIntoView({ block: 'start' }), 60); });
+  // envia a posição mesmo parado (a cada 30 s) e reativa a tela ligada ao voltar para o app
+  setInterval(() => { if (state.share && state.share.on) enviarPosicao(true); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { manterTela(); enviarPosicao(true); } });
+  if (state.share && state.share.on) startGps();
+  refreshShare();
   $('alertChip').addEventListener('click', () => { alertaNovo = null; showTab('alertas'); refreshAlertas(); });
   $('btnNotif').addEventListener('click', async () => {
     if (!('Notification' in window)) { $('notifInfo').textContent = 'Este navegador não permite notificações. Os avisos aparecem na tela e o celular vibra.'; return; }

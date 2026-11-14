@@ -7,6 +7,7 @@ App para fazer a pé o trajeto da Rota da Luz até o Santuário Nacional de Apar
 - **Alternativa pela Via Dutra:** do mesmo ponto de saída, para usar se a Rota da Luz estiver bloqueada, com as orientações do mapa Caminho Consciente.
 - **Alertas:** comunicados sobre bloqueios, obras e operações na Rota da Luz e na Dutra, com as fontes. Ficam no arquivo `alertas.json` e podem ser atualizados sem mudar o app.
 - **No caminho:** pontos de apoio, hospedagem, igrejas, saúde e QR-codes do mapa oficial.
+- **Acompanhamento ao vivo:** um link secreto para quem vai te esperar ver no celular (iPhone ou Android) onde você está, quanto falta e a hora prevista de chegada. Funciona com o app aberto e a tela ligada; a posição passa pelo serviço gratuito ntfy.sh.
 - **Preparação:** checklist da mochila, dicas de segurança e telefones de emergência.
 
 Os dados ficam salvos só no próprio celular.

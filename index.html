@@ -47,6 +47,8 @@
     <div class="row">
       <button class="btn primary" id="btnWalk">Iniciar caminhada</button>
     </div>
+    <button class="share-pill" id="sharePill">👥 Compartilhar minha caminhada</button>
+    <div class="acomp-info" id="acompInfo" hidden></div>
     <p class="tiny" id="gpsStatus">O GPS liga quando você inicia a caminhada. Sua localização fica só no celular.</p>
   </div>
 </section>
@@ -87,6 +89,24 @@
         <a class="btn" id="lnkWaze" target="_blank" rel="noopener">Abrir no Waze</a>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="shareCard">
+    <div class="card-label">Acompanhamento ao vivo</div>
+    <div id="shareOff">
+      <p class="note">Crie um link e mande para quem vai te esperar. A pessoa abre no celular (iPhone ou Android) e vê, ao vivo, onde você está, quanto falta e a hora prevista de chegada.</p>
+      <button class="btn primary wide" id="btnShareOn">👥 Criar link de acompanhamento</button>
+    </div>
+    <div id="shareOnBox" hidden>
+      <p class="share-status" id="shareStatus"></p>
+      <div class="row">
+        <button class="btn" id="btnShareSend">Enviar link pelo WhatsApp</button>
+        <button class="btn" id="btnShareCopy">Copiar link</button>
+      </div>
+      <label class="check-line"><input type="checkbox" id="chkAwake" checked> Manter a tela ligada durante a caminhada (necessário para continuar enviando)</label>
+      <button class="btn danger wide" id="btnShareOff">Parar de compartilhar</button>
+    </div>
+    <p class="note">Importante: o envio só funciona com o app aberto e a tela ligada. Leve um carregador portátil. Sua posição passa pelo serviço gratuito ntfy.sh, num endereço secreto; quem tiver o link consegue vê-la.</p>
   </div>
 
   <div class="card">

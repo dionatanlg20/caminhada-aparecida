@@ -1,11 +1,11 @@
 // Guarda os arquivos do app para abrir mesmo sem internet.
 // Mapas, satélite, rotas e busca de endereço sempre vêm da internet.
-const CACHE = 'caminhada-v12';
+const CACHE = 'caminhada-v13';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'rota-oficial.js', 'rota-dutra.js', 'alertas.json', 'manifest.json', 'icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'];
 const SEMPRE_ONLINE = ['tile.openstreetmap.org', 'basemaps.cartocdn.com', 'arcgisonline.com',
-  'routing.openstreetmap.de', 'nominatim.openstreetmap.org'];
+  'routing.openstreetmap.de', 'nominatim.openstreetmap.org', 'ntfy.sh'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
