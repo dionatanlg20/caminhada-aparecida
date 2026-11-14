@@ -174,7 +174,9 @@ function geometry() {
   }
   // sem traçado real, usa a distância informada pela organização da rota
   const kmReal = ROUTES[state.route].kmReal;
-  const f = src === 'reta' && kmReal && total > 0 ? kmReal / total : 1;
+  // Se a organização da rota informa a distância oficial, ela vale para os km mostrados,
+  // até o usuário carregar a trilha oficial (GPX/KML), que já tem a distância exata.
+  const f = src !== 'gpx' && kmReal && total > 0 ? kmReal / total : 1;
   return { stops, line, acc, total, stopAlong, src, f };
 }
 
@@ -215,6 +217,8 @@ function setTrackStatus(msg) {
 }
 
 function describeTrack(src) {
+  const kmReal = ROUTES[state.route].kmReal;
+  if (src === 'osm' && kmReal) return `Os km seguem a distância oficial de ${kmReal} km. A linha no mapa é um caminho a pé aproximado, pelas estradas do OpenStreetMap, e serve para mostrar onde você está; pode não ser exatamente o traçado sinalizado. Para ver a trilha oficial no mapa, carregue o arquivo GPX ou KML da Associação abaixo.`;
   if (src === 'osm') return 'Caminho a pé calculado pelas ruas e estradas do OpenStreetMap, evitando rodovias. Pode não ser exatamente o traçado oficial sinalizado. Se tiver a trilha oficial em arquivo GPX ou KML, carregue abaixo.';
   if (src === 'gpx') return 'Usando a trilha do arquivo que você carregou.';
   return 'Ainda sem o caminho real: mostrando linha reta entre as paradas.';
@@ -361,7 +365,7 @@ function render() {
   const g = geometry();
   const { stops, total, stopAlong, src, f } = g;
   const done = state.done[state.route] || [];
-  const label = src === 'reta' && f !== 1 ? 'pelo caminho (estimado)' : SRC_LABEL[src];
+  const label = src !== 'gpx' && f !== 1 ? 'pela Rota da Luz' : SRC_LABEL[src];
 
   $('routeName').textContent = ROUTES[state.route].nome;
   if (fetching !== trackId()) setTrackStatus(describeTrack(src));
