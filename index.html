@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Caminhada a Aparecida</title>
-<meta name="description" content="Trajeto a pé até o Santuário Nacional de Aparecida pela Rota da Luz: ponto de saída, instruções passo a passo, mapa e satélite.">
+<meta name="description" content="Trecho final da Rota da Luz a pé até Aparecida, pelo traçado oficial: ponto de saída, instruções passo a passo, mapa e satélite.">
 <meta name="theme-color" content="#0f2a4f">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -54,7 +54,7 @@
 <section id="tab-trajeto" class="tab page" hidden>
   <header class="page-head">
     <h1>Trajeto</h1>
-    <p>Rota da Luz · até o Santuário Nacional</p>
+    <p>Rota da Luz · trecho final até a Praça da Fé, em Aparecida</p>
   </header>
 
   <div class="card">
@@ -67,8 +67,9 @@
       </div>
     </div>
 
+    <button class="btn primary wide" id="btnStart35">Usar o ponto dos 35 km da Rota da Luz</button>
     <form id="searchForm" class="search">
-      <input id="searchInput" type="search" placeholder="Digite o endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
+      <input id="searchInput" type="search" placeholder="Ou digite outro endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
       <button class="btn" type="submit">Buscar</button>
     </form>
     <ul id="searchResults" class="results" hidden></ul>
@@ -76,7 +77,6 @@
     <div class="chips">
       <button class="chip" id="btnStartHere">📍 Estou aqui agora</button>
       <button class="chip" id="btnStartMap">👆 Escolher no mapa</button>
-      <button class="chip" id="btnStartPinda">Centro de Pindamonhangaba</button>
     </div>
 
     <div class="driver" id="driverBox" hidden>
@@ -95,20 +95,17 @@
       <div><b id="sumTime">--</b><span>tempo andando (4,5 km/h)</span></div>
     </div>
     <p class="note" id="trackInfo"></p>
-    <div class="official">
-      <b>Rota da Luz:</b> a Associação dos Amigos da Rota da Luz indica Pindamonhangaba como saída para um trajeto de cerca de 35 km. Confirme com eles o ponto oficial de partida e peça o arquivo da trilha (GPX ou KML).
-      <a href="https://www.amigosdarotadaluz.org" target="_blank" rel="noopener">amigosdarotadaluz.org</a>
-    </div>
-    <div class="row">
-      <button class="btn" id="btnGpx">Carregar trilha oficial (GPX/KML)</button>
-      <button class="btn ghost" id="btnAuto" hidden>Voltar ao trajeto automático</button>
-    </div>
-    <input type="file" id="trackFile" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" hidden>
   </div>
 
   <div class="card">
     <div class="card-label">3 · Passo a passo</div>
     <ol id="steps" class="steps"></ol>
+  </div>
+
+  <div class="card">
+    <div class="card-label">4 · No caminho <span class="muted">(mapa oficial da Associação)</span></div>
+    <ul id="pois" class="steps"></ul>
+    <p class="note">Fonte: mapa oficial da Associação dos Amigos da Rota da Luz · <a href="https://www.amigosdarotadaluz.org/rotadaluz-mapas" target="_blank" rel="noopener">amigosdarotadaluz.org</a></p>
   </div>
 </section>
 
@@ -148,6 +145,7 @@
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="rota-oficial.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
