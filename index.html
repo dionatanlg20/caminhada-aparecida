@@ -27,6 +27,7 @@
       </div>
     </div>
     <div id="alertCard" class="alert-card" hidden></div>
+    <button id="alertChip" class="alert-chip" hidden></button>
   </div>
 
   <div class="map-tools">
@@ -89,7 +90,24 @@
   </div>
 
   <div class="card">
-    <div class="card-label">2 · Resumo</div>
+    <div class="card-label">2 · Caminho</div>
+    <div class="vias">
+      <button class="via" id="viaLuz" data-via="luz">
+        <span class="via-t">Rota da Luz <span class="tag ok">recomendada</span></span>
+        <span class="via-d">Traçado oficial da Associação, por estradas rurais e cidades</span>
+        <b id="viaLuzKm">--</b>
+      </button>
+      <button class="via" id="viaDutra" data-via="dutra">
+        <span class="via-t">Via Dutra <span class="tag warn">alternativa</span></span>
+        <span class="via-d">Pelo acostamento da rodovia. Use só se a Rota da Luz estiver bloqueada</span>
+        <b id="viaDutraKm">--</b>
+      </button>
+    </div>
+    <p class="note" id="viaNote"></p>
+  </div>
+
+  <div class="card">
+    <div class="card-label">3 · Resumo</div>
     <div class="summary">
       <div><b id="sumDist">--</b><span>distância a pé</span></div>
       <div><b id="sumTime">--</b><span>tempo andando (4,5 km/h)</span></div>
@@ -98,14 +116,35 @@
   </div>
 
   <div class="card">
-    <div class="card-label">3 · Passo a passo</div>
+    <div class="card-label">4 · Passo a passo</div>
     <ol id="steps" class="steps"></ol>
   </div>
 
-  <div class="card">
-    <div class="card-label">4 · No caminho <span class="muted">(mapa oficial da Associação)</span></div>
+  <div class="card" id="poisCard">
+    <div class="card-label">5 · No caminho <span class="muted">(mapa oficial da Associação)</span></div>
     <ul id="pois" class="steps"></ul>
     <p class="note">Fonte: mapa oficial da Associação dos Amigos da Rota da Luz · <a href="https://www.amigosdarotadaluz.org/rotadaluz-mapas" target="_blank" rel="noopener">amigosdarotadaluz.org</a></p>
+  </div>
+</section>
+
+<!-- ALERTAS -->
+<section id="tab-alertas" class="tab page" hidden>
+  <header class="page-head">
+    <h1>Alertas</h1>
+    <p id="alertasSub">Comunicados sobre o caminho</p>
+  </header>
+  <div id="alertasList"></div>
+  <div class="card">
+    <div class="card-label">Confirme antes de sair</div>
+    <p class="note">Os alertas foram montados com comunicados e notícias publicados na internet. Situações de última hora podem não aparecer aqui. Na véspera, confirme:</p>
+    <div class="contacts">
+      <a class="btn" href="https://wa.me/5511941603680" target="_blank" rel="noopener">💬 Associação Rota da Luz (WhatsApp)</a>
+      <a class="btn" href="tel:08000173536">📞 RioSP, Via Dutra: 0800 017 35 36</a>
+      <a class="btn" href="tel:191">🚓 PRF, rodovias federais: 191</a>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="btnAlertas">Atualizar alertas</button>
+    </div>
   </div>
 </section>
 
@@ -141,11 +180,13 @@
 <nav class="tabs">
   <button data-tab="caminhada" aria-current="page"><span>🧭</span>Caminhada</button>
   <button data-tab="trajeto"><span>🗺️</span>Trajeto</button>
+  <button data-tab="alertas"><span class="ic-wrap">⚠️<i class="badge" id="alertBadge" hidden></i></span>Alertas</button>
   <button data-tab="check"><span>🎒</span>Preparação</button>
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="rota-oficial.js"></script>
+<script src="rota-dutra.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -148,7 +148,7 @@ body {
 .tabs {
   position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--card); border-top: 1px solid var(--line);
 }
 .tabs button {
@@ -170,3 +170,40 @@ body {
 .btn.wide { width: 100%; margin-bottom: 12px; }
 .poi { width: 26px; height: 26px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 14px; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
 .steps a { color: var(--accent); }
+
+/* ---------- Escolha do caminho ---------- */
+.vias { display: grid; gap: 10px; }
+.via {
+  font: inherit; text-align: left; cursor: pointer; color: var(--text);
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+  background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px;
+}
+.via.on { border-color: var(--accent); background: var(--card); }
+.via:disabled { opacity: .5; cursor: not-allowed; }
+.via-t { font-weight: 700; }
+.via-d { grid-column: 1; color: var(--muted); font-size: .85rem; }
+.via b { grid-row: 1 / span 2; grid-column: 2; font-size: 1.15rem; }
+.tag { display: inline-block; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; vertical-align: middle; margin-left: 4px; }
+.tag.ok { background: #e6f4ea; color: #137333; }
+.tag.warn { background: #fef7e0; color: #b06000; }
+.tag.info { background: #e8f0fe; color: #1967d2; }
+
+/* ---------- Alertas ---------- */
+.alerta { border-left: 5px solid var(--line); }
+.alerta.ok { border-left-color: var(--ok); }
+.alerta.atencao { border-left-color: #f29900; }
+.alerta.info { border-left-color: var(--accent); }
+.alerta h3 { margin: 4px 0 6px; font-size: 1.05rem; }
+.alerta p { margin: 0 0 8px; font-size: .93rem; }
+.alerta .fontes { font-size: .8rem; color: var(--muted); }
+.alerta .fontes a { color: var(--accent); }
+.alerta .meta { font-size: .75rem; color: var(--muted); }
+.contacts { display: grid; gap: 8px; }
+.contacts .btn { text-align: left; }
+.alert-chip {
+  justify-self: start; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  background: #fef7e0; color: #b06000; border: 1px solid #f9dfa3; border-radius: 99px; padding: 8px 14px; box-shadow: var(--shadow);
+}
+.ic-wrap { position: relative; }
+.badge { position: absolute; top: -4px; right: -10px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--warn); color: #fff; font-size: 10px; font-style: normal; font-weight: 800; display: grid; place-items: center; padding: 0 4px; }
+.alert-chip.okc { background: #e6f4ea; color: #137333; border-color: #b7e1c1; }

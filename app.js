@@ -7,11 +7,13 @@
 // =====================================================================
 
 const OF = window.ROTA_OFICIAL;
+const DU = window.ROTA_DUTRA;
 const FIM = { nome: OF.fim.nome, sub: OF.fim.sub, p: [OF.fim.lat, OF.fim.lng] };
 const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', p: [-22.850521, -45.233723] };
 const KM_PADRAO = 35;            // km até o término, pedido para a caminhada
 const VELOCIDADE = 4.5;          // km/h de caminhada
 const FORA_DO_CAMINHO = 0.06;    // km (60 m)
+const FORA_NA_DUTRA = 0.12;      // na rodovia o traçado segue o centro da pista: tolerância maior
 const NA_TRILHA = 0.08;          // até 80 m da trilha conta como "na trilha"
 const ROUTER = 'https://routing.openstreetmap.de/routed-foot';
 const GEOCODER = 'https://nominatim.openstreetmap.org';
@@ -106,6 +108,7 @@ const blank = () => ({
   startedAt: null,
   layer: 'mapa',
   visto: false,
+  via: 'luz',      // 'luz' (Rota da Luz oficial) ou 'dutra' (alternativa)
 });
 let state = load();
 function load() {
@@ -199,10 +202,30 @@ function officialFrom(al, offset) {
   return { pts, steps, len: OF_TOTAL - al };
 }
 
+const routeKey = () => `${state.via}:${state.start.p.join(',')}`;
+const dutraOk = () => !!(state.start && sameP(state.start.p, P35));
+
+function dutraRoute(key) {
+  const acc = cumulative(DU.pts);
+  const avisos = DU.avisos.map((a) => ({ text: a.text, ic: a.ic, kind: a.kind, name: '', p: round6(pointAt(DU.pts, acc, a.along)), along: a.along, aprox: !!a.aprox }));
+  const fim = DU.steps.map((s) => ({ ...instruction(s.type, s.modifier, s.name, s.exit), kind: 'turn', name: s.name, p: [s.lat, s.lng], along: s.along }));
+  const last = { text: `Chegada à ${FIM.nome}, término da Rota da Luz`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: DU.total };
+  const steps = mergeClose([...avisos, ...fim, last].sort((a, b) => a.along - b.along));
+  return { key, pts: DU.pts, steps, dist: DU.total, approach: 0, dutra: DU.dutra };
+}
+
 async function computeRoute() {
   if (!state.start || routing) return;
-  const key = state.start.p.join(',');
+  if (state.via === 'dutra' && !dutraOk()) state.via = 'luz';
+  const key = routeKey();
   if (state.route && state.route.key === key) return;
+  if (state.via === 'dutra') {
+    state.route = dutraRoute(key);
+    routeError = false;
+    save();
+    refreshAll();
+    return;
+  }
   const sp = state.start.p;
   const pr = project(sp, OF_PTS, OF_ACC);
   // ponto de saída na própria trilha oficial
@@ -238,7 +261,7 @@ async function computeRoute() {
     const joinStep = { text: `Entre na trilha oficial da Rota da Luz, pela ${roadAt(pr.along)}`, ic: '🟦', kind: 'join', name: '', p: join, along: alen };
     const o = officialFrom(pr.along, alen);
     const last = { text: `Chegada à ${FIM.nome}, término da Rota da Luz`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: alen + o.len };
-    if (state.start && state.start.p.join(',') === key) {
+    if (state.start && routeKey() === key) {
       state.route = { key, pts: [...apts, ...o.pts], steps: mergeClose([first, ...asteps, joinStep, ...o.steps, last]), dist: alen + o.len, approach: alen };
       save();
     }
@@ -248,7 +271,7 @@ async function computeRoute() {
   } finally {
     routing = false;
     refreshAll();
-    if (!routeError && state.start && (!state.route || state.route.key !== state.start.p.join(','))) computeRoute();
+    if (!routeError && state.start && (!state.route || state.route.key !== routeKey())) computeRoute();
   }
 }
 
@@ -386,8 +409,9 @@ function navInfo() {
   }
   const idx = r.steps.findIndex((s, i) => i > 0 && s.along > pr.along + 0.015);
   const next = idx >= 0 ? r.steps[idx] : null;
+  const naDutra = r.dutra && pr.along >= r.dutra.de - 0.05 && pr.along <= r.dutra.ate + 0.05;
   return {
-    kind: pr.d > FORA_DO_CAMINHO ? 'off' : 'on',
+    kind: pr.d > (naDutra ? FORA_NA_DUTRA : FORA_DO_CAMINHO) ? 'off' : 'on',
     total, along: pr.along, rest, off: pr.d,
     next, nextIdx: idx, toNext: next ? next.along - pr.along : rest,
   };
@@ -432,7 +456,7 @@ function refreshNav(n) {
       }
       if (n.kind === 'off') {
         alertEl.hidden = false;
-        alertEl.textContent = `⚠️ Você saiu do caminho. Volte cerca de ${fmtDist(n.off)} até a linha azul.`;
+        alertEl.textContent = `⚠️ Você saiu do caminho. Volte cerca de ${fmtDist(n.off)} até a linha ${state.via === 'dutra' ? 'laranja' : 'azul'}.`;
         if (!offRouteWarned && navigator.vibrate) navigator.vibrate([300, 150, 300]);
         offRouteWarned = true;
       } else {
@@ -481,9 +505,24 @@ function refreshTrajeto(n) {
   let info;
   if (!s) info = 'Escolha o ponto de saída.';
   else if (!r) info = routeError ? 'Sem internet para calcular o caminho até a trilha. Ele será calculado assim que houver conexão.' : 'Calculando…';
+  else if (state.via === 'dutra') info = `Alternativa pela Via Dutra até a ${FIM.nome}. Traçado pelas vias do mapa (OpenStreetMap), com as orientações do Caminho Consciente. A posição dos km da rodovia é aproximada.`;
   else if (r.approach > 0) info = `Traçado oficial da Rota da Luz (mapa da Associação), até a ${FIM.nome}. Do seu ponto de saída até a trilha são ${fmtDist(r.approach)} pelas ruas.`;
   else info = `Traçado oficial da Rota da Luz (mapa da Associação), do ponto de saída até a ${FIM.nome}, em Aparecida.`;
   $('trackInfo').textContent = info;
+
+  // escolha do caminho
+  const pr0 = s ? project(s.p, OF_PTS, OF_ACC) : null;
+  $('viaLuzKm').textContent = state.via === 'luz' && r ? fmtDist(r.dist) : (pr0 ? `${pr0.d > NA_TRILHA ? '≈ ' : ''}${fmtDist(OF_TOTAL - pr0.along + pr0.d)}` : '--');
+  $('viaDutraKm').textContent = dutraOk() ? fmtDist(DU.total) : '--';
+  $('viaLuz').classList.toggle('on', state.via === 'luz');
+  $('viaDutra').classList.toggle('on', state.via === 'dutra');
+  $('viaDutra').disabled = !dutraOk();
+  $('viaNote').textContent = !dutraOk()
+    ? 'A alternativa pela Via Dutra parte do ponto dos 35 km. Para usá-la, escolha esse ponto de saída.'
+    : state.via === 'dutra'
+      ? 'Você escolheu a Via Dutra. Veja os alertas antes de sair: no dia 19 não há faixa exclusiva para romeiros confirmada.'
+      : 'Se a Rota da Luz estiver bloqueada no dia, troque aqui para a Via Dutra. O ponto de saída é o mesmo.';
+  $('poisCard').hidden = state.via === 'dutra';
 
   const ol = $('steps');
   ol.innerHTML = '';
@@ -500,14 +539,15 @@ function refreshTrajeto(n) {
       li.querySelector('.t').textContent = st.text;
       li.querySelector('.d').textContent = i === r.steps.length - 1
         ? `km ${km1(r.dist)}`
-        : `km ${km1(st.along)} · depois siga ${fmtDist(st.len)}`;
+        : `${st.aprox ? 'aprox. ' : ''}km ${km1(st.along)} · depois siga ${fmtDist(st.len)}`;
       li.addEventListener('click', () => focusOn(st.p));
       ol.append(li);
     });
   }
-  // pontos da Associação ao longo do trajeto
+  // pontos da Associação ao longo do trajeto (só na Rota da Luz)
   const ul = $('pois');
   ul.innerHTML = '';
+  if (state.via === 'dutra') return;
   const startAl = s ? project(s.p, OF_PTS, OF_ACC).along : 0;
   const offset = r ? r.approach : 0;
   OF.pois.filter((p) => p.along >= startAl - 0.05).forEach((p) => {
@@ -525,6 +565,78 @@ function focusOn(p) {
   follow = false;
   $('btnFollow').classList.remove('on');
   if (map) setTimeout(() => map.setView(p, 17), 60);
+}
+
+// ---------------------------------------------------------------------
+// Alertas (arquivo alertas.json, atualizável sem mudar o app)
+// ---------------------------------------------------------------------
+const ALERT_KEY = 'caminhada-aparecida-alertas';
+let alertas = null;
+try { alertas = JSON.parse(localStorage.getItem(ALERT_KEY) || 'null'); } catch (e) { alertas = null; }
+async function loadAlertas() {
+  try {
+    const r = await fetch(`alertas.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    alertas = await r.json();
+    try { localStorage.setItem(ALERT_KEY, JSON.stringify(alertas)); } catch (e) { /* ignora */ }
+  } catch (e) { /* sem internet: usa a última cópia */ }
+  refreshAlertas();
+}
+const fmtData = (iso) => iso ? iso.split('-').reverse().join('/') : '';
+const NIVEL = { ok: ['ok', 'sem bloqueio'], atencao: ['warn', 'atenção'], info: ['info', 'informação'] };
+const ROTA_NOME = { luz: 'Rota da Luz', dutra: 'Via Dutra', todas: 'Todas as rotas' };
+function alertCard(a) {
+  const div = document.createElement('div');
+  div.className = `card alerta ${a.nivel}`;
+  const [cls, lbl] = NIVEL[a.nivel] || NIVEL.info;
+  div.innerHTML = `<div class="meta"><span class="tag ${cls}"></span> · <span class="rota"></span></div><h3></h3><p></p><div class="fontes">Fontes: </div>`;
+  div.querySelector('.tag').textContent = lbl;
+  div.querySelector('.rota').textContent = ROTA_NOME[a.rota] || a.rota;
+  div.querySelector('h3').textContent = a.titulo;
+  div.querySelector('p').textContent = a.texto;
+  const f = div.querySelector('.fontes');
+  (a.fontes || []).forEach((x, i) => {
+    if (i) f.append(' · ');
+    const link = document.createElement('a');
+    link.href = x.url; link.target = '_blank'; link.rel = 'noopener'; link.textContent = x.nome;
+    f.append(link);
+  });
+  return div;
+}
+function refreshAlertas() {
+  const list = $('alertasList');
+  list.innerHTML = '';
+  if (!alertas) {
+    list.innerHTML = '<div class="card"><p class="note">Sem conexão para carregar os alertas. Conecte-se à internet e toque em "Atualizar alertas".</p></div>';
+    $('alertBadge').hidden = true; $('alertChip').hidden = true;
+    return;
+  }
+  $('alertasSub').textContent = `Verificado em ${fmtData(alertas.verificado)} · para a caminhada de ${alertas.para}`;
+  const rel = (a) => a.rota === state.via || a.rota === 'todas';
+  const ordem = { atencao: 0, ok: 1, info: 2 };
+  const meus = alertas.alertas.filter(rel).sort((a, b) => ordem[a.nivel] - ordem[b.nivel]);
+  const outros = alertas.alertas.filter((a) => !rel(a));
+  const h = document.createElement('div');
+  h.className = 'card-label';
+  h.textContent = `Para o caminho escolhido: ${ROTA_NOME[state.via]}`;
+  list.append(h);
+  meus.forEach((a) => list.append(alertCard(a)));
+  if (outros.length) {
+    const h2 = document.createElement('div');
+    h2.className = 'card-label';
+    h2.style.marginTop = '20px';
+    h2.textContent = `Sobre a outra opção: ${ROTA_NOME[state.via === 'luz' ? 'dutra' : 'luz']}`;
+    list.append(h2);
+    outros.forEach((a) => list.append(alertCard(a)));
+  }
+  const n = meus.filter((a) => a.nivel === 'atencao').length;
+  $('alertBadge').hidden = !n;
+  $('alertBadge').textContent = n;
+  const chip = $('alertChip');
+  const ok = meus.find((a) => a.nivel === 'ok');
+  if (n) { chip.hidden = false; chip.textContent = `⚠️ ${n} ${n > 1 ? 'alertas' : 'alerta'} para este caminho · ver`; chip.className = 'alert-chip'; }
+  else if (ok) { chip.hidden = false; chip.textContent = `✅ ${ok.titulo} · ver`; chip.className = 'alert-chip okc'; }
+  else chip.hidden = true;
 }
 
 // ---------------------------------------------------------------------
@@ -614,7 +726,7 @@ function drawRoute() {
   const r = state.route;
   if (r) {
     L.polyline(r.pts, { color: '#ffffff', weight: 9, opacity: 0.95, interactive: false }).addTo(routeLayer);
-    L.polyline(r.pts, { color: '#1a73e8', weight: 5, opacity: 1, className: 'route-line', interactive: false }).addTo(routeLayer);
+    L.polyline(r.pts, { color: state.via === 'dutra' ? '#e37400' : '#1a73e8', weight: 5, opacity: 1, className: 'route-line', interactive: false }).addTo(routeLayer);
   }
   // os marcadores não bloqueiam o toque ao escolher o ponto no mapa
   if (state.start) L.marker(state.start.p, { icon: pinIcon('a', 'A'), interactive: false, keyboard: false }).addTo(routeLayer);
@@ -640,20 +752,24 @@ function fitRoute() {
 // ---------------------------------------------------------------------
 // Atualização geral e abas
 // ---------------------------------------------------------------------
-let lastRouteKey = null, lastStartKey = null;
+let lastRouteKey = null, lastStartKey = null, pendingFit = false, currentTab = null;
 function refreshAll() {
   const n = navInfo();
   refreshNav(n);
   refreshStats(n);
   refreshTrajeto(n);
   refreshChecklist();
+  refreshAlertas();
   const rk = state.route ? `${state.route.key}:${state.route.pts.length}` : 'none';
   const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
   if (rk !== lastRouteKey || sk !== lastStartKey) {
     const routeChanged = rk !== lastRouteKey;
     lastRouteKey = rk; lastStartKey = sk;
     drawRoute();
-    if (routeChanged && state.route) fitRoute();
+    if (routeChanged && state.route) {
+      // com o mapa escondido (outra aba), o enquadramento fica para quando ele aparecer
+      if (currentTab === 'caminhada') fitRoute(); else pendingFit = true;
+    }
   }
 }
 // os créditos do mapa ficam logo acima do painel de baixo, sem cobrir os números
@@ -663,11 +779,18 @@ function fitSheet() {
 }
 window.addEventListener('resize', fitSheet);
 function showTab(name) {
+  currentTab = name;
   document.querySelectorAll('.tab').forEach((s) => { s.hidden = s.id !== `tab-${name}`; });
   document.querySelectorAll('.tabs button').forEach((b) => {
     if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  if (name === 'caminhada' && map) setTimeout(() => { fitSheet(); map.invalidateSize(); }, 30);
+  if (name === 'caminhada' && map) {
+    setTimeout(() => {
+      fitSheet();
+      map.invalidateSize();
+      if (pendingFit && !pickingOnMap) { pendingFit = false; fitRoute(); }
+    }, 30);
+  }
   window.scrollTo(0, 0);
 }
 
@@ -715,6 +838,16 @@ function init() {
     }
   });
   $('btnStart35').addEventListener('click', () => setStart(START35.p, START35));
+  document.querySelectorAll('.via').forEach((b) => b.addEventListener('click', () => {
+    if (b.disabled || state.via === b.dataset.via) return;
+    state.via = b.dataset.via;
+    state.route = null;
+    save();
+    refreshAll();
+    computeRoute();
+  }));
+  $('alertChip').addEventListener('click', () => showTab('alertas'));
+  $('btnAlertas').addEventListener('click', () => { $('alertasSub').textContent = 'Atualizando…'; loadAlertas(); });
   $('btnStartHere').addEventListener('click', () => {
     if (me) setStart(me);
     else { pendingStartHere = true; startGps(); $('trackInfo').textContent = 'Aguardando o GPS para marcar sua posição…'; }
@@ -739,6 +872,7 @@ function init() {
   setInterval(() => { if (state.walking) refreshAll(); }, 10000);
   refreshAll();
   computeRoute();
+  loadAlertas();
   if (state.route) fitRoute();
   showTab(state.visto ? 'caminhada' : 'trajeto');
   state.visto = true;
