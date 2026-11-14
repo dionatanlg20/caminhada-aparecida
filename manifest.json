@@ -1,0 +1,14 @@
+{
+  "name": "Caminhada a Aparecida",
+  "short_name": "Aparecida",
+  "description": "Acompanhe sua caminhada até o Santuário Nacional de Aparecida.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ee",
+  "theme_color": "#1d3f72",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
