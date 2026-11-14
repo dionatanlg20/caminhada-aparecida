@@ -288,11 +288,16 @@ function startGps() {
   if (watchId !== null) return;
   $('gpsStatus').textContent = 'Procurando sinal de GPS…';
   watchId = navigator.geolocation.watchPosition(onPos, (err) => {
-    $('gpsStatus').textContent = err.code === 1
-      ? 'Permissão de localização negada. Libere nas configurações do navegador.'
-      : 'Não foi possível obter a localização. Tente em local aberto.';
-    watchId = null;
-    $('btnGps').textContent = 'Ativar GPS';
+    if (err.code === 1) {
+      // permissão negada: o GPS para de vez
+      $('gpsStatus').textContent = 'Permissão de localização negada. Libere nas configurações do navegador.';
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      $('btnGps').textContent = 'Ativar GPS';
+    } else {
+      // sinal fraco ou demorado: o GPS continua tentando sozinho
+      $('gpsStatus').textContent = 'Sinal de GPS fraco. Continuando a procurar… Tente ficar em local aberto.';
+    }
   }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
   $('btnGps').textContent = 'GPS ativo';
 }
@@ -301,6 +306,7 @@ function onPos(p) {
   const { latitude, longitude, accuracy } = p.coords;
   me = [latitude, longitude];
   $('gpsStatus').textContent = `GPS ativo · precisão de ${Math.round(accuracy)} m`;
+  $('btnGps').textContent = 'GPS ativo';
 
   if (state.route === 'gps' && !state.gpsStart) {
     state.gpsStart = me;
