@@ -58,20 +58,39 @@ body {
   border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow);
 }
 .map-tools {
-  position: absolute; z-index: 500; right: 12px; bottom: calc(var(--sheet-h, 210px) + 34px);
-  display: grid; gap: 10px;
+  position: absolute; z-index: 500; right: 12px; bottom: calc(var(--sheet-h, 210px) + 30px);
+  display: grid; gap: 8px;
 }
 .fab {
-  width: 48px; height: 48px; border-radius: 50%; border: 0;
+  width: 44px; height: 44px; border-radius: 50%; border: 0;
   background: var(--card); color: var(--text); box-shadow: var(--shadow);
-  font-size: 22px; display: grid; place-items: center; cursor: pointer;
+  font-size: 20px; display: grid; place-items: center; cursor: pointer;
 }
+/* quando falta espaço, o card de cima deixa a coluna dos botões livre */
+#tab-caminhada.apertado .map-top { right: 66px; }
 .fab.on { background: var(--accent); color: #fff; }
 .sheet {
   position: absolute; z-index: 500; left: 0; right: 0; bottom: 0;
   background: var(--card); border-radius: 22px 22px 0 0; box-shadow: var(--shadow);
-  padding: 16px 16px 10px;
+  padding: 4px 16px 10px; max-height: 44vh; overflow-y: auto; overscroll-behavior: contain;
 }
+.sheet-handle { display: block; width: 100%; height: 22px; border: 0; background: none; cursor: pointer; padding: 0; }
+.sheet-handle i { display: block; width: 44px; height: 5px; border-radius: 99px; background: var(--line); margin: 6px auto 0; }
+/* painel recolhido: só o botão principal */
+.sheet.min > :not(.sheet-handle):not(.row) { display: none !important; }
+/* mapa em tela cheia, estilo Google Maps */
+body.tela-cheia #tab-caminhada { bottom: 0; }
+body.tela-cheia .map-top, body.tela-cheia .sheet, body.tela-cheia .tabs, body.tela-cheia #btnTela { display: none !important; }
+body.tela-cheia .map-tools { bottom: 96px; }
+body.tela-cheia .maplibregl-ctrl-bottom-right { bottom: 84px; }
+.sair-tela { position: absolute; z-index: 600; left: 12px; top: calc(12px + env(safe-area-inset-top)); font-size: 20px; font-weight: 800; }
+.tela-info {
+  position: absolute; z-index: 600; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom));
+  background: var(--brand); color: #fff; border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow);
+  font-size: .95rem; line-height: 1.3;
+}
+.tela-info b { font-size: 1.05rem; }
+.ic-tela { font-size: 22px; line-height: 1; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; gap: 4px; }
 .stats b { display: block; font-size: 1.1rem; font-weight: 800; }
 .stats span { color: var(--muted); font-size: .75rem; }
@@ -243,3 +262,6 @@ body.acomp #tab-caminhada { bottom: 0; }
 .et-links .btn { padding: 9px 10px; font-size: .9rem; flex: 1 1 100px; }
 .sheet.pre .stats, .sheet.pre .bar { display: none; }
 .sheet.pre .etapas { margin-top: 2px; }
+.via-st { grid-column: 1 / -1; font-size: .82rem; font-weight: 700; margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #fef7e0; color: #b06000; }
+.via-st.ok { background: #e6f4ea; color: #137333; }
+.via-st:empty { display: none; }

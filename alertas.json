@@ -1,6 +1,6 @@
 {
   "verificado": "2026-11-15",
-  "atualizado": "2026-11-15T14:00",
+  "atualizado": "2026-11-15T16:00",
   "para": "19/11/2026",
   "alertas": [
     {
@@ -24,9 +24,13 @@
       "id": "dutra-sem-faixa",
       "nivel": "atencao",
       "rota": "dutra",
-      "titulo": "Dutra: faixa para romeiros não está confirmada no dia 19",
-      "texto": "O fechamento da terceira faixa para romeiros e as tendas de apoio na Dutra fizeram parte da operação Romaria Segura, de 30/09 a 18/10. Não encontramos comunicado de faixa bloqueada para romeiros em novembro. No dia 19, conte com trânsito normal ao lado do acostamento. Use a Dutra só se a Rota da Luz estiver bloqueada.",
+      "titulo": "Dutra: terceira faixa para romeiros NÃO anunciada para o dia 19",
+      "texto": "Em outubro, na operação Romaria Segura (30/09 a 18/10), a RioSP fechou com cones a terceira faixa em cerca de 45 km sem acostamento para os romeiros, e montou tendas de apoio. Até 15/11 não há anúncio de faixa fechada para romeiros em novembro: no dia 19, quem for pela Dutra caminha pelo acostamento com o trânsito normal ao lado. Use a Dutra só se a Rota da Luz estiver bloqueada. Se a RioSP anunciar a faixa, este aviso muda.",
       "fontes": [
+        {
+          "nome": "Via Dutra fecha 45 km de faixa com cones para romeiros (outubro)",
+          "url": "https://clickpetroleoegas.com.br/40-mil-pessoas-a-pe-no-meio-dos-caminhoes-via-dutra-fecha-45-km-de-faixa-com-cones-e-leva-a-antt-plano-de-calcada-ate-aparecida-btl96-mhbb01/"
+        },
         {
           "nome": "Romaria Segura 2026 (NetCampos)",
           "url": "https://www.netcampos.com/noticias/2026/09/romaria-segura-2026-dutra-aparecida-sao-jose-vidoca.html"
@@ -46,7 +50,7 @@
       "nivel": "atencao",
       "rota": "dutra",
       "titulo": "Obras na Dutra entre Pindamonhangaba e Aparecida",
-      "texto": "Depois das romarias, a RioSP retomou obras de recuperação do pavimento no Vale do Paraíba, com interdições pontuais de faixas (por exemplo, no km 81, em Roseira). As obras da 3ª e da 4ª faixa entre Pindamonhangaba e Aparecida seguem cronograma próprio. Em trecho de obra, o acostamento pode estar estreito ou desviado. Confirme com a RioSP: 0800 017 35 36.",
+      "texto": "Depois das romarias, a RioSP retomou obras de recuperação do pavimento no Vale do Paraíba, com interdições pontuais de faixas (por exemplo, no km 81, em Roseira). As obras da 3ª e da 4ª faixa entre Pindamonhangaba e Aparecida seguem cronograma próprio. Em trecho de obra, o acostamento pode estar estreito ou desviado. Até 15/11 não há cronograma divulgado para os dias 17 a 20/11 nesse trecho. Confirme com a RioSP: 0800 017 35 36.",
       "fontes": [
         {
           "nome": "Obras de pavimento após a romaria; km 81 em Roseira (Vale360)",

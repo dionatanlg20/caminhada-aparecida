@@ -10,7 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
 
@@ -30,7 +30,10 @@
     <button id="alertChip" class="alert-chip" hidden></button>
   </div>
 
+  <button class="fab sair-tela" id="btnSairTela" aria-label="Sair do mapa em tela cheia" title="Voltar" hidden>✕</button>
+  <div class="tela-info" id="telaInfo" hidden></div>
   <div class="map-tools">
+    <button class="fab" id="btnTela" aria-label="Mapa em tela cheia" title="Mapa em tela cheia"><span class="ic-tela">⛶</span></button>
     <button class="fab" id="btnNorte" aria-label="Voltar o mapa para o norte" title="Norte" hidden><span id="norteIc" class="norte">➤</span></button>
     <button class="fab" id="btnLayer" aria-label="Alternar mapa e satélite" title="Mapa / Satélite"><span id="layerIcon">🛰️</span></button>
     <button class="fab" id="btnFollow" aria-label="Centralizar em mim" title="Centralizar em mim">◎</button>
@@ -38,6 +41,7 @@
   </div>
 
   <div class="sheet">
+    <button class="sheet-handle" id="sheetHandle" aria-label="Recolher ou abrir o painel"><i></i></button>
     <div class="stats">
       <div><b id="sFalta">--</b><span>faltam</span></div>
       <div><b id="sAndado">0,0 km</b><span>andados</span></div>
@@ -151,6 +155,7 @@
       <button class="via" id="viaDutra" data-via="dutra">
         <span class="via-t">Via Dutra <span class="tag warn">alternativa</span></span>
         <span class="via-d">Pelo acostamento da rodovia. Use só se a Rota da Luz estiver bloqueada</span>
+        <span class="via-st" id="viaDutraSt"></span>
         <b id="viaDutraKm">--</b>
       </button>
     </div>
@@ -242,9 +247,9 @@
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=22"></script>
-<script src="rota-dutra.js?v=22"></script>
-<script src="rota-fe.js?v=22"></script>
-<script src="app.js?v=22"></script>
+<script src="rota-oficial.js?v=25"></script>
+<script src="rota-dutra.js?v=25"></script>
+<script src="rota-fe.js?v=25"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

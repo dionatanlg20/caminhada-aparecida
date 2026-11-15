@@ -470,6 +470,26 @@ function navInfo() {
   };
 }
 
+function refreshTela() {
+  const tools = document.querySelector('.map-tools');
+  if (!document.body.classList.contains('tela-cheia')) { tools.style.bottom = ''; return; }
+  $('telaInfo').innerHTML = '<b></b><br><span></span>';
+  $('telaInfo').querySelector('b').textContent = $('navDist').textContent;
+  $('telaInfo').querySelector('span').textContent = $('navInstr').textContent;
+  // botões sempre acima da barrinha, qualquer que seja a altura dela
+  tools.style.bottom = `${$('telaInfo').offsetHeight + 28}px`;
+}
+function telaCheia(on) {
+  document.body.classList.toggle('tela-cheia', on);
+  $('btnSairTela').hidden = !on;
+  $('telaInfo').hidden = !on;
+  if (on) document.documentElement.style.setProperty('--sheet-h', '0px');
+  refreshTela();
+  setTimeout(() => {
+    if (!on) fitSheet();
+    if (map) { map.resize(); if (on && !state.walking && !MODO_ACOMP) fitRoute(); }
+  }, 30);
+}
 function refreshNav(n) {
   if (pickingOnMap) return;
   const icon = $('navIcon'), d = $('navDist'), t = $('navInstr'), alertEl = $('alertCard');
@@ -521,6 +541,7 @@ function refreshNav(n) {
 }
 
 function refreshStats(n) {
+  setTimeout(refreshTela, 0);
   const rest = n.rest != null ? n.rest : null;
   $('sFalta').textContent = rest != null ? fmtDist(rest) : '--';
   $('sAndado').textContent = state.km < 0.01 ? '0,0 km' : fmtDist(state.km);
@@ -600,6 +621,11 @@ function refreshTrajeto(n) {
   $('viaLuz').classList.toggle('on', state.via === 'luz');
   $('viaDutra').classList.toggle('on', state.via === 'dutra');
   $('viaDutra').disabled = !dutraOk();
+  // situação da terceira faixa da Dutra, direto dos alertas
+  const faixa = alertas && alertas.alertas.find((x) => x.rota === 'dutra' && /faixa/i.test(x.titulo));
+  const stF = $('viaDutraSt');
+  stF.textContent = faixa ? `${faixa.nivel === 'atencao' || faixa.nivel === 'urgente' ? '⚠️' : '✅'} ${faixa.titulo}` : '';
+  stF.className = `via-st ${faixa && !(faixa.nivel === 'atencao' || faixa.nivel === 'urgente') ? 'ok' : ''}`;
   $('viaNote').textContent = !dutraOk()
     ? 'A alternativa pela Via Dutra parte do ponto dos 35 km. Para usá-la, escolha esse ponto de saída.'
     : state.via === 'dutra'
@@ -674,7 +700,7 @@ async function loadAlertas() {
     alertas = novo;
     try { localStorage.setItem(ALERT_KEY, JSON.stringify(alertas)); } catch (e) { /* ignora */ }
   } catch (e) { /* sem internet: usa a última cópia */ }
-  refreshAlertas();
+  if (MODO_ACOMP) refreshAlertas(); else refreshAll();
 }
 // Avisa o caminhante: aviso na tela, vibração e notificação do celular (se permitida)
 function avisarMudanca(velho, novo) {
@@ -967,6 +993,7 @@ function renderAcomp() {
   if (p.b != null) partes.push(`bateria <b>${p.b}%</b>`);
   if (p.acc) partes.push(`precisão ${p.acc} m`);
   info.innerHTML = partes.join(' · ');
+  refreshTela();
   const parado = idade > SEM_SINAL_MS && !acomp.fim && p.k !== 'arrived';
   info.classList.toggle('stale', parado);
   if (parado) info.innerHTML = `⚠️ Sem atualização há ${Math.round(idade / 60000)} min (última às ${hora}). O celular pode estar com a tela apagada ou sem sinal.${p.b != null ? ` Bateria: ${p.b}%.` : ''}`;
@@ -1013,6 +1040,9 @@ function initAcompanhante() {
   $('btnFollow').addEventListener('click', () => { followWalker = true; $('btnFollow').classList.add('on'); if (acomp.pos && map) mapView([acomp.pos.lat, acomp.pos.lng], 16); });
   $('btnFit').addEventListener('click', () => { followWalker = false; $('btnFollow').classList.remove('on'); fitRoute(); });
   $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
+  $('btnTela').addEventListener('click', () => telaCheia(true));
+  $('btnSairTela').addEventListener('click', () => telaCheia(false));
+  $('sheetHandle').addEventListener('click', () => { document.querySelector('.sheet').classList.toggle('min'); setTimeout(() => { fitSheet(); if (map) map.resize(); }, 30); });
   refreshAll();
   computeRoute();
   renderAcomp();
@@ -1173,8 +1203,8 @@ function fitRoute() {
   const pts = state.route ? state.route.pts : [FIM.p, state.start ? state.start.p : P35];
   const b = new maplibregl.LngLatBounds();
   pts.forEach((p) => b.extend(ll(p)));
-  const sheetH = (document.querySelector('.sheet') || {}).offsetHeight || 200;
-  const topH = MODO_ACOMP ? 140 : 150;
+  const sheetH = document.body.classList.contains('tela-cheia') ? ($('telaInfo').offsetHeight + 10) : ((document.querySelector('.sheet') || {}).offsetHeight || 200);
+  const topH = document.body.classList.contains('tela-cheia') ? 70 : (MODO_ACOMP ? 140 : 150);
   const cam = map.cameraForBounds(b, { padding: { top: topH, bottom: sheetH + 20, left: 24, right: 72 }, bearing: 0 });
   if (cam) map.easeTo({ ...cam, bearing: 0, pitch: 0, duration: 600 });
 }
@@ -1212,6 +1242,10 @@ function fitSheet() {
   const h = document.querySelector('.sheet').offsetHeight;
   if (!h) return;
   document.documentElement.style.setProperty('--sheet-h', `${h}px`);
+  // se a coluna de botões encostar no card de cima, o card fica mais estreito
+  const tab = $('tab-caminhada'), tools = document.querySelector('.map-tools'), card = document.querySelector('.map-top');
+  tab.classList.remove('apertado');
+  if (tools && card && tools.getBoundingClientRect().top < card.getBoundingClientRect().bottom + 6) tab.classList.add('apertado');
   if (lastSheetH && Math.abs(h - lastSheetH) > 30 && map && !state.walking && state.route) fitRoute();
   lastSheetH = h;
 }
@@ -1254,6 +1288,12 @@ function init() {
   });
   $('btnFit').addEventListener('click', () => { follow = false; $('btnFollow').classList.remove('on'); fitRoute(); });
   $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
+  $('btnTela').addEventListener('click', () => telaCheia(true));
+  $('btnSairTela').addEventListener('click', () => telaCheia(false));
+  $('sheetHandle').addEventListener('click', () => {
+    document.querySelector('.sheet').classList.toggle('min');
+    setTimeout(() => { fitSheet(); if (map) map.resize(); }, 30);
+  });
 
   $('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
