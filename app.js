@@ -716,8 +716,12 @@ function refreshNotif(perm) {
 // quem tem o link (#acompanhar=<código>) recebe e vê no mapa.
 // ---------------------------------------------------------------------
 const RELAY = 'https://ntfy.sh';
-const ENVIO_MS = 20000;          // envia a posição a cada 20 s (ou antes, se andou 25 m)
-const SEM_SINAL_MS = 3 * 60000;  // acompanhante: aviso após 3 min sem atualização
+// O ntfy.sh gratuito aceita 250 mensagens por dia por conexão. Para caber ~8 h de caminhada:
+const ENVIO_DIST = 0.25;          // envia a cada 250 m andados…
+const ENVIO_MAX_MS = 3 * 60000;   // …ou a cada 3 min, se parado
+const ENVIO_MIN_MS = 30000;       // nunca menos de 30 s entre envios (salvo momentos importantes)
+const LIMITE_DIA = 250, RESERVA = 15, ECONOMIA = 200; // perto do limite, envia menos e guarda para a chegada
+const SEM_SINAL_MS = 8 * 60000;   // acompanhante: aviso após 8 min sem atualização
 const MODO_ACOMP = (location.hash.match(/^#acompanhar=([a-z0-9]{16,64})$/) || [])[1] || null;
 
 function novoCodigo() {
@@ -730,13 +734,36 @@ const shareLink = () => `${location.origin}${location.pathname}#acompanhar=${sta
 let ultimoEnvio = { t: 0, p: null, ok: null }, bateria = null, wakeLock = null;
 if (navigator.getBattery) navigator.getBattery().then((b) => { bateria = b; }).catch(() => {});
 
+const hojeStr = () => new Date().toISOString().slice(0, 10);
+function contarEnvio() {
+  const sh = state.share;
+  if (sh.dia !== hojeStr()) { sh.dia = hojeStr(); sh.n = 0; }
+  sh.n = (sh.n || 0) + 1;
+  save();
+}
+const enviosHoje = () => (state.share && state.share.dia === hojeStr() ? state.share.n || 0 : 0);
+
+// forcar = momento importante (criar link, iniciar, pausar, chegar, nova tentativa)
 async function enviarPosicao(forcar) {
   const sh = state.share;
   if (!sh || !sh.on || !me || MODO_ACOMP) return;
   const agora = Date.now();
+  const desde = agora - ultimoEnvio.t;
   const andou = ultimoEnvio.p ? dist(ultimoEnvio.p, me) : Infinity;
-  if (!forcar && agora - ultimoEnvio.t < ENVIO_MS && !(andou > 0.025 && agora - ultimoEnvio.t > 5000)) return;
+  const usados = enviosHoje();
   const n = navInfo();
+  const chegou = n.kind === 'arrived';
+  if (usados >= LIMITE_DIA - 1) return;                                // acabou a cota do dia
+  if (usados >= LIMITE_DIA - RESERVA && !chegou) return;              // guarda as últimas para a chegada
+  if (!forcar && !(chegou && !ultimoEnvio.chegou)) {
+    const maxMs = usados >= ECONOMIA ? 10 * 60000 : ENVIO_MAX_MS;
+    if (desde < ENVIO_MIN_MS) {
+      // já andou o suficiente: agenda o envio para quando completar os 30 s
+      if (andou >= ENVIO_DIST && !agendado) agendado = setTimeout(() => { agendado = null; enviarPosicao(); }, ENVIO_MIN_MS - desde + 300);
+      return;
+    }
+    if (andou < ENVIO_DIST && desde < maxMs) return;
+  }
   const msg = {
     lat: +me[0].toFixed(6), lng: +me[1].toFixed(6), acc: Math.round(meAcc || 0), t: agora,
     al: n.along != null ? +n.along.toFixed(3) : null, r: n.rest != null ? +n.rest.toFixed(3) : null,
@@ -745,20 +772,23 @@ async function enviarPosicao(forcar) {
     s: state.start ? state.start.p : null, st: state.start ? state.start.title : '',
     b: bateria ? Math.round(bateria.level * 100) : null,
   };
-  ultimoEnvio = { t: agora, p: me, ok: ultimoEnvio.ok };
+  ultimoEnvio = { t: agora, p: me, ok: ultimoEnvio.ok, chegou: ultimoEnvio.chegou };
+  let status = 0;
   try {
     const r = await fetch(`${RELAY}/${sh.id}`, { method: 'POST', body: JSON.stringify(msg) });
+    status = r.status;
     ultimoEnvio.ok = r.ok ? agora : false;
+    if (r.ok) { contarEnvio(); if (chegou) ultimoEnvio.chegou = true; }
   } catch (e) {
     ultimoEnvio.ok = false;
   }
-  // falhou (sem sinal ou serviço ocupado): tenta de novo em 10 s com a posição mais recente
+  // falhou: sem sinal → tenta de novo em 10 s; serviço no limite (429) → espera 1 min
   if (ultimoEnvio.ok === false && !retentativa) {
-    retentativa = setTimeout(() => { retentativa = null; enviarPosicao(true); }, 10000);
+    retentativa = setTimeout(() => { retentativa = null; enviarPosicao(true); }, status === 429 ? 60000 : 10000);
   }
   refreshShare();
 }
-let retentativa = null;
+let retentativa = null, agendado = null;
 
 async function manterTela() {
   const querer = state.walking && state.share && state.share.on && state.share.awake !== false;
@@ -785,14 +815,14 @@ function refreshShare() {
   let st;
   if (!me) st = '🟡 Link criado. A posição começa a ser enviada quando o GPS ligar (toque em "Iniciar caminhada").';
   else if (ultimoEnvio.ok === false) st = '🔴 Sem internet no momento: a posição será enviada quando o sinal voltar.';
-  else if (ultimoEnvio.ok) st = `🟢 Enviando sua posição ao vivo · último envio às ${new Date(ultimoEnvio.ok).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  else if (ultimoEnvio.ok) st = `🟢 Enviando sua posição ao vivo · último envio às ${new Date(ultimoEnvio.ok).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · a cada 250 m ou 3 min · ${enviosHoje()} de ${LIMITE_DIA} envios do dia`;
   else st = '🟡 Preparando o envio da posição…';
   $('shareStatus').textContent = st;
   pill.textContent = ultimoEnvio.ok && ultimoEnvio.ok !== false ? '🟢 Compartilhando ao vivo' : '🟡 Compartilhamento ligado';
 }
 
 function ligarCompartilhamento() {
-  state.share = { id: novoCodigo(), on: true, awake: true };
+  state.share = { id: novoCodigo(), on: true, awake: true, dia: hojeStr(), n: (state.share && state.share.dia === hojeStr() ? state.share.n : 0) };
   save();
   startGps();
   refreshShare();
@@ -1060,6 +1090,7 @@ function refreshAll() {
     refreshTrajeto(n);
     refreshChecklist();
     refreshAlertas();
+    refreshShare();
   }
   const rk = state.route ? `${state.route.key}:${state.route.pts.length}` : 'none';
   const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
@@ -1170,7 +1201,7 @@ function init() {
   $('chkAwake').addEventListener('change', (e) => { if (state.share) { state.share.awake = e.target.checked; save(); manterTela(); } });
   $('sharePill').addEventListener('click', () => { showTab('trajeto'); setTimeout(() => $('shareCard').scrollIntoView({ block: 'start' }), 60); });
   // envia a posição mesmo parado (a cada 30 s) e reativa a tela ligada ao voltar para o app
-  setInterval(() => { if (state.share && state.share.on && Date.now() - ultimoEnvio.t >= 25000) enviarPosicao(true); }, 30000);
+  setInterval(() => { if (state.share && state.share.on) enviarPosicao(); }, 30000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { manterTela(); enviarPosicao(true); } });
   if (state.share && state.share.on) startGps();
   refreshShare();
