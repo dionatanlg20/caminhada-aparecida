@@ -752,8 +752,13 @@ async function enviarPosicao(forcar) {
   } catch (e) {
     ultimoEnvio.ok = false;
   }
+  // falhou (sem sinal ou serviço ocupado): tenta de novo em 10 s com a posição mais recente
+  if (ultimoEnvio.ok === false && !retentativa) {
+    retentativa = setTimeout(() => { retentativa = null; enviarPosicao(true); }, 10000);
+  }
   refreshShare();
 }
+let retentativa = null;
 
 async function manterTela() {
   const querer = state.walking && state.share && state.share.on && state.share.awake !== false;
@@ -1165,7 +1170,7 @@ function init() {
   $('chkAwake').addEventListener('change', (e) => { if (state.share) { state.share.awake = e.target.checked; save(); manterTela(); } });
   $('sharePill').addEventListener('click', () => { showTab('trajeto'); setTimeout(() => $('shareCard').scrollIntoView({ block: 'start' }), 60); });
   // envia a posição mesmo parado (a cada 30 s) e reativa a tela ligada ao voltar para o app
-  setInterval(() => { if (state.share && state.share.on) enviarPosicao(true); }, 30000);
+  setInterval(() => { if (state.share && state.share.on && Date.now() - ultimoEnvio.t >= 25000) enviarPosicao(true); }, 30000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { manterTela(); enviarPosicao(true); } });
   if (state.share && state.share.on) startGps();
   refreshShare();
