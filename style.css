@@ -265,3 +265,21 @@ body.acomp #tab-caminhada { bottom: 0; }
 .via-st { grid-column: 1 / -1; font-size: .82rem; font-weight: 700; margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #fef7e0; color: #b06000; }
 .via-st.ok { background: #e6f4ea; color: #137333; }
 .via-st:empty { display: none; }
+
+/* ---------- Caminho escolhido (tela principal) ---------- */
+.rota-seg { display: flex; gap: 6px; margin: 0 0 12px; }
+.rota-seg button {
+  flex: 1 1 0; min-width: 0; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 5px; white-space: normal; line-height: 1.15; text-align: center; overflow-wrap: anywhere;
+  padding: 9px 6px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); color: var(--muted);
+}
+.rota-seg button.on { color: var(--text); background: var(--card); }
+.rota-seg button.on[data-r="luz"] { border-color: #1a73e8; }
+.rota-seg button.on[data-r="dutra"] { border-color: #e37400; }
+.rota-seg button.on[data-r="fe"] { border-color: #8e24aa; }
+.rota-seg button:disabled { opacity: .45; }
+.rota-seg.travado button:not(.on) { display: none; }
+.rota-seg.travado button.on { flex: 0 1 auto; padding: 6px 12px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.luz { background: #1a73e8; } .dot.dutra { background: #e37400; } .dot.fe { background: #8e24aa; }
+body.acomp #rotaSeg { display: none !important; }

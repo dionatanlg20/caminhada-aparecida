@@ -234,6 +234,32 @@ function officialFrom(al, offset) {
   return { pts, steps, len: OF_TOTAL - al };
 }
 
+// caminho escolhido: 'luz', 'dutra' (alternativa da Rota da Luz) ou 'fe'
+const caminho = () => (state.rota === 'fe' ? 'fe' : state.via === 'dutra' ? 'dutra' : 'luz');
+const NOME_CAMINHO = { luz: 'Rota da Luz', dutra: 'Via Dutra (alternativa)', fe: 'Caminho da Fé' };
+const COR_CAMINHO = { luz: '#1a73e8', dutra: '#e37400', fe: '#8e24aa' };
+function escolherCaminho(c) {
+  if (state.walking || c === caminho()) return;
+  if (c === 'fe') { trocarRota('fe'); return; }
+  if (state.rota !== 'luz') trocarRota('luz');
+  if (c === 'dutra' && !dutraOk()) { state.start = { ...START35 }; }
+  state.via = c === 'dutra' ? 'dutra' : 'luz';
+  state.route = null;
+  save();
+  refreshAll();
+  computeRoute();
+  pendingFit = true;
+  if (currentTab === 'caminhada') setTimeout(() => { if (!state.route) return; pendingFit = false; fitRoute(); }, 50);
+}
+function refreshCaminho() {
+  const seg = $('rotaSeg'), c = caminho();
+  seg.classList.toggle('travado', !!(state.walking || state.ms > 0));
+  seg.querySelectorAll('button').forEach((b) => {
+    const on = b.dataset.r === c;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
 const routeKey = () => `${state.rota}:${state.via}:${state.start.p.join(',')}`;
 const dutraOk = () => !!(state.rota === 'luz' && state.start && sameP(state.start.p, P35));
 
@@ -509,7 +535,7 @@ function refreshNav(n) {
       break;
     case 'nogps':
       icon.textContent = '🚶'; d.textContent = `${fmtDist(n.total)} até ${FIM.ate}`;
-      t.textContent = 'Primeiro de carro até o ponto de saída. Depois, a pé.';
+      t.textContent = NOME_CAMINHO[caminho()];
       break;
     case 'tostart':
       icon.textContent = state.walking ? '📍' : '🚗'; d.textContent = `${fmtDist(n.toStart)} até a saída`;
@@ -531,7 +557,7 @@ function refreshNav(n) {
       }
       if (n.kind === 'off') {
         alertEl.hidden = false;
-        alertEl.textContent = `⚠️ Você saiu do caminho. Volte cerca de ${fmtDist(n.off)} até a linha ${state.via === 'dutra' ? 'laranja' : 'azul'}.`;
+        alertEl.textContent = `⚠️ Você saiu do caminho. Volte cerca de ${fmtDist(n.off)} até a linha ${({ luz: 'azul', dutra: 'laranja', fe: 'roxa' })[caminho()]}.`;
         if (!offRouteWarned && navigator.vibrate) navigator.vibrate([300, 150, 300]);
         offRouteWarned = true;
       } else {
@@ -978,7 +1004,7 @@ function renderAcomp() {
     $('navInstr').textContent = `Posição recebida às ${hora}. Faltam ${p.r != null ? fmtDist(p.r) : '--'} até ${FIM.ate}.`;
   } else {
     $('navIcon').textContent = '🚶'; $('navDist').textContent = `Faltam ${p.r != null ? fmtDist(p.r) : '--'}`;
-    $('navInstr').textContent = p.k === 'off' ? 'Está um pouco fora da linha do trajeto.' : 'Caminhando pelo trajeto.';
+    $('navInstr').textContent = p.k === 'off' ? 'Está um pouco fora da linha do trajeto.' : `Caminhando · ${NOME_CAMINHO[caminho()]}`;
   }
   // painel de baixo
   $('sFalta').textContent = p.r != null ? fmtDist(p.r) : '--';
@@ -1108,6 +1134,30 @@ function initMap() {
     attributionControl: false, dragRotate: true, pitchWithRotate: true, maxPitch: 60,
   });
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+  // peça do mapa que falhou (sinal fraco, conexão caiu): baixa de novo só a camada que falhou
+  const pendentes = new Set(); let recarga = null, tentativas = 0;
+  const recarregarMapa = (ids) => {
+    (ids || ['openmaptiles']).forEach((id) => pendentes.add(id));
+    if (recarga || tentativas > 15) return;
+    recarga = setTimeout(() => {
+      recarga = null; tentativas++;
+      const defs = map.getStyle().sources;
+      pendentes.forEach((id) => {
+        const src = map.getSource(id), def = defs[id];
+        if (!src || !def) return;
+        if (def.type === 'vector' && src.setUrl && src.url) src.setUrl(src.url);
+        else if (def.type === 'raster' && src.setTiles && def.tiles && map.getLayoutProperty(id, 'visibility') !== 'none') src.setTiles(def.tiles);
+      });
+      pendentes.clear();
+    }, 4000);
+  };
+  map.on('error', (e) => { if (e && e.sourceId) recarregarMapa([e.sourceId]); });
+  map.on('idle', () => {
+    const caches = (map.style && map.style.sourceCaches) || {};
+    const ruins = Object.entries(caches).filter(([, sc]) => Object.values(sc._tiles || {}).some((t) => t.state === 'errored')).map(([id]) => id);
+    if (ruins.length) recarregarMapa(ruins); else tentativas = 0;
+  });
+  window.addEventListener('online', () => recarregarMapa(['openmaptiles']));
   map.on('load', () => {
     mapReady = true;
     // créditos recolhidos (só o ícone ⓘ), para não ocupar o mapa
@@ -1181,7 +1231,7 @@ function drawRoute() {
   map.getSource('rota').setData(r
     ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.pts.map(ll) } }
     : { type: 'FeatureCollection', features: [] });
-  map.setPaintProperty('rota-linha', 'line-color', state.via === 'dutra' ? '#e37400' : '#1a73e8');
+  map.setPaintProperty('rota-linha', 'line-color', COR_CAMINHO[caminho()]);
   if (startMarker) startMarker.remove();
   startMarker = state.start ? new maplibregl.Marker({ element: marcador('a', 'A'), anchor: 'center' }).setLngLat(ll(state.start.p)).addTo(map) : null;
   if (!fimMarker) fimMarker = new maplibregl.Marker({ element: marcador('b', '⛪'), anchor: 'center' }).setLngLat(ll(FIM.p)).addTo(map);
@@ -1222,6 +1272,7 @@ function refreshAll() {
     refreshChecklist();
     refreshAlertas();
     refreshShare();
+    refreshCaminho();
   }
   const rk = state.route ? `${state.route.key}:${state.route.pts.length}` : 'none';
   const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
@@ -1325,6 +1376,7 @@ function init() {
   });
   $('btnStart35').addEventListener('click', () => setStart(START35.p, START35));
   document.querySelectorAll('.rota-op').forEach((b) => b.addEventListener('click', () => trocarRota(b.dataset.rota)));
+  document.querySelectorAll('#rotaSeg button').forEach((b) => b.addEventListener('click', () => escolherCaminho(b.dataset.r)));
   document.querySelectorAll('.via').forEach((b) => b.addEventListener('click', () => {
     if (b.disabled || state.via === b.dataset.via) return;
     state.via = b.dataset.via;

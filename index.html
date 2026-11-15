@@ -10,7 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
 
@@ -42,6 +42,11 @@
 
   <div class="sheet">
     <button class="sheet-handle" id="sheetHandle" aria-label="Recolher ou abrir o painel"><i></i></button>
+    <div class="rota-seg" id="rotaSeg" role="radiogroup" aria-label="Caminho escolhido">
+      <button data-r="luz" role="radio"><i class="dot luz"></i>Rota da Luz</button>
+      <button data-r="dutra" role="radio"><i class="dot dutra"></i>Via Dutra</button>
+      <button data-r="fe" role="radio"><i class="dot fe"></i>Caminho da Fé</button>
+    </div>
     <div class="stats">
       <div><b id="sFalta">--</b><span>faltam</span></div>
       <div><b id="sAndado">0,0 km</b><span>andados</span></div>
@@ -247,9 +252,9 @@
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=25"></script>
-<script src="rota-dutra.js?v=25"></script>
-<script src="rota-fe.js?v=25"></script>
-<script src="app.js?v=25"></script>
+<script src="rota-oficial.js?v=28"></script>
+<script src="rota-dutra.js?v=28"></script>
+<script src="rota-fe.js?v=28"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
