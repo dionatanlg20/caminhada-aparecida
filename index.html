@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Caminhada a Aparecida</title>
-<meta name="description" content="Trecho final da Rota da Luz a pé até Aparecida, pelo traçado oficial: ponto de saída, instruções passo a passo, mapa e satélite.">
+<meta name="description" content="Os 35 km finais a pé até Aparecida, pela Rota da Luz ou pelo Caminho da Fé: ponto de saída, instruções passo a passo, mapa, alertas e acompanhamento ao vivo.">
 <meta name="theme-color" content="#0f2a4f">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
       </div>
       <div class="etapa" id="etapa2">
         <span class="num">2</span>
-        <div class="et-txt"><b>A pé até a Praça da Fé</b><small id="et2sub"></small></div>
+        <div class="et-txt"><b id="et2tit">A pé até a Praça da Fé</b><small id="et2sub"></small></div>
       </div>
     </div>
     <div class="row">
@@ -72,8 +72,24 @@
 <section id="tab-trajeto" class="tab page" hidden>
   <header class="page-head">
     <h1>Trajeto</h1>
-    <p>Rota da Luz · trecho final até a Praça da Fé, em Aparecida</p>
+    <p id="trajSub">Rota da Luz · trecho final até a Praça da Fé, em Aparecida</p>
   </header>
+
+  <div class="card">
+    <div class="card-label">Rota de peregrinação</div>
+    <div class="vias">
+      <button class="via rota-op" id="rotaLuz" data-rota="luz">
+        <span class="via-t">Rota da Luz</span>
+        <span class="via-d">Sai do sul de Pindamonhangaba · terreno plano, estradas rurais e cidades · termina na Praça da Fé</span>
+        <b>35 km</b>
+      </button>
+      <button class="via rota-op" id="rotaFe" data-rota="fe">
+        <span class="via-t">Caminho da Fé</span>
+        <span class="via-d">Sai do alto da serra (Estrada do Gomeral, Guaratinguetá) · descida de 1.700 m para 630 m, quase toda em terra · termina no Santuário Nacional</span>
+        <b>35 km</b>
+      </button>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-label">1 · Ponto de saída</div>
@@ -124,7 +140,7 @@
     <p class="note">Importante: a posição é enviada a cada 250 m andados (cerca de 3 minutos) ou a cada 3 minutos se você estiver parado. O início e a chegada são enviados na hora. O envio só funciona com o app aberto e a tela ligada: leve um carregador portátil. Para acompanhamento contínuo, ligue também o compartilhamento de localização do Google Maps. A posição passa pelo serviço gratuito ntfy.sh, num endereço secreto; quem tiver o link consegue vê-la.</p>
   </div>
 
-  <div class="card">
+  <div class="card" id="viaCard">
     <div class="card-label">2 · Caminho</div>
     <div class="vias">
       <button class="via" id="viaLuz" data-via="luz">
@@ -179,6 +195,7 @@
     <p class="note">Os alertas foram montados com comunicados e notícias publicados na internet. Situações de última hora podem não aparecer aqui. Na véspera, confirme:</p>
     <div class="contacts">
       <a class="btn" href="https://wa.me/5511941603680" target="_blank" rel="noopener">💬 Associação Rota da Luz (WhatsApp)</a>
+      <a class="btn" href="https://wa.me/5519998562620" target="_blank" rel="noopener">💬 Associação Caminho da Fé (WhatsApp)</a>
       <a class="btn" href="tel:08000173536">📞 RioSP, Via Dutra: 0800 017 35 36</a>
       <a class="btn" href="tel:191">🚓 PRF, rodovias federais: 191</a>
     </div>
@@ -225,8 +242,9 @@
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=20"></script>
-<script src="rota-dutra.js?v=20"></script>
-<script src="app.js?v=20"></script>
+<script src="rota-oficial.js?v=21"></script>
+<script src="rota-dutra.js?v=21"></script>
+<script src="rota-fe.js?v=21"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

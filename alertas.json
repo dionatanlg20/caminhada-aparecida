@@ -1,6 +1,6 @@
 {
-  "verificado": "2026-11-14",
-  "atualizado": "2026-11-14T16:30",
+  "verificado": "2026-11-15",
+  "atualizado": "2026-11-15T14:00",
   "para": "19/11/2026",
   "alertas": [
     {
@@ -98,6 +98,66 @@
         {
           "nome": "Lei 14.759/2023",
           "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm"
+        }
+      ]
+    },
+    {
+      "id": "fe-sem-bloqueio",
+      "nivel": "ok",
+      "rota": "fe",
+      "titulo": "Caminho da Fé: nenhum bloqueio anunciado para novembro",
+      "texto": "Até 15/11 não encontramos comunicado de interdição da Estrada do Gomeral, da estrada Caminho da Fé em Guaratinguetá nem da chegada por Potim. Confirme na véspera com a Associação dos Amigos do Caminho da Fé pelo WhatsApp e com a Defesa Civil de Guaratinguetá (199).",
+      "fontes": [
+        {
+          "nome": "Associação dos Amigos do Caminho da Fé",
+          "url": "https://caminhodafe.com.br/ptbr/comunicados/"
+        }
+      ]
+    },
+    {
+      "id": "fe-gomeral-meia-pista",
+      "nivel": "atencao",
+      "rota": "fe",
+      "titulo": "Estrada do Gomeral: trechos danificados por chuvas",
+      "texto": "A Defesa Civil de Guaratinguetá sinalizou um trecho da estrada de acesso ao Gomeral, entre as igrejas de São Lázaro e Milagres, que ficou em meia pista depois de chuvas fortes (março de 2026). Em dezembro de 2025, as chuvas danificaram a cabeceira de uma ponte perto do restaurante Tao do Gomeral. Não encontramos atualização para novembro: atenção a esses pontos.",
+      "fontes": [
+        {
+          "nome": "Defesa Civil sinaliza trecho da estrada do Gomeral (Prefeitura de Guaratinguetá)",
+          "url": "https://guaratingueta.sp.gov.br/defesa-civil-sinaliza-trecho-da-estrada-de-acesso-ao-gomeral-de-forma-preventiva/"
+        },
+        {
+          "nome": "Chuvas e danos na Estrada Cênica (Portal R3)",
+          "url": "https://www.portalr3.com.br/2025/12/29/chuvas-danos-cacapava-guaratingueta-estrada-cenica"
+        }
+      ]
+    },
+    {
+      "id": "fe-terra-chuva",
+      "nivel": "atencao",
+      "rota": "fe",
+      "titulo": "Serra em estrada de terra: com chuva, barro e carro só 4x4",
+      "texto": "O ponto de saída e a descida ficam em estrada de terra na Serra da Mantiqueira. Peregrinos relatam lamaçais na descida das Pedrinhas e recomendam carro 4x4 com chuva, mesmo pouca. Se chover na véspera, combine com o motorista um carro adequado ou confirme as condições antes de subir.",
+      "fontes": [
+        {
+          "nome": "Relatos do trecho Campos do Jordão–Gomeral (Peregrino da Esperança)",
+          "url": "https://peregrinodaesperanca.com.br/campos-do-jordao"
+        },
+        {
+          "nome": "Travessia Campos do Jordão–Aparecida (Turismo de Aventura)",
+          "url": "https://www.turismodeaventura.eco.br/caminhodafe"
+        }
+      ]
+    },
+    {
+      "id": "fe-descida",
+      "nivel": "info",
+      "rota": "fe",
+      "titulo": "Descida longa: de 1.700 m para 630 m de altitude",
+      "texto": "Os 35 km descem cerca de 1.100 m, com curvas fechadas na Estrada do Gomeral. Use tênis com boa aderência, cuide dos joelhos na descida e leve água: há poucos pontos de apoio no alto da serra. Emergência: SAMU 192, Defesa Civil 199.",
+      "fontes": [
+        {
+          "nome": "Mapa oficial do Caminho da Fé",
+          "url": "https://caminhodafe.com.br/ptbr/"
         }
       ]
     }
