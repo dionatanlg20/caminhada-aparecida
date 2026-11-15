@@ -60,7 +60,7 @@ function dist(a, b) {
 }
 const km1 = (km) => km.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 function fmtDist(km) {
-  if (km < 1) return `${Math.max(10, Math.round(km * 100) * 10)} m`;
+  if (Math.round(km * 100) * 10 < 1000) return `${Math.max(10, Math.round(km * 100) * 10)} m`;
   return `${km1(km)} km`;
 }
 function fmtDur(h) {
@@ -164,19 +164,22 @@ const VIRA = {
   straight: ['Siga em frente', '⬆️'],
   uturn: ['Faça o retorno', '↩️'],
 };
-const via = (name) => (name ? ` na ${name}` : ' na estrada sem nome');
+// artigo certo: "no Caminho da Fé", "na Rua X", "pelo Acesso Y"
+const masc = (name) => /^(Caminho|Acesso|Anel|Contorno|Viaduto|Trevo|Largo|Beco|Rodoanel|Corredor|Elevado|Túnel|Parque|Calçadão)\b/i.test(name);
+const via = (name) => (name ? ` ${masc(name) ? 'no' : 'na'} ${name}` : ' na estrada sem nome');
+const pela = (name) => `${masc(name) ? 'pelo' : 'pela'} ${name}`;
 function instruction(type, modifier, rawName, exit) {
   const name = (rawName || '').replace(/\s*;\s*/g, ' / ');
   const [vira, ic] = VIRA[modifier] || ['Siga', '⬆️'];
   switch (type) {
     case 'roundabout': case 'rotary': case 'roundabout turn':
       return { text: `Na rotatória, pegue a ${exit || 1}ª saída${name ? ` para a ${name}` : ''}`, ic: '🔄' };
-    case 'fork': return { text: `Na bifurcação, ${vira.toLowerCase()}${name ? `, pela ${name}` : ''}`, ic };
+    case 'fork': return { text: `Na bifurcação, ${vira.toLowerCase()}${name ? `, ${pela(name)}` : ''}`, ic };
     case 'end of road': return { text: `No fim da via, ${vira.toLowerCase()}${via(name)}`, ic };
     case 'continue': case 'new name':
       return modifier && modifier !== 'straight'
         ? { text: `${vira}${via(name)}`, ic }
-        : { text: `Continue${name ? ` pela ${name}` : ' em frente'}`, ic: '⬆️' };
+        : { text: `Continue${name ? ` ${pela(name)}` : ' em frente'}`, ic: '⬆️' };
     default:
       return { text: `${vira}${via(name)}`, ic };
   }
@@ -260,7 +263,7 @@ async function computeRoute() {
   // ponto de saída na própria trilha oficial
   if (pr.d <= NA_TRILHA) {
     const o = officialFrom(pr.along, 0);
-    const first = { text: `Comece a caminhar pela ${roadAt(pr.along)}`, ic: '🚶', kind: 'start', name: '', p: sp, along: 0 };
+    const first = { text: `Comece a caminhar ${pela(roadAt(pr.along))}`, ic: '🚶', kind: 'start', name: '', p: sp, along: 0 };
     const last = { text: `Chegada ${FIM.chegada}, término ${RT.da}`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: o.len };
     state.route = { key, pts: [sp, ...o.pts], steps: mergeClose([first, ...o.steps, last]), dist: o.len + pr.d, approach: 0 };
     routeError = false;
@@ -286,8 +289,8 @@ async function computeRoute() {
         return { ...instruction(s.maneuver.type, s.maneuver.modifier, s.name || s.ref || '', s.maneuver.exit), kind: 'turn', name: s.name || '', p: loc, along: project(loc, apts, aacc).along };
       });
     const first0 = r.legs[0].steps[0];
-    const first = { text: `Comece a caminhar${first0 && first0.name ? ` pela ${first0.name}` : ''} em direção à trilha ${RT.da}`, ic: '🚶', kind: 'start', name: '', p: sp, along: 0 };
-    const joinStep = { text: `Entre na trilha ${RT.da}, pela ${roadAt(pr.along)}`, ic: '🟦', kind: 'join', name: '', p: join, along: alen };
+    const first = { text: `Comece a caminhar${first0 && first0.name ? ` ${pela(first0.name)}` : ''} em direção à trilha ${RT.da}`, ic: '🚶', kind: 'start', name: '', p: sp, along: 0 };
+    const joinStep = { text: `Entre na trilha ${RT.da}, ${pela(roadAt(pr.along))}`, ic: '🟦', kind: 'join', name: '', p: join, along: alen };
     const o = officialFrom(pr.along, alen);
     const last = { text: `Chegada ${FIM.chegada}, término ${RT.da}`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: alen + o.len };
     if (state.start && routeKey() === key) {
