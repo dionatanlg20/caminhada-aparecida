@@ -9,8 +9,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
   </div>
 
   <div class="map-tools">
+    <button class="fab" id="btnNorte" aria-label="Voltar o mapa para o norte" title="Norte" hidden><span id="norteIc" class="norte">➤</span></button>
     <button class="fab" id="btnLayer" aria-label="Alternar mapa e satélite" title="Mapa / Satélite"><span id="layerIcon">🛰️</span></button>
     <button class="fab" id="btnFollow" aria-label="Centralizar em mim" title="Centralizar em mim">◎</button>
     <button class="fab" id="btnFit" aria-label="Ver trajeto inteiro" title="Ver trajeto inteiro">⤢</button>
@@ -223,9 +224,9 @@
   <button data-tab="check"><span>🎒</span>Preparação</button>
 </nav>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="rota-oficial.js?v=19"></script>
-<script src="rota-dutra.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script src="rota-oficial.js?v=20"></script>
+<script src="rota-dutra.js?v=20"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

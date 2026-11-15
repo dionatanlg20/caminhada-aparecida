@@ -163,9 +163,11 @@ body {
 .mk { width: 30px; height: 30px; border-radius: 50%; color: #fff; font-weight: 800; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); font-size: 14px; }
 .mk.a { background: var(--ok); }
 .mk.b { background: var(--brand); font-size: 15px; }
-.leaflet-container { font: inherit; }
-.leaflet-control-attribution { font-size: 10px; }
-.leaflet-bottom { bottom: var(--sheet-h, 210px); }
+.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: var(--sheet-h, 210px); }
+.maplibregl-ctrl-attrib { font-size: 10px; }
+.maplibregl-popup-content { font: 600 .9rem/1.3 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f1b2d; border-radius: 10px; }
+.norte { display: inline-block; transform: rotate(-90deg); color: var(--warn); font-size: 20px; }
+#btnNorte .norte { transition: transform .1s; }
 
 .btn.wide { width: 100%; margin-bottom: 12px; }
 .poi { width: 26px; height: 26px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 14px; box-shadow: 0 1px 5px rgba(0,0,0,.35); }

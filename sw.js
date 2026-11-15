@@ -1,10 +1,10 @@
 // Guarda os arquivos do app para abrir mesmo sem internet.
 // Mapas, satélite, rotas e busca de endereço sempre vêm da internet.
-const CACHE = 'caminhada-v19';
-const FILES = ['./', 'index.html', 'style.css?v=19', 'app.js?v=19', 'rota-oficial.js?v=19', 'rota-dutra.js?v=19', 'alertas.json', 'manifest.json', 'icon.svg',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'];
-const SEMPRE_ONLINE = ['tile.openstreetmap.org', 'basemaps.cartocdn.com', 'arcgisonline.com',
+const CACHE = 'caminhada-v20';
+const FILES = ['./', 'index.html', 'style.css?v=20', 'app.js?v=20', 'rota-oficial.js?v=20', 'rota-dutra.js?v=20', 'alertas.json', 'manifest.json', 'icon.svg',
+  'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css'];
+const SEMPRE_ONLINE = ['tile.openstreetmap.org', 'tiles.openfreemap.org', 'basemaps.cartocdn.com', 'arcgisonline.com',
   'routing.openstreetmap.de', 'nominatim.openstreetmap.org', 'ntfy.sh'];
 
 self.addEventListener('install', (e) => {

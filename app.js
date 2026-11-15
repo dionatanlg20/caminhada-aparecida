@@ -598,7 +598,7 @@ function focusOn(p) {
   showTab('caminhada');
   follow = false;
   $('btnFollow').classList.remove('on');
-  if (map) setTimeout(() => map.setView(p, 17), 60);
+  if (map) setTimeout(() => mapView(p, 17), 60);
 }
 
 // ---------------------------------------------------------------------
@@ -845,7 +845,7 @@ function enviarLink() {
 
 // ----------------------------- modo acompanhante -----------------------------
 let acomp = { pos: null, trilha: [], ids: new Set(), ultimo: 0, fim: false, rotaKey: null };
-let walkerMarker = null, trilhaLine = null, followWalker = true;
+let walkerMarker = null, followWalker = true;
 
 function receberMsg(ev) {
   if (!ev || ev.event !== 'message' || acomp.ids.has(ev.id)) return;
@@ -915,13 +915,10 @@ function renderAcomp() {
   if (parado) info.innerHTML = `⚠️ Sem atualização há ${Math.round(idade / 60000)} min (última às ${hora}). O celular pode estar com a tela apagada ou sem sinal.${p.b != null ? ` Bateria: ${p.b}%.` : ''}`;
   // mapa
   if (map) {
-    if (!walkerMarker) {
-      walkerMarker = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div class="walker-dot"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: 1000 }).addTo(map);
-      trilhaLine = L.polyline([], { color: '#e37400', weight: 4, opacity: 0.8, dashArray: '2 8', interactive: false }).addTo(map);
-    }
-    walkerMarker.setLatLng([p.lat, p.lng]);
-    trilhaLine.setLatLngs(acomp.trilha.map((x) => [x[0], x[1]]));
-    if (followWalker) map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14));
+    if (!walkerMarker) walkerMarker = new maplibregl.Marker({ element: el('walker-dot'), anchor: 'center' }).setLngLat([p.lng, p.lat]).addTo(map);
+    walkerMarker.setLngLat([p.lng, p.lat]);
+    if (mapReady) map.getSource('trilha').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: acomp.trilha.map((x) => [x[1], x[0]]) } });
+    if (followWalker) map.easeTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 14), duration: 600 });
   }
 }
 
@@ -956,9 +953,9 @@ function initAcompanhante() {
   $('acompInfo').hidden = false;
   $('btnLayer').addEventListener('click', () => { state.layer = state.layer === 'satelite' ? 'mapa' : 'satelite'; applyLayer(); });
   $('btnFollow').classList.add('on');
-  $('btnFollow').addEventListener('click', () => { followWalker = true; $('btnFollow').classList.add('on'); if (acomp.pos && map) map.setView([acomp.pos.lat, acomp.pos.lng], 16); });
+  $('btnFollow').addEventListener('click', () => { followWalker = true; $('btnFollow').classList.add('on'); if (acomp.pos && map) mapView([acomp.pos.lat, acomp.pos.lng], 16); });
   $('btnFit').addEventListener('click', () => { followWalker = false; $('btnFollow').classList.remove('on'); fitRoute(); });
-  if (map) map.on('dragstart', () => { followWalker = false; $('btnFollow').classList.remove('on'); });
+  $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
   refreshAll();
   computeRoute();
   renderAcomp();
@@ -1000,82 +997,123 @@ function refreshChecklist() {
 }
 
 // ---------------------------------------------------------------------
-// Mapa (moderno + satélite)
+// Mapa vetorial (MapLibre + OpenFreeMap): zoom suave, giro e 3D; satélite opcional
 // ---------------------------------------------------------------------
-let map = null, routeLayer = null, poiLayer = null, meMarker = null, meCircle = null, tileErrors = 0;
-const layers = {};
+const ESTILO_MAPA = 'https://tiles.openfreemap.org/styles/liberty';
+const SATELITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+let map = null, mapReady = false, primeiroSimbolo = null;
+let meMarker = null, startMarker = null, fimMarker = null, poiMarkers = [];
+const ll = (p) => [p[1], p[0]];   // [lat, lng] → [lng, lat]
+function mapView(p, zoom) {
+  if (!map) return;
+  map.easeTo({ center: ll(p), zoom: zoom != null ? zoom : map.getZoom(), duration: 500 });
+}
+function el(cls, html) {
+  const d = document.createElement('div');
+  d.className = cls;
+  if (html) d.innerHTML = html;
+  return d;
+}
 function initMap() {
-  if (typeof L === 'undefined') { $('map').innerHTML = '<p style="padding:150px 16px">Sem internet para carregar o mapa agora.</p>'; return; }
-  map = L.map('map', { zoomControl: false, zoomSnap: 0.25 }).setView(P35, 11);
-  layers.mapa = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO',
+  if (typeof maplibregl === 'undefined') { $('map').innerHTML = '<p style="padding:150px 16px">Sem internet para carregar o mapa agora.</p>'; return; }
+  map = new maplibregl.Map({
+    container: 'map', style: ESTILO_MAPA, center: ll(P35), zoom: 10.5,
+    attributionControl: false, dragRotate: true, pitchWithRotate: true, maxPitch: 60,
   });
-  layers.satelite = L.layerGroup([
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics',
-    }),
-    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.9 }),
-    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-  ]);
-  layers.reserva = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
-  // se o mapa moderno não carregar, troca para o mapa padrão do OpenStreetMap
-  layers.mapa.on('tileerror', () => {
-    tileErrors++;
-    if (tileErrors === 6 && state.layer === 'mapa') applyLayer();
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+  map.on('load', () => {
+    mapReady = true;
+    // créditos recolhidos (só o ícone ⓘ), para não ocupar o mapa
+    const at = document.querySelector('.maplibregl-ctrl-attrib');
+    if (at) at.classList.remove('maplibregl-compact-show');
+    const simb = map.getStyle().layers.find((l) => l.type === 'symbol');
+    primeiroSimbolo = simb ? simb.id : undefined;
+    // satélite (escondido até o usuário escolher), abaixo das ruas e nomes
+    map.addSource('satelite', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' });
+    map.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' } }, map.getStyle().layers[1] && map.getStyle().layers[1].id);
+    // trajeto: borda branca + linha colorida, abaixo dos nomes
+    map.addSource('rota', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'rota-borda', type: 'line', source: 'rota', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 5, 16, 12] } }, primeiroSimbolo);
+    map.addLayer({ id: 'rota-linha', type: 'line', source: 'rota', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 3, 16, 7] } }, primeiroSimbolo);
+    // rastro de quem está sendo acompanhado
+    map.addSource('trilha', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'trilha', type: 'line', source: 'trilha', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#e37400', 'line-width': 4, 'line-dasharray': [0.5, 2] } });
+    applyLayer();
+    drawRoute();
+    if (state.route && currentTab === 'caminhada') fitRoute();
+    drawMe();
+    if (MODO_ACOMP) renderAcomp();
   });
-  applyLayer();
-  poiLayer = L.layerGroup(OF.pois.map((p) =>
-    L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: `<div class="poi">${p.ic}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }) })
-      .bindPopup(`<b>${escapeHtml(p.nome)}</b>`)));
-  map.on('zoomend', () => { if (map.getZoom() >= 13) poiLayer.addTo(map); else poiLayer.remove(); });
-  map.on('dragstart', () => { follow = false; $('btnFollow').classList.remove('on'); });
+  // pontos oficiais da Associação: aparecem de perto (zoom 13+)
+  OF.pois.forEach((p) => {
+    const m = new maplibregl.Marker({ element: el('poi', p.ic), anchor: 'center' })
+      .setLngLat([p.lng, p.lat])
+      .setPopup(new maplibregl.Popup({ offset: 16, closeButton: false }).setText(p.nome));
+    poiMarkers.push(m);
+  });
+  const atualizarPois = () => {
+    const ver = map.getZoom() >= 13 && !MODO_ACOMP_SEM_POIS();
+    poiMarkers.forEach((m) => { if (ver && !m._map) m.addTo(map); else if (!ver && m._map) m.remove(); });
+  };
+  map.on('zoomend', atualizarPois);
+  map.on('dragstart', () => {
+    follow = false; $('btnFollow').classList.remove('on');
+    if (typeof followWalker !== 'undefined') followWalker = false;
+  });
+  map.on('rotate', () => { $('btnNorte').hidden = Math.abs(map.getBearing()) < 1 && map.getPitch() < 1; $('norteIc').style.transform = `rotate(${-map.getBearing()}deg)`; });
+  map.on('pitch', () => { $('btnNorte').hidden = Math.abs(map.getBearing()) < 1 && map.getPitch() < 1; });
   map.on('click', (e) => {
     if (!pickingOnMap) return;
     pickingOnMap = false;
-    map.closePopup();
-    setStart([e.latlng.lat, e.latlng.lng]);
+    setStart([e.lngLat.lat, e.lngLat.lng]);
     setTimeout(() => showTab('trajeto'), 300);
   });
 }
+const MODO_ACOMP_SEM_POIS = () => state.via === 'dutra';
 function applyLayer() {
-  if (!map) return;
-  Object.values(layers).forEach((l) => { if (map.hasLayer(l)) map.removeLayer(l); });
-  const base = state.layer === 'satelite' ? layers.satelite : (tileErrors >= 6 ? layers.reserva : layers.mapa);
-  base.addTo(map);
   $('layerIcon').textContent = state.layer === 'satelite' ? '🗺️' : '🛰️';
   $('btnLayer').title = state.layer === 'satelite' ? 'Ver mapa' : 'Ver satélite';
   $('btnLayer').classList.toggle('on', state.layer === 'satelite');
+  if (!mapReady) return;
+  const sat = state.layer === 'satelite';
+  // no satélite, ficam só as ruas e os nomes por cima da imagem (como o "híbrido" do Google)
+  map.getStyle().layers.forEach((l) => {
+    if (['rota-borda', 'rota-linha', 'trilha'].includes(l.id)) return;
+    if (l.id === 'satelite') { map.setLayoutProperty(l.id, 'visibility', sat ? 'visible' : 'none'); return; }
+    if (['background', 'fill', 'fill-extrusion', 'raster', 'hillshade'].includes(l.type)) map.setLayoutProperty(l.id, 'visibility', sat ? 'none' : 'visible');
+  });
 }
-const pinIcon = (cls, txt) => L.divIcon({ className: '', html: `<div class="mk ${cls}">${txt}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+function marcador(cls, txt) {
+  const d = el(`mk ${cls}`, txt);
+  d.style.pointerEvents = 'none'; // não bloqueia o toque ao escolher o ponto no mapa
+  return d;
+}
 function drawRoute() {
-  if (!map) return;
-  if (routeLayer) routeLayer.remove();
-  routeLayer = L.layerGroup().addTo(map);
+  if (!mapReady) return;
   const r = state.route;
-  if (r) {
-    L.polyline(r.pts, { color: '#ffffff', weight: 9, opacity: 0.95, interactive: false }).addTo(routeLayer);
-    L.polyline(r.pts, { color: state.via === 'dutra' ? '#e37400' : '#1a73e8', weight: 5, opacity: 1, className: 'route-line', interactive: false }).addTo(routeLayer);
-  }
-  // os marcadores não bloqueiam o toque ao escolher o ponto no mapa
-  if (state.start) L.marker(state.start.p, { icon: pinIcon('a', 'A'), interactive: false, keyboard: false }).addTo(routeLayer);
-  L.marker(FIM.p, { icon: pinIcon('b', '⛪'), interactive: false, keyboard: false }).addTo(routeLayer);
+  map.getSource('rota').setData(r
+    ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.pts.map(ll) } }
+    : { type: 'FeatureCollection', features: [] });
+  map.setPaintProperty('rota-linha', 'line-color', state.via === 'dutra' ? '#e37400' : '#1a73e8');
+  if (startMarker) startMarker.remove();
+  startMarker = state.start ? new maplibregl.Marker({ element: marcador('a', 'A'), anchor: 'center' }).setLngLat(ll(state.start.p)).addTo(map) : null;
+  if (!fimMarker) fimMarker = new maplibregl.Marker({ element: marcador('b', '⛪'), anchor: 'center' }).setLngLat(ll(FIM.p)).addTo(map);
 }
 function drawMe() {
   if (!map || !me) return;
-  if (!meMarker) {
-    meCircle = L.circle(me, { radius: meAcc || 20, color: '#1a73e8', weight: 1, fillOpacity: 0.08, interactive: false }).addTo(map);
-    meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me-dot"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: 1000, interactive: false }).addTo(map);
-  } else {
-    meMarker.setLatLng(me);
-    meCircle.setLatLng(me).setRadius(meAcc || 20);
-  }
-  if (follow && state.walking) map.setView(me, Math.max(map.getZoom(), 16));
+  if (!meMarker) meMarker = new maplibregl.Marker({ element: el('me-dot'), anchor: 'center' }).setLngLat(ll(me)).addTo(map);
+  else meMarker.setLngLat(ll(me));
+  if (follow && state.walking) map.easeTo({ center: ll(me), zoom: Math.max(map.getZoom(), 16), duration: 600 });
 }
 function fitRoute() {
   if (!map) return;
-  const pts = state.route ? state.route.pts.slice() : [FIM.p, state.start ? state.start.p : P35];
+  const pts = state.route ? state.route.pts : [FIM.p, state.start ? state.start.p : P35];
+  const b = new maplibregl.LngLatBounds();
+  pts.forEach((p) => b.extend(ll(p)));
   const sheetH = (document.querySelector('.sheet') || {}).offsetHeight || 200;
-  map.fitBounds(pts, { paddingTopLeft: [20, 150], paddingBottomRight: [72, sheetH + 20] });
+  const topH = MODO_ACOMP ? 140 : 150;
+  const cam = map.cameraForBounds(b, { padding: { top: topH, bottom: sheetH + 20, left: 24, right: 72 }, bearing: 0 });
+  if (cam) map.easeTo({ ...cam, bearing: 0, pitch: 0, duration: 600 });
 }
 
 // ---------------------------------------------------------------------
@@ -1124,7 +1162,7 @@ function showTab(name) {
   if (name === 'caminhada' && map) {
     setTimeout(() => {
       fitSheet();
-      map.invalidateSize();
+      map.resize();
       if (pendingFit && !pickingOnMap) { pendingFit = false; fitRoute(); }
     }, 30);
   }
@@ -1149,9 +1187,10 @@ function init() {
   $('btnFollow').addEventListener('click', () => {
     follow = true; $('btnFollow').classList.add('on');
     startGps();
-    if (me && map) map.setView(me, 17);
+    if (me && map) mapView(me, 17);
   });
   $('btnFit').addEventListener('click', () => { follow = false; $('btnFollow').classList.remove('on'); fitRoute(); });
+  $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
 
   $('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1227,7 +1266,7 @@ function init() {
     $('navIcon').textContent = '👆';
     $('navDist').textContent = 'Escolha no mapa';
     $('navInstr').textContent = 'Toque no local exato onde o carro vai te deixar.';
-    if (map) setTimeout(() => map.setView(state.start ? state.start.p : P35, 15), 60);
+    if (map) setTimeout(() => mapView(state.start ? state.start.p : P35, 15), 60);
   });
   $('btnReset').addEventListener('click', () => {
     if (!confirm('Zerar km andados e tempo? O ponto de saída e o trajeto continuam salvos.')) return;
