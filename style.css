@@ -283,3 +283,61 @@ body.acomp #tab-caminhada { bottom: 0; }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .dot.luz { background: #1a73e8; } .dot.dutra { background: #e37400; } .dot.fe { background: #8e24aa; }
 body.acomp #rotaSeg { display: none !important; }
+
+/* =====================================================================
+   LAYOUT: mapa grande em cima + dashboard embaixo (seções que abrem e fecham)
+   ===================================================================== */
+html, body { height: 100%; overflow: hidden; }
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+.map-area { position: relative; flex: 0 0 46%; min-height: 230px; }
+#map { position: absolute; inset: 0; }
+.map-area .map-tools { right: 10px; bottom: 12px; top: auto; transform: none; }
+.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: 0 !important; }
+.map-area .alert-card { position: absolute; z-index: 500; left: 10px; right: 64px; top: calc(10px + env(safe-area-inset-top)); }
+.dash {
+  flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0,0,0,.12);
+  padding: 12px 14px calc(28px + env(safe-area-inset-bottom));
+}
+.dash .nav-card { margin-bottom: 10px; padding: 12px 14px; }
+.dash .nav-icon { width: 42px; height: 42px; font-size: 24px; }
+.dash .nav-dist { font-size: 1.25rem; }
+.dash .alert-chip { display: block; width: 100%; text-align: left; margin: 0 0 10px; box-shadow: none; }
+.dash .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; text-align: left; }
+.dash .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.dash .stat b { font-size: 1.45rem; letter-spacing: -.01em; }
+.dash .stat span { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+.dash .bar { margin: 10px 0 12px; height: 8px; }
+.dash .etapas.card { margin-bottom: 12px; }
+.dash .row.acao .btn.primary { flex: 1 1 100%; }
+.dash .share-pill { margin-top: 10px; }
+.dash .acomp-info { margin: 6px 0 4px; font-size: .9rem; }
+/* seções */
+.sec { background: var(--card); border: 1px solid var(--line); border-radius: 16px; margin-top: 10px; overflow: hidden; }
+.sec > summary {
+  list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer;
+  font-weight: 700; -webkit-user-select: none; user-select: none;
+}
+.sec > summary::-webkit-details-marker { display: none; }
+.sec > summary::after { content: '›'; margin-left: auto; font-size: 1.6rem; line-height: 1; color: var(--muted); transition: transform .2s; }
+.sec[open] > summary::after { transform: rotate(90deg); }
+.sec[open] > summary { border-bottom: 1px solid var(--line); }
+.sec-ic { font-size: 1.35rem; flex: none; }
+.sec-t { display: grid; gap: 1px; min-width: 0; }
+.sec-t small { font-weight: 500; color: var(--muted); font-size: .8rem; }
+.sec .badge { position: static; margin-left: auto; min-width: 22px; height: 22px; border-radius: 11px; font-size: .78rem; }
+.sec .badge + * { margin-left: 0; }
+.sec-body { padding: 10px; }
+.sec-body .card { margin-bottom: 10px; }
+.sec-body .card:last-child { margin-bottom: 0; }
+/* tela larga (computador, tablet): mapa à esquerda, dashboard à direita */
+@media (min-width: 900px) {
+  .app { flex-direction: row; }
+  .map-area { flex: 1 1 auto; min-height: 0; }
+  .dash { flex: 0 0 440px; border-top: 0; border-left: 1px solid var(--line); }
+}
+/* mapa em tela cheia */
+body.tela-cheia .map-area { position: fixed; inset: 0; z-index: 900; }
+body.tela-cheia .dash { display: none !important; }
+/* quem acompanha só vê mapa, números e situação */
+body.acomp .sec, body.acomp .etapas { display: none !important; }

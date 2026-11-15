@@ -595,7 +595,7 @@ function refreshEtapas() {
   const box = $('etapas');
   if (box.hidden === mostrar) {
     box.hidden = !mostrar;
-    document.querySelector('.sheet').classList.toggle('pre', mostrar);
+    $('dash').classList.toggle('pre', mostrar);
     setTimeout(fitSheet, 0);
   }
   if (!mostrar) return;
@@ -1068,7 +1068,6 @@ function initAcompanhante() {
   $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
   $('btnTela').addEventListener('click', () => telaCheia(true));
   $('btnSairTela').addEventListener('click', () => telaCheia(false));
-  $('sheetHandle').addEventListener('click', () => { document.querySelector('.sheet').classList.toggle('min'); setTimeout(() => { fitSheet(); if (map) map.resize(); }, 30); });
   refreshAll();
   computeRoute();
   renderAcomp();
@@ -1253,8 +1252,9 @@ function fitRoute() {
   const pts = state.route ? state.route.pts : [FIM.p, state.start ? state.start.p : P35];
   const b = new maplibregl.LngLatBounds();
   pts.forEach((p) => b.extend(ll(p)));
-  const sheetH = document.body.classList.contains('tela-cheia') ? ($('telaInfo').offsetHeight + 10) : ((document.querySelector('.sheet') || {}).offsetHeight || 200);
-  const topH = document.body.classList.contains('tela-cheia') ? 70 : (MODO_ACOMP ? 140 : 150);
+  const cheia = document.body.classList.contains('tela-cheia');
+  const sheetH = cheia ? ($('telaInfo').offsetHeight + 10) : 10;
+  const topH = cheia ? 70 : 30;
   const cam = map.cameraForBounds(b, { padding: { top: topH, bottom: sheetH + 20, left: 24, right: 72 }, bearing: 0 });
   if (cam) map.easeTo({ ...cam, bearing: 0, pitch: 0, duration: 600 });
 }
@@ -1262,7 +1262,7 @@ function fitRoute() {
 // ---------------------------------------------------------------------
 // Atualização geral e abas
 // ---------------------------------------------------------------------
-let lastRouteKey = null, lastStartKey = null, pendingFit = false, currentTab = null;
+let lastRouteKey = null, lastStartKey = null, pendingFit = false, currentTab = 'caminhada';
 function refreshAll() {
   const n = navInfo();
   if (!MODO_ACOMP) {
@@ -1287,34 +1287,21 @@ function refreshAll() {
   }
   if (MODO_ACOMP) renderAcomp();
 }
-// os créditos do mapa ficam logo acima do painel de baixo, sem cobrir os números
-let lastSheetH = 0;
-function fitSheet() {
-  const h = document.querySelector('.sheet').offsetHeight;
-  if (!h) return;
-  document.documentElement.style.setProperty('--sheet-h', `${h}px`);
-  // se a coluna de botões encostar no card de cima, o card fica mais estreito
-  const tab = $('tab-caminhada'), tools = document.querySelector('.map-tools'), card = document.querySelector('.map-top');
-  tab.classList.remove('apertado');
-  if (tools && card && tools.getBoundingClientRect().top < card.getBoundingClientRect().bottom + 6) tab.classList.add('apertado');
-  if (lastSheetH && Math.abs(h - lastSheetH) > 30 && map && !state.walking && state.route) fitRoute();
-  lastSheetH = h;
-}
+// Layout: mapa fixo em cima e dashboard rolando embaixo (seções que abrem e fecham)
+function fitSheet() { if (map) map.resize(); }
 window.addEventListener('resize', fitSheet);
+const SECAO = { trajeto: 'secTrajeto', alertas: 'secAlertas', check: 'secCheck', share: 'secShare', passos: 'secPassos', pontos: 'secPois' };
 function showTab(name) {
-  currentTab = name;
-  document.querySelectorAll('.tab').forEach((s) => { s.hidden = s.id !== `tab-${name}`; });
-  document.querySelectorAll('.tabs button').forEach((b) => {
-    if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
-  });
-  if (name === 'caminhada' && map) {
-    setTimeout(() => {
-      fitSheet();
-      map.resize();
-      if (pendingFit && !pickingOnMap) { pendingFit = false; fitRoute(); }
-    }, 30);
+  currentTab = 'caminhada'; // o mapa está sempre visível
+  if (name === 'caminhada') {
+    $('dash').scrollTo({ top: 0 });
+    setTimeout(() => { if (!map) return; map.resize(); if (pendingFit && !pickingOnMap) { pendingFit = false; fitRoute(); } }, 30);
+    return;
   }
-  window.scrollTo(0, 0);
+  const sec = $(SECAO[name]);
+  if (!sec) return;
+  sec.open = true;
+  setTimeout(() => sec.scrollIntoView({ block: 'start' }), 30);
 }
 
 // ---------------------------------------------------------------------
@@ -1329,7 +1316,6 @@ function init() {
   }
   if (MODO_ACOMP) { initAcompanhante(); return; }
   initMap();
-  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
   $('btnWalk').addEventListener('click', toggleWalk);
   $('btnLayer').addEventListener('click', () => { state.layer = state.layer === 'satelite' ? 'mapa' : 'satelite'; save(); applyLayer(); });
   $('btnFollow').addEventListener('click', () => {
@@ -1341,10 +1327,6 @@ function init() {
   $('btnNorte').addEventListener('click', () => { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
   $('btnTela').addEventListener('click', () => telaCheia(true));
   $('btnSairTela').addEventListener('click', () => telaCheia(false));
-  $('sheetHandle').addEventListener('click', () => {
-    document.querySelector('.sheet').classList.toggle('min');
-    setTimeout(() => { fitSheet(); if (map) map.resize(); }, 30);
-  });
 
   $('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1394,7 +1376,7 @@ function init() {
     setTimeout(() => { $('btnShareCopy').textContent = 'Copiar link'; }, 2500);
   });
   $('chkAwake').addEventListener('change', (e) => { if (state.share) { state.share.awake = e.target.checked; save(); manterTela(); } });
-  $('sharePill').addEventListener('click', () => { showTab('trajeto'); setTimeout(() => $('shareCard').scrollIntoView({ block: 'start' }), 60); });
+  $('sharePill').addEventListener('click', () => showTab('share'));
   // envia a posição mesmo parado (a cada 30 s) e reativa a tela ligada ao voltar para o app
   setInterval(() => { if (state.share && state.share.on) enviarPosicao(); }, 30000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { manterTela(); enviarPosicao(true); } });
@@ -1437,7 +1419,7 @@ function init() {
   computeRoute();
   loadAlertas();
   if (state.route) fitRoute();
-  showTab(state.visto ? 'caminhada' : 'trajeto');
+  showTab('caminhada');
   state.visto = true;
   save();
 

@@ -10,15 +10,34 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=28">
+<link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
+<div class="app" id="app">
 
-<!-- CAMINHADA (mapa + navegação) -->
-<section id="tab-caminhada" class="tab">
-  <div id="map"></div>
+  <!-- MAPA (metade de cima) -->
+  <section class="map-area" id="mapArea">
+    <div id="map"></div>
+    <div id="alertCard" class="alert-card" hidden></div>
+    <button class="fab sair-tela" id="btnSairTela" aria-label="Sair do mapa em tela cheia" title="Voltar" hidden>✕</button>
+    <div class="tela-info" id="telaInfo" hidden></div>
+    <div class="map-tools">
+      <button class="fab" id="btnTela" aria-label="Mapa em tela cheia" title="Mapa em tela cheia"><span class="ic-tela">⛶</span></button>
+      <button class="fab" id="btnNorte" aria-label="Voltar o mapa para o norte" title="Norte" hidden><span id="norteIc" class="norte">➤</span></button>
+      <button class="fab" id="btnLayer" aria-label="Alternar mapa e satélite" title="Mapa / Satélite"><span id="layerIcon">🛰️</span></button>
+      <button class="fab" id="btnFollow" aria-label="Centralizar em mim" title="Centralizar em mim">◎</button>
+      <button class="fab" id="btnFit" aria-label="Ver trajeto inteiro" title="Ver trajeto inteiro">⤢</button>
+    </div>
+  </section>
 
-  <div class="map-top">
+  <!-- DASHBOARD (rola embaixo) -->
+  <main class="dash" id="dash">
+    <div class="rota-seg" id="rotaSeg" role="radiogroup" aria-label="Caminho escolhido">
+      <button data-r="luz" role="radio"><i class="dot luz"></i>Rota da Luz</button>
+      <button data-r="dutra" role="radio"><i class="dot dutra"></i>Via Dutra</button>
+      <button data-r="fe" role="radio"><i class="dot fe"></i>Caminho da Fé</button>
+    </div>
+
     <div id="navCard" class="nav-card">
       <div class="nav-icon" id="navIcon">⛪</div>
       <div class="nav-text">
@@ -26,35 +45,17 @@
         <div class="nav-instr" id="navInstr">Defina seu ponto de saída para começar.</div>
       </div>
     </div>
-    <div id="alertCard" class="alert-card" hidden></div>
     <button id="alertChip" class="alert-chip" hidden></button>
-  </div>
 
-  <button class="fab sair-tela" id="btnSairTela" aria-label="Sair do mapa em tela cheia" title="Voltar" hidden>✕</button>
-  <div class="tela-info" id="telaInfo" hidden></div>
-  <div class="map-tools">
-    <button class="fab" id="btnTela" aria-label="Mapa em tela cheia" title="Mapa em tela cheia"><span class="ic-tela">⛶</span></button>
-    <button class="fab" id="btnNorte" aria-label="Voltar o mapa para o norte" title="Norte" hidden><span id="norteIc" class="norte">➤</span></button>
-    <button class="fab" id="btnLayer" aria-label="Alternar mapa e satélite" title="Mapa / Satélite"><span id="layerIcon">🛰️</span></button>
-    <button class="fab" id="btnFollow" aria-label="Centralizar em mim" title="Centralizar em mim">◎</button>
-    <button class="fab" id="btnFit" aria-label="Ver trajeto inteiro" title="Ver trajeto inteiro">⤢</button>
-  </div>
-
-  <div class="sheet">
-    <button class="sheet-handle" id="sheetHandle" aria-label="Recolher ou abrir o painel"><i></i></button>
-    <div class="rota-seg" id="rotaSeg" role="radiogroup" aria-label="Caminho escolhido">
-      <button data-r="luz" role="radio"><i class="dot luz"></i>Rota da Luz</button>
-      <button data-r="dutra" role="radio"><i class="dot dutra"></i>Via Dutra</button>
-      <button data-r="fe" role="radio"><i class="dot fe"></i>Caminho da Fé</button>
-    </div>
     <div class="stats">
-      <div><b id="sFalta">--</b><span>faltam</span></div>
-      <div><b id="sAndado">0,0 km</b><span>andados</span></div>
-      <div><b id="sTempo">0:00</b><span>tempo</span></div>
-      <div><b id="sChegada">--</b><span>chegada</span></div>
+      <div class="stat"><b id="sFalta">--</b><span>faltam</span></div>
+      <div class="stat"><b id="sAndado">0,0 km</b><span>andados</span></div>
+      <div class="stat"><b id="sTempo">0:00</b><span>tempo</span></div>
+      <div class="stat"><b id="sChegada">--</b><span>chegada</span></div>
     </div>
     <div class="bar"><i id="bar"></i></div>
-    <div class="etapas" id="etapas" hidden>
+
+    <div class="etapas card" id="etapas" hidden>
       <div class="etapa" id="etapa1">
         <span class="num" id="et1num">1</span>
         <div class="et-txt"><b>De carro até o ponto de saída</b><small id="et1sub"></small></div>
@@ -68,193 +69,193 @@
         <div class="et-txt"><b id="et2tit">A pé até a Praça da Fé</b><small id="et2sub"></small></div>
       </div>
     </div>
-    <div class="row">
+
+    <div class="row acao">
       <button class="btn primary" id="btnWalk">Iniciar caminhada</button>
     </div>
     <button class="share-pill" id="sharePill">👥 Compartilhar minha caminhada</button>
     <div class="acomp-info" id="acompInfo" hidden></div>
     <p class="tiny" id="gpsStatus">O GPS liga quando você inicia a caminhada. Sua localização fica só no celular.</p>
-  </div>
-</section>
 
-<!-- TRAJETO -->
-<section id="tab-trajeto" class="tab page" hidden>
-  <header class="page-head">
-    <h1>Trajeto</h1>
-    <p id="trajSub">Rota da Luz · trecho final até a Praça da Fé, em Aparecida</p>
-  </header>
-
-  <div class="card">
-    <div class="card-label">Rota de peregrinação</div>
-    <div class="vias">
-      <button class="via rota-op" id="rotaLuz" data-rota="luz">
-        <span class="via-t">Rota da Luz</span>
-        <span class="via-d">Sai do sul de Pindamonhangaba · terreno plano, estradas rurais e cidades · termina na Praça da Fé</span>
-        <b>35 km</b>
-      </button>
-      <button class="via rota-op" id="rotaFe" data-rota="fe">
-        <span class="via-t">Caminho da Fé</span>
-        <span class="via-d">Sai do alto da serra (Estrada do Gomeral, Guaratinguetá) · descida de 1.700 m para 630 m, quase toda em terra · termina no Santuário Nacional</span>
-        <b>35 km</b>
-      </button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-label">1 · Ponto de saída</div>
-    <div id="startBox" class="start-box">
-      <div class="pin">A</div>
-      <div>
-        <div class="start-title" id="startTitle">Ainda não definido</div>
-        <div class="muted" id="startSub">Onde o carro vai te deixar.</div>
+    <!-- ALERTAS -->
+    <details class="sec" id="secAlertas">
+      <summary><span class="sec-ic">⚠️</span><span class="sec-t">Alertas<small id="alertasSub">Comunicados sobre o caminho</small></span><i class="badge" id="alertBadge" hidden></i></summary>
+      <div class="sec-body">
+        <div class="card">
+          <div class="card-label">Avisos automáticos</div>
+          <p class="note" id="notifInfo"></p>
+          <button class="btn primary wide" id="btnNotif" hidden>🔔 Ativar notificações de alerta</button>
+        </div>
+        <div id="alertasList"></div>
+        <div class="card">
+          <div class="card-label">Confirme antes de sair</div>
+          <p class="note">Os alertas foram montados com comunicados e notícias publicados na internet. Situações de última hora podem não aparecer aqui. Na véspera, confirme:</p>
+          <div class="contacts">
+            <a class="btn" href="https://wa.me/5511941603680" target="_blank" rel="noopener">💬 Associação Rota da Luz (WhatsApp)</a>
+            <a class="btn" href="https://wa.me/5519998562620" target="_blank" rel="noopener">💬 Associação Caminho da Fé (WhatsApp)</a>
+            <a class="btn" href="tel:08000173536">📞 RioSP, Via Dutra: 0800 017 35 36</a>
+            <a class="btn" href="tel:191">🚓 PRF, rodovias federais: 191</a>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn ghost" id="btnAlertas">Atualizar alertas</button>
+          </div>
+        </div>
       </div>
-    </div>
+    </details>
 
-    <button class="btn primary wide" id="btnStart35">Usar o ponto dos 35 km da Rota da Luz</button>
-    <form id="searchForm" class="search">
-      <input id="searchInput" type="search" placeholder="Ou digite outro endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
-      <button class="btn" type="submit">Buscar</button>
-    </form>
-    <ul id="searchResults" class="results" hidden></ul>
+    <!-- PONTO DE SAÍDA E CAMINHO -->
+    <details class="sec" id="secTrajeto">
+      <summary><span class="sec-ic">🗺️</span><span class="sec-t">Ponto de saída e caminho<small id="trajSub">Rota da Luz · trecho final até a Praça da Fé, em Aparecida</small></span></summary>
+      <div class="sec-body">
+        <div class="card">
+          <div class="card-label">Rota de peregrinação</div>
+          <div class="vias">
+            <button class="via rota-op" id="rotaLuz" data-rota="luz">
+              <span class="via-t">Rota da Luz</span>
+              <span class="via-d">Sai do sul de Pindamonhangaba · terreno plano, estradas rurais e cidades · termina na Praça da Fé</span>
+              <b>35 km</b>
+            </button>
+            <button class="via rota-op" id="rotaFe" data-rota="fe">
+              <span class="via-t">Caminho da Fé</span>
+              <span class="via-d">Sai do alto da serra (Estrada do Gomeral, Guaratinguetá) · descida de 1.700 m para 630 m, quase toda em terra · termina no Santuário Nacional</span>
+              <b>35 km</b>
+            </button>
+          </div>
+        </div>
 
-    <div class="chips">
-      <button class="chip" id="btnStartHere">📍 Estou aqui agora</button>
-      <button class="chip" id="btnStartMap">👆 Escolher no mapa</button>
-    </div>
+        <div class="card">
+          <div class="card-label">Ponto de saída</div>
+          <div id="startBox" class="start-box">
+            <div class="pin">A</div>
+            <div>
+              <div class="start-title" id="startTitle">Ainda não definido</div>
+              <div class="muted" id="startSub">Onde o carro vai te deixar.</div>
+            </div>
+          </div>
+          <button class="btn primary wide" id="btnStart35">Usar o ponto dos 35 km da Rota da Luz</button>
+          <form id="searchForm" class="search">
+            <input id="searchInput" type="search" placeholder="Ou digite outro endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
+            <button class="btn" type="submit">Buscar</button>
+          </form>
+          <ul id="searchResults" class="results" hidden></ul>
+          <div class="chips">
+            <button class="chip" id="btnStartHere">📍 Estou aqui agora</button>
+            <button class="chip" id="btnStartMap">👆 Escolher no mapa</button>
+          </div>
+          <div class="driver" id="driverBox" hidden>
+            <div class="card-label">Para o motorista</div>
+            <div class="row">
+              <a class="btn" id="lnkGmaps" target="_blank" rel="noopener">Abrir no Google Maps</a>
+              <a class="btn" id="lnkWaze" target="_blank" rel="noopener">Abrir no Waze</a>
+            </div>
+          </div>
+        </div>
 
-    <div class="driver" id="driverBox" hidden>
-      <div class="card-label">Para o motorista</div>
-      <div class="row">
-        <a class="btn" id="lnkGmaps" target="_blank" rel="noopener">Abrir no Google Maps</a>
-        <a class="btn" id="lnkWaze" target="_blank" rel="noopener">Abrir no Waze</a>
+        <div class="card" id="viaCard">
+          <div class="card-label">Caminho</div>
+          <div class="vias">
+            <button class="via" id="viaLuz" data-via="luz">
+              <span class="via-t">Rota da Luz <span class="tag ok">recomendada</span></span>
+              <span class="via-d">Traçado oficial da Associação, por estradas rurais e cidades</span>
+              <b id="viaLuzKm">--</b>
+            </button>
+            <button class="via" id="viaDutra" data-via="dutra">
+              <span class="via-t">Via Dutra <span class="tag warn">alternativa</span></span>
+              <span class="via-d">Pelo acostamento da rodovia. Use só se a Rota da Luz estiver bloqueada</span>
+              <span class="via-st" id="viaDutraSt"></span>
+              <b id="viaDutraKm">--</b>
+            </button>
+          </div>
+          <p class="note" id="viaNote"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Resumo</div>
+          <div class="summary">
+            <div><b id="sumDist">--</b><span>distância a pé</span></div>
+            <div><b id="sumTime">--</b><span>tempo andando (4,5 km/h)</span></div>
+          </div>
+          <p class="note" id="trackInfo"></p>
+        </div>
       </div>
-    </div>
-  </div>
+    </details>
 
-  <div class="card" id="shareCard">
-    <div class="card-label">Acompanhamento ao vivo</div>
-    <div id="shareOff">
-      <p class="note">Crie um link e mande para quem vai te esperar. A pessoa abre no celular (iPhone ou Android) e vê, ao vivo, onde você está, quanto falta e a hora prevista de chegada.</p>
-      <button class="btn primary wide" id="btnShareOn">👥 Criar link de acompanhamento</button>
-    </div>
-    <div id="shareOnBox" hidden>
-      <p class="share-status" id="shareStatus"></p>
-      <div class="row">
-        <button class="btn" id="btnShareSend">Enviar link pelo WhatsApp</button>
-        <button class="btn" id="btnShareCopy">Copiar link</button>
+    <!-- PASSO A PASSO -->
+    <details class="sec" id="secPassos">
+      <summary><span class="sec-ic">🧭</span><span class="sec-t">Passo a passo<small>Todas as curvas, com o nome das ruas</small></span></summary>
+      <div class="sec-body">
+        <div class="card"><ol id="steps" class="steps"></ol></div>
       </div>
-      <label class="check-line"><input type="checkbox" id="chkAwake" checked> Manter a tela ligada durante a caminhada (necessário para continuar enviando)</label>
-      <button class="btn danger wide" id="btnShareOff">Parar de compartilhar</button>
-    </div>
-    <p class="note">Importante: a posição é enviada a cada 250 m andados (cerca de 3 minutos) ou a cada 3 minutos se você estiver parado. O início e a chegada são enviados na hora. O envio só funciona com o app aberto e a tela ligada: leve um carregador portátil. Para acompanhamento contínuo, ligue também o compartilhamento de localização do Google Maps. A posição passa pelo serviço gratuito ntfy.sh, num endereço secreto; quem tiver o link consegue vê-la.</p>
-  </div>
+    </details>
 
-  <div class="card" id="viaCard">
-    <div class="card-label">2 · Caminho</div>
-    <div class="vias">
-      <button class="via" id="viaLuz" data-via="luz">
-        <span class="via-t">Rota da Luz <span class="tag ok">recomendada</span></span>
-        <span class="via-d">Traçado oficial da Associação, por estradas rurais e cidades</span>
-        <b id="viaLuzKm">--</b>
-      </button>
-      <button class="via" id="viaDutra" data-via="dutra">
-        <span class="via-t">Via Dutra <span class="tag warn">alternativa</span></span>
-        <span class="via-d">Pelo acostamento da rodovia. Use só se a Rota da Luz estiver bloqueada</span>
-        <span class="via-st" id="viaDutraSt"></span>
-        <b id="viaDutraKm">--</b>
-      </button>
-    </div>
-    <p class="note" id="viaNote"></p>
-  </div>
+    <!-- ACOMPANHAMENTO -->
+    <details class="sec" id="secShare">
+      <summary><span class="sec-ic">👥</span><span class="sec-t">Acompanhamento ao vivo<small>Link para quem vai te esperar</small></span></summary>
+      <div class="sec-body">
+        <div class="card" id="shareCard">
+          <div id="shareOff">
+            <p class="note">Crie um link e mande para quem vai te esperar. A pessoa abre no celular (iPhone ou Android) e vê, ao vivo, onde você está, quanto falta e a hora prevista de chegada.</p>
+            <button class="btn primary wide" id="btnShareOn">👥 Criar link de acompanhamento</button>
+          </div>
+          <div id="shareOnBox" hidden>
+            <p class="share-status" id="shareStatus"></p>
+            <div class="row">
+              <button class="btn" id="btnShareSend">Enviar link pelo WhatsApp</button>
+              <button class="btn" id="btnShareCopy">Copiar link</button>
+            </div>
+            <label class="check-line"><input type="checkbox" id="chkAwake" checked> Manter a tela ligada durante a caminhada (necessário para continuar enviando)</label>
+            <button class="btn danger wide" id="btnShareOff">Parar de compartilhar</button>
+          </div>
+          <p class="note">Importante: a posição é enviada a cada 250 m andados (cerca de 3 minutos) ou a cada 3 minutos se você estiver parado. O início e a chegada são enviados na hora. O envio só funciona com o app aberto e a tela ligada: leve um carregador portátil. Para acompanhamento contínuo, ligue também o compartilhamento de localização do Google Maps. A posição passa pelo serviço gratuito ntfy.sh, num endereço secreto; quem tiver o link consegue vê-la.</p>
+        </div>
+      </div>
+    </details>
 
-  <div class="card">
-    <div class="card-label">3 · Resumo</div>
-    <div class="summary">
-      <div><b id="sumDist">--</b><span>distância a pé</span></div>
-      <div><b id="sumTime">--</b><span>tempo andando (4,5 km/h)</span></div>
-    </div>
-    <p class="note" id="trackInfo"></p>
-  </div>
+    <!-- PONTOS NO CAMINHO -->
+    <details class="sec" id="secPois">
+      <summary><span class="sec-ic">📍</span><span class="sec-t">Pontos no caminho<small>Apoio, hospedagem, igrejas e QR-codes</small></span></summary>
+      <div class="sec-body">
+        <div class="card" id="poisCard">
+          <ul id="pois" class="steps"></ul>
+          <p class="note">Fonte: mapa oficial da Associação dos Amigos da Rota da Luz · <a href="https://www.amigosdarotadaluz.org/rotadaluz-mapas" target="_blank" rel="noopener">amigosdarotadaluz.org</a></p>
+        </div>
+      </div>
+    </details>
 
-  <div class="card">
-    <div class="card-label">4 · Passo a passo</div>
-    <ol id="steps" class="steps"></ol>
-  </div>
-
-  <div class="card" id="poisCard">
-    <div class="card-label">5 · No caminho <span class="muted">(mapa oficial da Associação)</span></div>
-    <ul id="pois" class="steps"></ul>
-    <p class="note">Fonte: mapa oficial da Associação dos Amigos da Rota da Luz · <a href="https://www.amigosdarotadaluz.org/rotadaluz-mapas" target="_blank" rel="noopener">amigosdarotadaluz.org</a></p>
-  </div>
-</section>
-
-<!-- ALERTAS -->
-<section id="tab-alertas" class="tab page" hidden>
-  <header class="page-head">
-    <h1>Alertas</h1>
-    <p id="alertasSub">Comunicados sobre o caminho</p>
-  </header>
-  <div class="card">
-    <div class="card-label">Avisos automáticos</div>
-    <p class="note" id="notifInfo"></p>
-    <button class="btn primary wide" id="btnNotif" hidden>🔔 Ativar notificações de alerta</button>
-  </div>
-  <div id="alertasList"></div>
-  <div class="card">
-    <div class="card-label">Confirme antes de sair</div>
-    <p class="note">Os alertas foram montados com comunicados e notícias publicados na internet. Situações de última hora podem não aparecer aqui. Na véspera, confirme:</p>
-    <div class="contacts">
-      <a class="btn" href="https://wa.me/5511941603680" target="_blank" rel="noopener">💬 Associação Rota da Luz (WhatsApp)</a>
-      <a class="btn" href="https://wa.me/5519998562620" target="_blank" rel="noopener">💬 Associação Caminho da Fé (WhatsApp)</a>
-      <a class="btn" href="tel:08000173536">📞 RioSP, Via Dutra: 0800 017 35 36</a>
-      <a class="btn" href="tel:191">🚓 PRF, rodovias federais: 191</a>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <button class="btn ghost" id="btnAlertas">Atualizar alertas</button>
-    </div>
-  </div>
-</section>
-
-<!-- CHECKLIST -->
-<section id="tab-check" class="tab page" hidden>
-  <header class="page-head">
-    <h1>Preparação</h1>
-    <p>Mochila e segurança</p>
-  </header>
-  <div class="card">
-    <div class="card-label">Mochila <span id="checkCount"></span></div>
-    <ul id="checkList" class="checks"></ul>
-  </div>
-  <div class="card">
-    <div class="card-label">Segurança</div>
-    <ul class="tips">
-      <li>Caminhe de frente para o trânsito e use colete ou roupa refletiva.</li>
-      <li>Prefira caminhar de dia. À noite, use lanterna e pisca-pisca.</li>
-      <li>Beba água a cada 30 minutos, mesmo sem sede.</li>
-      <li>Avise alguém do seu trajeto e horário previsto de chegada.</li>
-    </ul>
-    <div class="sos">
-      <a href="tel:192" class="btn">SAMU 192</a>
-      <a href="tel:190" class="btn">Polícia 190</a>
-      <a href="tel:193" class="btn">Bombeiros 193</a>
-    </div>
-  </div>
-  <div class="row">
-    <button class="btn danger" id="btnReset">Zerar caminhada</button>
-  </div>
-</section>
-
-<nav class="tabs">
-  <button data-tab="caminhada" aria-current="page"><span>🧭</span>Caminhada</button>
-  <button data-tab="trajeto"><span>🗺️</span>Trajeto</button>
-  <button data-tab="alertas"><span class="ic-wrap">⚠️<i class="badge" id="alertBadge" hidden></i></span>Alertas</button>
-  <button data-tab="check"><span>🎒</span>Preparação</button>
-</nav>
+    <!-- PREPARAÇÃO -->
+    <details class="sec" id="secCheck">
+      <summary><span class="sec-ic">🎒</span><span class="sec-t">Preparação<small>Mochila e segurança <span id="checkCount"></span></small></span></summary>
+      <div class="sec-body">
+        <div class="card">
+          <div class="card-label">Mochila</div>
+          <ul id="checkList" class="checks"></ul>
+        </div>
+        <div class="card">
+          <div class="card-label">Segurança</div>
+          <ul class="tips">
+            <li>Caminhe de frente para o trânsito e use colete ou roupa refletiva.</li>
+            <li>Prefira caminhar de dia. À noite, use lanterna e pisca-pisca.</li>
+            <li>Beba água a cada 30 minutos, mesmo sem sede.</li>
+            <li>Avise alguém do seu trajeto e horário previsto de chegada.</li>
+          </ul>
+          <div class="sos">
+            <a href="tel:192" class="btn">SAMU 192</a>
+            <a href="tel:190" class="btn">Polícia 190</a>
+            <a href="tel:193" class="btn">Bombeiros 193</a>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn danger" id="btnReset">Zerar caminhada</button>
+        </div>
+      </div>
+    </details>
+  </main>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=28"></script>
-<script src="rota-dutra.js?v=28"></script>
-<script src="rota-fe.js?v=28"></script>
-<script src="app.js?v=28"></script>
+<script src="rota-oficial.js?v=29"></script>
+<script src="rota-dutra.js?v=29"></script>
+<script src="rota-fe.js?v=29"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>
