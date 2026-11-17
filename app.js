@@ -122,6 +122,8 @@ usarRota('luz');
 // Estado (salvo só no celular)
 // ---------------------------------------------------------------------
 const KEY = 'caminhada-aparecida-v3';
+const PARADAS = window.PARADAS || [];   // paradas da viagem de carro (paradas.js)
+const PERTO_DA_PARADA = 0.4;             // km: chegando perto com o GPS ligado, marca a parada como feita
 const blank = () => ({
   start: { ...START35 },
   route: null,     // { pts, steps, dist, approach, key }
@@ -133,6 +135,7 @@ const blank = () => ({
   layer: 'mapa',
   visto: false,
   share: null,     // { id, on, awake } acompanhamento ao vivo
+  paradas: [],     // ids das paradas da viagem de carro já feitas
   via: 'luz',      // 'luz' (Rota da Luz oficial) ou 'dutra' (alternativa)
   rota: 'luz',     // 'luz' (Rota da Luz) ou 'fe' (Caminho da Fé)
 });
@@ -600,7 +603,10 @@ function refreshEtapas() {
   }
   if (!mostrar) return;
   const [la, ln] = state.start.p;
-  $('et1gm').href = `https://www.google.com/maps/dir/?api=1&destination=${la},${ln}&travelmode=driving`;
+  const faltam = paradasQueFaltam();
+  const wp = faltam.length ? `&waypoints=${encodeURIComponent(faltam.map((x) => x.p.join(',')).join('|'))}` : '';
+  $('et1gm').href = `https://www.google.com/maps/dir/?api=1&destination=${la},${ln}&travelmode=driving${wp}`;
+  $('et1gm').textContent = faltam.length ? `🚗 Google Maps (${faltam.length} parada${faltam.length > 1 ? 's' : ''})` : '🚗 Google Maps';
   $('et1wz').href = `https://waze.com/ul?ll=${la},${ln}&navigate=yes`;
   const d = me ? dist(me, state.start.p) : null;
   const chegou = d != null && d <= NO_PONTO;
@@ -608,11 +614,47 @@ function refreshEtapas() {
   $('etapa2').className = `etapa ${chegou ? 'atual' : ''}`;
   $('et1num').textContent = chegou ? '✓' : '1';
   $('et1links').hidden = chegou;
+  $('paradasBox').hidden = chegou || !PARADAS.length;
+  if (!chegou) refreshParadas();
   $('et1sub').textContent = chegou
     ? `Você está no ponto de saída: ${state.start.title}`
     : `${state.start.title}${d != null ? ` · você está a ${fmtDist(d)} daqui, em linha reta` : ''}`;
   $('et2tit').textContent = `A pé até ${FIM.ate}`;
   $('et2sub').textContent = `${fmtDist(state.route.dist)} · cerca de ${fmtDur(state.route.dist / VELOCIDADE)} andando${chegou ? ' · pode começar!' : ''}`;
+}
+
+// Paradas da viagem de carro (paradas.js)
+let parHtml = '';
+function paradasQueFaltam() { return PARADAS.filter((x) => !(state.paradas || []).includes(x.id)); }
+function marcarParada(id, feita) {
+  const set = new Set(state.paradas || []);
+  if (feita) set.add(id); else set.delete(id);
+  state.paradas = PARADAS.map((x) => x.id).filter((i) => set.has(i));
+  save(); refreshEtapas();
+}
+function refreshParadas() {
+  if (!PARADAS.length) return;
+  const perto = me ? paradasQueFaltam().filter((x) => dist(me, x.p) <= PERTO_DA_PARADA) : [];
+  if (perto.length) { const set = new Set([...(state.paradas || []), ...perto.map((x) => x.id)]); state.paradas = PARADAS.map((x) => x.id).filter((i) => set.has(i)); save(); }
+  const feitas = state.paradas || [];
+  const prox = paradasQueFaltam()[0];
+  $('parCount').textContent = `${feitas.length} de ${PARADAS.length} feitas`;
+  const html = PARADAS.map((x, i) => {
+    const ok = feitas.includes(x.id), atual = prox && prox.id === x.id;
+    const d = me ? ` · a ${fmtDist(dist(me, x.p))} em linha reta` : '';
+    const gm = `https://www.google.com/maps/dir/?api=1&destination=${x.p.join(',')}&travelmode=driving`;
+    const wz = `https://waze.com/ul?ll=${x.p.join(',')}&navigate=yes`;
+    const ver = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.q)}`;
+    return `<li class="par ${ok ? 'feita' : ''} ${atual ? 'atual' : ''}" data-id="${x.id}">
+      <span class="num">${ok ? '✓' : i + 1}</span>
+      <div class="par-txt"><b>${escapeHtml(x.nome)}</b>
+        <small>${escapeHtml(x.onde)} · ${escapeHtml(x.horas)}${atual ? d : ''}</small>
+        <small>Para: ${escapeHtml(x.para)}. ${escapeHtml(x.obs || '')}</small>
+        ${ok ? '' : `<div class="par-bts"><a class="btn" href="${gm}" target="_blank" rel="noopener">Ir (Google)</a><a class="btn" href="${wz}" target="_blank" rel="noopener">Ir (Waze)</a><a class="btn" href="${ver}" target="_blank" rel="noopener">Ver local</a></div>`}
+        <label class="par-ok"><input type="checkbox" ${ok ? 'checked' : ''}> ${ok ? 'Parada feita' : 'Marcar como feita'}</label>
+      </div></li>`;
+  }).join('');
+  if (html !== parHtml) { parHtml = html; $('parList').innerHTML = html; }
 }
 
 // ---------------------------------------------------------------------
@@ -1405,6 +1447,10 @@ function init() {
     $('navDist').textContent = 'Escolha no mapa';
     $('navInstr').textContent = 'Toque no local exato onde o carro vai te deixar.';
     if (map) setTimeout(() => mapView(state.start ? state.start.p : P35, 15), 60);
+  });
+  $('parList').addEventListener('change', (e) => {
+    const li = e.target.closest('li.par');
+    if (li && e.target.type === 'checkbox') marcarParada(li.dataset.id, e.target.checked);
   });
   $('btnReset').addEventListener('click', () => {
     if (!confirm('Zerar km andados e tempo? O ponto de saída e o trajeto continuam salvos.')) return;

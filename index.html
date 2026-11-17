@@ -10,7 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <div class="app" id="app">
@@ -63,6 +63,11 @@
       <div class="row et-links" id="et1links">
         <a class="btn" id="et1gm" target="_blank" rel="noopener">🚗 Google Maps</a>
         <a class="btn" id="et1wz" target="_blank" rel="noopener">🚗 Waze</a>
+      </div>
+      <div class="paradas" id="paradasBox">
+        <div class="par-tit"><b>Paradas na viagem</b><small id="parCount"></small></div>
+        <ol class="par-list" id="parList"></ol>
+        <p class="tiny" id="parInfo">O botão Google Maps acima já passa pelas paradas que faltam. No Waze vá de uma parada para a outra (botão "Ir" de cada uma).</p>
       </div>
       <div class="etapa" id="etapa2">
         <span class="num">2</span>
@@ -253,9 +258,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=29"></script>
-<script src="rota-dutra.js?v=29"></script>
-<script src="rota-fe.js?v=29"></script>
-<script src="app.js?v=29"></script>
+<script src="rota-oficial.js?v=30"></script>
+<script src="rota-dutra.js?v=30"></script>
+<script src="rota-fe.js?v=30"></script>
+<script src="paradas.js?v=30"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

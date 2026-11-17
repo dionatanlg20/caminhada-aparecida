@@ -341,3 +341,22 @@ body.tela-cheia .map-area { position: fixed; inset: 0; z-index: 900; }
 body.tela-cheia .dash { display: none !important; }
 /* quem acompanha só vê mapa, números e situação */
 body.acomp .sec, body.acomp .etapas { display: none !important; }
+
+/* Paradas da viagem de carro */
+.paradas { margin-left: 40px; border-top: 1px solid var(--line); padding-top: 8px; }
+.par-tit { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.par-tit small { color: var(--muted); font-size: .8rem; }
+.par-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.par { display: flex; gap: 10px; align-items: flex-start; }
+.par .num { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .8rem; background: var(--bg); border: 2px solid var(--line); color: var(--muted); }
+.par.atual .num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.par.feita .num { background: var(--ok); border-color: var(--ok); color: #fff; }
+.par-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.par-txt b { font-size: .95rem; }
+.par.feita .par-txt b { color: var(--muted); text-decoration: line-through; }
+.par-txt small { color: var(--muted); font-size: .82rem; line-height: 1.3; }
+.par.feita .par-txt small:nth-of-type(2) { display: none; }
+.par-bts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.par-bts .btn { padding: 7px 9px; font-size: .82rem; flex: 1 1 80px; text-align: center; }
+.par-ok { display: flex; align-items: center; gap: 6px; font-size: .85rem; margin-top: 2px; }
+.par-ok input { width: 18px; height: 18px; }
