@@ -6,7 +6,15 @@
   "data": "2027-10-30",
   "km": 50,
   "kmOrigem": "planejamento",
-  "kmMotivo": ""
+  "kmMotivo": "",
+  "origem": {
+   "nome": "Rua Campinas, 51 (Cabral)",
+   "cidade": "Curitiba",
+   "p": [
+    -25.4018225,
+    -49.2490164
+   ]
+  }
  },
  "alertas": [
   {

@@ -30,7 +30,7 @@ const CFG_KEY = 'caminhada-aparecida-config';
 const CAMINHADA_PADRAO = {
   data: '2027-10-30', km: 50, kmOrigem: 'planejamento',
   inicio: '05:00',                                         // hora de começar a andar
-  origem: { nome: 'Curitiba', p: [-25.4284, -49.2733] },   // de onde sai de carro na véspera
+  origem: { nome: 'Rua Campinas, 51 (Cabral)', cidade: 'Curitiba', p: [-25.4018225, -49.2490164] }, // de onde sai de carro na véspera
   paradaCadaH: 2, paradaMin: 30,                           // no carro: 30 min de parada a cada 2 h de estrada
   folga: 0.10,                                             // 10% a mais no tempo de estrada (trânsito do feriadão)
   preparoMin: 15,                                          // chegar ao ponto de saída 15 min antes de começar
@@ -976,9 +976,9 @@ function renderPlano() {
   const pl = planoViagem();
   const caixas = [$('capaPlano'), $('planoBox')].filter(Boolean);
   if (!pl) { caixas.forEach((c) => { c.hidden = true; }); return; }
-  const o = CAMINHADA.origem.nome;
+  const o = CAMINHADA.origem.cidade || CAMINHADA.origem.nome;
   const lin = [
-    ['🚗', `${diaCurto(pl.saida)}, ${hm(pl.saida)}`, `Saída de ${o}`],
+    ['🚗', `${diaCurto(pl.saida)}, ${hm(pl.saida)}`, `Saída de casa: ${CAMINHADA.origem.nome}, ${o}`],
     ['☕', `${pl.nParadas} parada${pl.nParadas === 1 ? '' : 's'} de ${CAMINHADA.paradaMin} min`, `uma a cada ${CAMINHADA.paradaCadaH} h de estrada · ${fmtDur(pl.estrada)} de estrada (${Math.round(pl.v.km)} km${pl.v.aprox ? ', estimativa' : ''}${pl.v.transito ? ', com o trânsito previsto para o horário' : ', sem trânsito + 10% de folga'})`],
     ['📍', `${diaCurto(pl.chegaPonto)}, ${hm(pl.chegaPonto)}`, `Chegada ao ponto de saída (${saidaResumo()})`],
     ['🚶', `${hm(pl.inicio)}`, `Início da caminhada (${km1(pl.kmPe)} km)`],
