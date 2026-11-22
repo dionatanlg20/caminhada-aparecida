@@ -1,29 +1,37 @@
 'use strict';
 
 // =====================================================================
-// Caminhada a Aparecida — trecho final a pé (35 km)
-// Duas rotas: Rota da Luz (rota-oficial.js, traçado oficial da Associação)
-// e Caminho da Fé (rota-fe.js, trilha GPS conferida com o mapa oficial).
+// Caminhada a Aparecida — trecho final a pé (distância configurável, hoje 50 km)
+// Três caminhos: Rota da Luz (rota-oficial.js, traçado oficial da Associação),
+// Via Dutra (rota-dutra.js) e Caminho da Fé (rota-fe.js, trilha GPS conferida com o mapa oficial).
+// Data e distância vêm de alertas.json ("caminhada"), atualizável sem mudar o app.
 // =====================================================================
 
 const DU = window.ROTA_DUTRA;
 const ROTAS = {
   luz: {
     dados: window.ROTA_OFICIAL, nome: 'Rota da Luz', da: 'da Rota da Luz',
-    saida: 'Estrada da Rota da Luz', local: 'Pindamonhangaba', estrada: 'Estrada da Rota da Luz',
+    estrada: 'Estrada da Rota da Luz',
     fim: { nome: 'Praça da Fé', ate: 'a Praça da Fé', chegada: 'à Praça da Fé' },
     fonte: 'Traçado oficial da Rota da Luz (mapa da Associação)',
   },
   fe: {
     dados: window.ROTA_FE, nome: 'Caminho da Fé', da: 'do Caminho da Fé',
-    saida: 'Estrada do Gomeral', local: 'Guaratinguetá, no alto da serra', estrada: 'Estrada do Gomeral',
+    estrada: 'Estrada do Gomeral',
     fim: { nome: 'Santuário Nacional de Aparecida', ate: 'o Santuário Nacional', chegada: 'ao Santuário Nacional' },
     fonte: 'Trilha do Caminho da Fé gravada por GPS e conferida com o mapa oficial da Associação (ramal principal, pela Estrada do Gomeral)',
   },
 };
 let RT, OF, FIM;
 const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', p: [-22.850521, -45.233723] };
-const KM_PADRAO = 35;            // km até o término, pedido para a caminhada
+// Caminhada planejada: data e distância. Valores do planejamento; alertas.json ("caminhada") pode mudar
+// a distância quando sair o anúncio de quantos km da Via Dutra serão fechados para os romeiros.
+const CFG_KEY = 'caminhada-aparecida-config';
+const CAMINHADA_PADRAO = { data: '2027-11-02', km: 50, kmOrigem: 'planejamento' };
+let CAMINHADA = { ...CAMINHADA_PADRAO };
+try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c && c.km > 0 && c.data) CAMINHADA = { ...CAMINHADA_PADRAO, ...c }; } catch (e) { /* sem armazenamento */ }
+const KM_MAX = 60;               // os traçados cobrem os 62 km finais de cada caminho
+let KM_PADRAO = Math.min(KM_MAX, CAMINHADA.km);  // km até o término
 const VELOCIDADE = 4.5;          // km/h de caminhada
 const FORA_DO_CAMINHO = 0.06;    // km (60 m)
 const FORA_NA_DUTRA = 0.12;      // na rodovia o traçado segue o centro da pista: tolerância maior
@@ -103,9 +111,23 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&a
 
 // Trilha da rota escolhida (troca ao mudar de rota)
 let OF_PTS, OF_ACC, OF_TOTAL, P35, START35, rotaAtual = null;
-function usarRota(id) {
+// Cidade (por km até o fim) do ponto de saída
+function cidadeEm(dados, kmFim) {
+  const c = (dados.cidades || []).reduce((m, x) => (Math.abs(x[0] - kmFim) < Math.abs(m[0] - kmFim) ? x : m), [1e9, '']);
+  return c[1];
+}
+// Ponto de saída da Via Dutra: KM_PADRAO km antes do fim, na própria rodovia
+const DU_ACC = cumulative(DU.pts), DU_TOTAL = DU_ACC[DU_ACC.length - 1];
+let P_DUTRA, START_DUTRA;
+function kmDaDutra(al) { return Math.round((DU.kmSaida || 71) + (DU.dutra.ate - al)); }
+function calcularDutra() {
+  const al = DU_TOTAL - KM_PADRAO;
+  P_DUTRA = round6(pointAt(DU.pts, DU_ACC, al));
+  START_DUTRA = { p: P_DUTRA, title: `Via Dutra, por volta do km ${kmDaDutra(al)}`, sub: `${cidadeEm(DU, KM_PADRAO)} · ${km1(KM_PADRAO)} km até a Praça da Fé pela Via Dutra`, preset: true, dutra: true };
+}
+function usarRota(id, forcar) {
   if (!ROTAS[id] || !ROTAS[id].dados) id = 'luz';
-  if (rotaAtual === id) return;
+  if (rotaAtual === id && !forcar) return;
   rotaAtual = id;
   RT = ROTAS[id];
   OF = RT.dados;
@@ -114,8 +136,12 @@ function usarRota(id) {
   OF_ACC = cumulative(OF_PTS);
   OF_TOTAL = OF_ACC[OF_ACC.length - 1];
   P35 = round6(pointAt(OF_PTS, OF_ACC, OF_TOTAL - KM_PADRAO));
-  START35 = { p: P35, title: RT.saida, sub: `${RT.local} · ${km1(KM_PADRAO)} km até ${RT.fim.ate} pela trilha ${RT.da}`, preset: true };
+  const via0 = roadAt(OF_TOTAL - KM_PADRAO);
+  START35 = { p: P35, title: via0 === RT.nome ? RT.estrada : via0, sub: `${cidadeEm(OF, KM_PADRAO)} · ${km1(KM_PADRAO)} km até ${RT.fim.ate} pela trilha ${RT.da}`, preset: true };
+  calcularDutra();
 }
+// ponto de saída padrão do caminho escolhido (muda com a distância da caminhada)
+const startPadrao = () => (state.via === 'dutra' && state.rota === 'luz' ? START_DUTRA : START35);
 usarRota('luz');
 
 // ---------------------------------------------------------------------
@@ -141,7 +167,9 @@ const blank = () => ({
 });
 let state = load();
 usarRota(state.rota);
-if (state.start && state.start.preset && !sameP(state.start.p, P35)) state.start = { ...START35 };
+if (state.via === 'dutra' && state.rota !== 'luz') state.via = 'luz';
+// distância mudou (ou caminho trocado): ponto de saída padrão acompanha. No meio de uma caminhada nada muda.
+if (!state.start || (state.start.preset && !state.walking && !state.ms && !sameP(state.start.p, startPadrao().p))) { state.start = { ...startPadrao() }; state.route = null; }
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -203,6 +231,13 @@ function mergeClose(list) {
   out.forEach((s, i) => { s.len = (i < out.length - 1 ? out[i + 1].along : s.along) - s.along; });
   return out;
 }
+// Altitude aproximada (m) no km "al" do Caminho da Fé
+function altitudeEm(al) {
+  const a = OF.alt || [];
+  if (!a.length) return '';
+  const p = a.reduce((m, x) => (Math.abs(x[0] - al) < Math.abs(m[0] - al) ? x : m), a[0]);
+  return (Math.round(p[1] / 10) * 10).toLocaleString('pt-BR');
+}
 // Nome da via em que a trilha está no km "al"
 function roadAt(al) {
   let name = '';
@@ -239,14 +274,16 @@ function officialFrom(al, offset) {
 
 // caminho escolhido: 'luz', 'dutra' (alternativa da Rota da Luz) ou 'fe'
 const caminho = () => (state.rota === 'fe' ? 'fe' : state.via === 'dutra' ? 'dutra' : 'luz');
-const NOME_CAMINHO = { luz: 'Rota da Luz', dutra: 'Via Dutra (alternativa)', fe: 'Caminho da Fé' };
+const NOME_CAMINHO = { luz: 'Rota da Luz', dutra: 'Via Dutra', fe: 'Caminho da Fé' };
 const COR_CAMINHO = { luz: '#1a73e8', dutra: '#e37400', fe: '#8e24aa' };
 function escolherCaminho(c) {
   if (state.walking || c === caminho()) return;
   if (c === 'fe') { trocarRota('fe'); return; }
   if (state.rota !== 'luz') trocarRota('luz');
-  if (c === 'dutra' && !dutraOk()) { state.start = { ...START35 }; }
+  const eraPadrao = !state.start || state.start.preset;
   state.via = c === 'dutra' ? 'dutra' : 'luz';
+  // a Via Dutra tem ponto de saída próprio, na rodovia
+  if (c === 'dutra' || eraPadrao || state.start.dutra) state.start = { ...startPadrao() };
   state.route = null;
   save();
   refreshAll();
@@ -264,15 +301,19 @@ function refreshCaminho() {
   });
 }
 const routeKey = () => `${state.rota}:${state.via}:${state.start.p.join(',')}`;
-const dutraOk = () => !!(state.rota === 'luz' && state.start && sameP(state.start.p, P35));
+const dutraOk = () => state.rota === 'luz';
 
 function dutraRoute(key) {
-  const acc = cumulative(DU.pts);
-  const avisos = DU.avisos.map((a) => ({ text: a.text, ic: a.ic, kind: a.kind, name: '', p: round6(pointAt(DU.pts, acc, a.along)), along: a.along, aprox: !!a.aprox }));
-  const fim = DU.steps.map((s) => ({ ...instruction(s.type, s.modifier, s.name, s.exit), kind: 'turn', name: s.name, p: [s.lat, s.lng], along: s.along }));
-  const last = { text: `Chegada ${FIM.chegada}, término ${RT.da}`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: DU.total };
-  const steps = mergeClose([...avisos, ...fim, last].sort((a, b) => a.along - b.along));
-  return { key, pts: DU.pts, steps, dist: DU.total, approach: 0, dutra: DU.dutra };
+  const acc = DU_ACC;
+  const al0 = project(state.start.p, DU.pts, acc).along;
+  const pts = [round6(pointAt(DU.pts, acc, al0)), ...DU.pts.filter((_, i) => acc[i] > al0 + 0.001)];
+  const total = DU_TOTAL - al0;
+  const first = { text: `Comece a caminhar pelo acostamento da Via Dutra (por volta do km ${kmDaDutra(al0)}), sentido Rio de Janeiro, rumo a Aparecida. Caminhe com atenção aos carros e atravesse a pista só nos pontos de travessia segura.`, ic: '🛣️', kind: 'start', name: '', p: pts[0], along: 0 };
+  const avisos = DU.avisos.filter((a) => a.along > al0 + 0.05).map((a) => ({ text: a.text, ic: a.ic, kind: a.kind, name: '', p: round6(pointAt(DU.pts, acc, a.along)), along: a.along - al0, aprox: !!a.aprox }));
+  const fim = DU.steps.filter((s) => s.along > al0).map((s) => ({ ...instruction(s.type, s.modifier, s.name, s.exit), kind: 'turn', name: s.name, p: [s.lat, s.lng], along: s.along - al0 }));
+  const last = { text: `Chegada ${FIM.chegada}, em Aparecida`, ic: '⛪', kind: 'end', name: '', p: FIM.p, along: total };
+  const steps = mergeClose([first, ...avisos, ...fim, last].sort((a, b) => a.along - b.along));
+  return { key, pts, steps, dist: total, approach: 0, dutra: { de: Math.max(0, DU.dutra.de - al0), ate: DU.dutra.ate - al0 } };
 }
 
 async function computeRoute() {
@@ -372,7 +413,8 @@ function labelFromAddress(j) {
 async function setStart(p, label) {
   const rp = round6(p);
   const lbl = label || { title: 'Buscando endereço…', sub: '' };
-  state.start = { p: rp, title: lbl.title, sub: lbl.sub, preset: !!(label && label.preset) };
+  state.start = { p: rp, title: lbl.title, sub: lbl.sub, preset: !!(label && label.preset), dutra: !!(label && label.dutra) };
+  if (!state.start.dutra && state.via === 'dutra') state.via = 'luz'; // ponto próprio: segue pela trilha
   state.route = null;
   routeError = false;
   save();
@@ -396,7 +438,7 @@ function trocarRota(id) {
   state.rota = id;
   usarRota(id);
   if (id !== 'luz') state.via = 'luz';
-  if (eraPadrao) state.start = { ...START35 };
+  if (eraPadrao) state.start = { ...startPadrao() };
   state.route = null;
   routeError = false;
   save();
@@ -618,7 +660,7 @@ function refreshEtapas() {
   if (!chegou) refreshParadas();
   $('et1sub').textContent = chegou
     ? `Você está no ponto de saída: ${state.start.title}`
-    : `${state.start.title}${d != null ? ` · você está a ${fmtDist(d)} daqui, em linha reta` : ''}`;
+    : `${state.start.title}${state.start.preset && !state.start.title.includes(saidaResumo()) ? `, ${saidaResumo()}` : ''}${d != null ? ` · você está a ${fmtDist(d)} daqui, em linha reta` : ''}`;
   $('et2tit').textContent = `A pé até ${FIM.ate}`;
   $('et2sub').textContent = `${fmtDist(state.route.dist)} · cerca de ${fmtDur(state.route.dist / VELOCIDADE)} andando${chegou ? ' · pode começar!' : ''}`;
 }
@@ -676,16 +718,16 @@ function refreshTrajeto(n) {
   let info;
   if (!s) info = 'Escolha o ponto de saída.';
   else if (!r) info = routeError ? 'Sem internet para calcular o caminho até a trilha. Ele será calculado assim que houver conexão.' : 'Calculando…';
-  else if (state.via === 'dutra') info = `Alternativa pela Via Dutra até ${FIM.ate}. Traçado pelas vias do mapa (OpenStreetMap), com as orientações do Caminho Consciente. A posição dos km da rodovia é aproximada.`;
+  else if (state.via === 'dutra') info = `Pela Via Dutra até ${FIM.ate}. Traçado pelas vias do mapa (OpenStreetMap), com as orientações do Caminho Consciente. A posição dos km da rodovia é aproximada.`;
   else if (r.approach > 0) info = `${RT.fonte}, até ${FIM.ate}. Do seu ponto de saída até a trilha são ${fmtDist(r.approach)} pelas ruas.`;
   else info = `${RT.fonte}, do ponto de saída até ${FIM.ate}, em Aparecida.`;
-  if (state.rota === 'fe') info += ` Descida da Serra da Mantiqueira: de ${OF.altInicio} m para ${OF.altFim} m de altitude, quase toda em estrada de terra.`;
+  if (state.rota === 'fe' && s) info += ` Descida da Serra da Mantiqueira: de cerca de ${altitudeEm(project(s.p, OF_PTS, OF_ACC).along)} m para ${OF.altFim} m de altitude, boa parte em estrada de terra.`;
   $('trackInfo').textContent = info;
 
   // escolha do caminho
   const pr0 = s ? project(s.p, OF_PTS, OF_ACC) : null;
   $('viaLuzKm').textContent = state.via === 'luz' && r ? fmtDist(r.dist) : (pr0 ? `${pr0.d > NA_TRILHA ? '≈ ' : ''}${fmtDist(OF_TOTAL - pr0.along + pr0.d)}` : '--');
-  $('viaDutraKm').textContent = dutraOk() ? fmtDist(DU.total) : '--';
+  $('viaDutraKm').textContent = state.via === 'dutra' && r ? fmtDist(r.dist) : fmtDist(KM_PADRAO);
   $('viaLuz').classList.toggle('on', state.via === 'luz');
   $('viaDutra').classList.toggle('on', state.via === 'dutra');
   $('viaDutra').disabled = !dutraOk();
@@ -694,16 +736,15 @@ function refreshTrajeto(n) {
   const stF = $('viaDutraSt');
   stF.textContent = faixa ? `${faixa.nivel === 'atencao' || faixa.nivel === 'urgente' ? '⚠️' : '✅'} ${faixa.titulo}` : '';
   stF.className = `via-st ${faixa && !(faixa.nivel === 'atencao' || faixa.nivel === 'urgente') ? 'ok' : ''}`;
-  $('viaNote').textContent = !dutraOk()
-    ? 'A alternativa pela Via Dutra parte do ponto dos 35 km. Para usá-la, escolha esse ponto de saída.'
-    : state.via === 'dutra'
-      ? 'Você escolheu a Via Dutra. Veja os alertas antes de sair: no dia 19 não há faixa exclusiva para romeiros confirmada.'
-      : 'Se a Rota da Luz estiver bloqueada no dia, troque aqui para a Via Dutra. O ponto de saída é o mesmo.';
+  $('viaNote').textContent = state.via === 'dutra'
+    ? `Você escolheu a Via Dutra: ${km1(KM_PADRAO)} km pela rodovia, saindo por volta do km ${kmDaDutra(DU_TOTAL - KM_PADRAO)}. Veja nos alertas se a faixa para romeiros foi confirmada.`
+    : `Se a Rota da Luz estiver bloqueada no dia, troque aqui para a Via Dutra. O ponto de saída muda para a própria rodovia (${km1(KM_PADRAO)} km antes de Aparecida).`;
   $('poisCard').hidden = state.via === 'dutra' || !OF.pois.length;
   $('viaCard').hidden = state.rota !== 'luz';
   $('rotaLuz').classList.toggle('on', state.rota === 'luz');
   $('rotaFe').classList.toggle('on', state.rota === 'fe');
-  $('btnStart35').textContent = `Usar o ponto dos 35 km ${RT.da}`;
+  $('btnStart35').textContent = state.via === 'dutra' && state.rota === 'luz' ? `Usar o ponto dos ${km1(KM_PADRAO)} km da Via Dutra` : `Usar o ponto dos ${km1(KM_PADRAO)} km ${RT.da}`;
+  document.querySelectorAll('.km-cam').forEach((e) => { e.textContent = `${km1(KM_PADRAO)} km`; });
   $('trajSub').textContent = `${RT.nome} · trecho final até ${FIM.ate}, em Aparecida`;
 
   const ol = $('steps');
@@ -767,9 +808,86 @@ async function loadAlertas() {
     if (alertas && antes !== assinatura(novo)) avisarMudanca(alertas, novo);
     alertas = novo;
     try { localStorage.setItem(ALERT_KEY, JSON.stringify(alertas)); } catch (e) { /* ignora */ }
+    aplicarCaminhada(novo.caminhada);
   } catch (e) { /* sem internet: usa a última cópia */ }
   if (MODO_ACOMP) refreshAlertas(); else refreshAll();
 }
+// Data e distância da caminhada vindas de alertas.json. Quando sair o anúncio de quantos km da Via Dutra
+// serão fechados para os romeiros, a distância muda aqui e o app recalcula o ponto de saída.
+let kmMudou = null;
+function aplicarCaminhada(c) {
+  if (!c || !c.data || !(c.km > 0)) return;
+  const antes = KM_PADRAO;
+  CAMINHADA = { ...CAMINHADA_PADRAO, ...c };
+  if (!MODO_ACOMP) { try { localStorage.setItem(CFG_KEY, JSON.stringify(CAMINHADA)); } catch (e) { /* ignora */ } }
+  refreshCapa();
+  const novoKm = Math.min(KM_MAX, CAMINHADA.km);
+  if (novoKm === antes) return;
+  if (!MODO_ACOMP && (state.walking || state.ms > 0)) return; // não muda o trajeto no meio da caminhada
+  KM_PADRAO = novoKm;
+  usarRota(state.rota, true);
+  if (MODO_ACOMP) return;
+  if (!state.start || state.start.preset) { state.start = { ...startPadrao() }; state.route = null; }
+  kmMudou = { de: antes, para: novoKm };
+  save();
+  computeRoute();
+  pendingFit = true;
+  setTimeout(() => { if (map && state.route && currentTab === 'caminhada') { pendingFit = false; fitRoute(); } }, 80);
+  const txt = `A caminhada agora tem ${km1(novoKm)} km (antes ${km1(antes)} km).${CAMINHADA.kmMotivo ? ` ${CAMINHADA.kmMotivo}` : ''}`;
+  if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+  if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker) {
+    navigator.serviceWorker.ready.then((reg) => reg.showNotification('Caminhada atualizada', { body: txt, tag: 'caminhada-km', icon: 'icon.svg', badge: 'icon.svg' })).catch(() => {});
+  }
+}
+
+// ----------------------------- contagem regressiva -----------------------------
+function diasParaCaminhada() {
+  const [y, m, d] = CAMINHADA.data.split('-').map(Number);
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  return Math.round((new Date(y, m - 1, d) - hoje) / 86400000);
+}
+function dataPorExtenso() {
+  const [y, m, d] = CAMINHADA.data.split('-').map(Number);
+  const t = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return `${t.charAt(0).toUpperCase()}${t.slice(1)}${m === 11 && d === 2 ? ' · Dia de Finados' : ''}`;
+}
+function saidaResumo() {
+  if (!state.start) return '--';
+  if (!state.start.preset) return state.start.title || 'Ponto escolhido';
+  return cidadeEm(state.via === 'dutra' && state.rota === 'luz' ? DU : OF, KM_PADRAO) || state.start.title;
+}
+function refreshCapa() {
+  if (!$('capa')) return;
+  const n = diasParaCaminhada();
+  const num = $('capaNum'), pre = $('capaPre'), dias = $('capaDias');
+  if (n > 1) { pre.textContent = 'Faltam'; num.textContent = n.toLocaleString('pt-BR'); dias.textContent = 'dias para a sua peregrinação'; }
+  else if (n === 1) { pre.textContent = 'Falta'; num.textContent = '1'; dias.textContent = 'dia para a sua peregrinação. É amanhã!'; }
+  else if (n === 0) { pre.textContent = ''; num.textContent = 'Hoje'; dias.textContent = 'é o dia da sua peregrinação. Bom caminho! 🙏'; }
+  else { pre.textContent = ''; num.textContent = '✓'; dias.textContent = 'Peregrinação realizada. Graças a Deus!'; }
+  $('capaData').textContent = dataPorExtenso();
+  $('capaKm').textContent = `${km1(KM_PADRAO)} km`;
+  $('capaCam').textContent = NOME_CAMINHO[caminho()].replace(' (alternativa)', '');
+  $('capaSaida').textContent = saidaResumo();
+  const conf = CAMINHADA.kmOrigem === 'confirmado';
+  $('capaSt').textContent = conf
+    ? `Distância confirmada: ${km1(KM_PADRAO)} km.${CAMINHADA.kmMotivo ? ` ${CAMINHADA.kmMotivo}` : ''}`
+    : `Distância do planejamento (${km1(KM_PADRAO)} km). Quando anunciarem quantos km da Via Dutra serão fechados para os romeiros, a caminhada é atualizada aqui.`;
+  $('capaSt').className = `capa-st ${conf ? 'ok' : ''}`;
+  const c = $('contagem');
+  c.hidden = n < 0;
+  $('contTxt').textContent = n > 1 ? `Faltam ${n.toLocaleString('pt-BR')} dias para a sua peregrinação` : n === 1 ? 'Falta 1 dia: é amanhã!' : n === 0 ? 'Hoje é o dia da sua peregrinação!' : '';
+  $('contSub').textContent = `${CAMINHADA.data.split('-').reverse().join('/')} · ${km1(KM_PADRAO)} km · ${NOME_CAMINHO[caminho()].replace(' (alternativa)', '')}${conf ? '' : ' · distância do planejamento'}`;
+}
+let capaEscondidaEm = 0;
+function mostrarCapa(on) {
+  const capa = $('capa');
+  if (!capa) return;
+  if (on && (window.__semCapa || MODO_ACOMP || state.walking)) return;
+  if (on) refreshCapa();
+  capa.hidden = !on;
+  if (!on) capaEscondidaEm = Date.now();
+}
+
 // Avisa o caminhante: aviso na tela, vibração e notificação do celular (se permitida)
 function avisarMudanca(velho, novo) {
   const ids = new Set(velho.alertas.map((x) => `${x.id}|${x.nivel}|${x.texto}`));
@@ -843,7 +961,8 @@ function refreshAlertas() {
   $('alertBadge').textContent = n;
   const chip = $('alertChip');
   const ok = meus.find((a) => a.nivel === 'ok');
-  if (alertaNovo) { chip.hidden = false; chip.textContent = `🔔 Alerta atualizado: ${alertaNovo.titulo} · ver`; chip.className = `alert-chip ${alertaNovo.nivel === 'urgente' ? 'bad' : ''}`; }
+  if (kmMudou) { chip.hidden = false; chip.textContent = `📏 Caminhada atualizada: agora são ${km1(kmMudou.para)} km (antes ${km1(kmMudou.de)} km) · ver`; chip.className = 'alert-chip'; }
+  else if (alertaNovo) { chip.hidden = false; chip.textContent = `🔔 Alerta atualizado: ${alertaNovo.titulo} · ver`; chip.className = `alert-chip ${alertaNovo.nivel === 'urgente' ? 'bad' : ''}`; }
   else if (urg) { chip.hidden = false; chip.textContent = `⛔ ${urg.titulo} · ver`; chip.className = 'alert-chip bad'; }
   else if (n) { chip.hidden = false; chip.textContent = `⚠️ ${n} ${n > 1 ? 'alertas' : 'alerta'} para este caminho · ver`; chip.className = 'alert-chip'; }
   else if (ok) { chip.hidden = false; chip.textContent = `✅ ${ok.titulo} · ver`; chip.className = 'alert-chip okc'; }
@@ -1315,6 +1434,7 @@ function refreshAll() {
     refreshAlertas();
     refreshShare();
     refreshCaminho();
+    refreshCapa();
   }
   const rk = state.route ? `${state.route.key}:${state.route.pts.length}` : 'none';
   const sk = state.start ? `${state.start.p.join(',')}:${state.start.title}` : 'none';
@@ -1351,13 +1471,21 @@ function showTab(name) {
 // ---------------------------------------------------------------------
 function init() {
   // página antiga em cache com código novo: recarrega uma vez buscando a versão nova
-  if (!document.getElementById('acompInfo') || !document.getElementById('shareCard')) {
+  if (!document.getElementById('acompInfo') || !document.getElementById('shareCard') || !document.getElementById('capa')) {
     let ja = false;
     try { ja = sessionStorage.getItem('recarregou') === '1'; sessionStorage.setItem('recarregou', '1'); } catch (e) { /* ignora */ }
     if (!ja) { location.replace(`${location.pathname}?r=${Date.now()}${location.hash}`); return; }
   }
   if (MODO_ACOMP) { initAcompanhante(); return; }
   initMap();
+  mostrarCapa(true);
+  $('btnCapa').addEventListener('click', () => mostrarCapa(false));
+  $('contagem').addEventListener('click', () => mostrarCapa(true));
+  // voltando ao app depois de um tempo (30 min ou mais), mostra a contagem de novo
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') capaEscondidaEm = Math.max(capaEscondidaEm, Date.now());
+    else if ($('capa').hidden && Date.now() - capaEscondidaEm > 30 * 60 * 1000) mostrarCapa(true);
+  });
   $('btnWalk').addEventListener('click', toggleWalk);
   $('btnLayer').addEventListener('click', () => { state.layer = state.layer === 'satelite' ? 'mapa' : 'satelite'; save(); applyLayer(); });
   $('btnFollow').addEventListener('click', () => {
@@ -1398,16 +1526,12 @@ function init() {
       ul.innerHTML = '<li>Não foi possível buscar agora. Verifique a internet ou escolha o ponto no mapa.</li>';
     }
   });
-  $('btnStart35').addEventListener('click', () => setStart(START35.p, START35));
+  $('btnStart35').addEventListener('click', () => { const st = startPadrao(); setStart(st.p, st); });
   document.querySelectorAll('.rota-op').forEach((b) => b.addEventListener('click', () => trocarRota(b.dataset.rota)));
   document.querySelectorAll('#rotaSeg button').forEach((b) => b.addEventListener('click', () => escolherCaminho(b.dataset.r)));
-  document.querySelectorAll('.via').forEach((b) => b.addEventListener('click', () => {
-    if (b.disabled || state.via === b.dataset.via) return;
-    state.via = b.dataset.via;
-    state.route = null;
-    save();
-    refreshAll();
-    computeRoute();
+  document.querySelectorAll('.via[data-via]').forEach((b) => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    escolherCaminho(b.dataset.via);
   }));
   $('btnShareOn').addEventListener('click', ligarCompartilhamento);
   $('btnShareOff').addEventListener('click', () => { if (confirm('Parar de compartilhar sua localização? O link deixará de ser atualizado.')) desligarCompartilhamento(); });

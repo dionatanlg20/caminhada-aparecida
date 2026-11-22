@@ -1,169 +1,145 @@
 {
-  "verificado": "2026-11-15",
-  "atualizado": "2026-11-15T16:00",
-  "para": "19/11/2026",
-  "alertas": [
+ "verificado": "2026-11-22",
+ "atualizado": "2026-11-22T16:00",
+ "para": "02/11/2027",
+ "caminhada": {
+  "data": "2027-11-02",
+  "km": 50,
+  "kmOrigem": "planejamento",
+  "kmMotivo": ""
+ },
+ "alertas": [
+  {
+   "id": "dutra-km-aguardando",
+   "nivel": "atencao",
+   "rota": "dutra",
+   "titulo": "Fechamento da faixa da Dutra para romeiros: aguardando anúncio para 2027",
+   "texto": "Ainda não há anúncio da RioSP, PRF ou ANTT de quantos km da Via Dutra serão fechados para os romeiros em 2027. Em 2026, na Romaria Segura (30/09 a 18/10), a terceira faixa foi fechada com cones em cerca de 45 km. O app usa 50 km, do seu planejamento. Quando sair o anúncio, a distância da caminhada é atualizada aqui (se for 45 km, passa a ser 45 km). Atenção: a faixa costuma ser fechada só no período da romaria de outubro; confirme se ela vale também para 2 de novembro.",
+   "fontes": [
     {
-      "id": "luz-sem-bloqueio",
-      "nivel": "ok",
-      "rota": "luz",
-      "titulo": "Rota da Luz: nenhum bloqueio anunciado",
-      "texto": "Até 14/11 não encontramos comunicado de interdição no trecho Pindamonhangaba → Moreira César → Roseira → Aparecida (Estrada Municipal Pinhão do Borba, SP-062 / Rodovia Vereador Abel Fabrício Dias e Avenida Itaguaçu). Confirme na véspera com a Associação dos Amigos da Rota da Luz pelo WhatsApp.",
-      "fontes": [
-        {
-          "nome": "Associação dos Amigos da Rota da Luz",
-          "url": "https://www.amigosdarotadaluz.org/rotadaluz-mapas"
-        },
-        {
-          "nome": "Rota da Luz é alternativa da RioSP aos romeiros",
-          "url": "https://penaestrada.com.br/rota-luz-alternativa-riosp-romeiros/"
-        }
-      ]
+     "nome": "Via Dutra fecha 45 km de faixa com cones para romeiros (outubro)",
+     "url": "https://clickpetroleoegas.com.br/40-mil-pessoas-a-pe-no-meio-dos-caminhoes-via-dutra-fecha-45-km-de-faixa-com-cones-e-leva-a-antt-plano-de-calcada-ate-aparecida-btl96-mhbb01/"
     },
     {
-      "id": "dutra-sem-faixa",
-      "nivel": "atencao",
-      "rota": "dutra",
-      "titulo": "Dutra: terceira faixa para romeiros NÃO anunciada para o dia 19",
-      "texto": "Em outubro, na operação Romaria Segura (30/09 a 18/10), a RioSP fechou com cones a terceira faixa em cerca de 45 km sem acostamento para os romeiros, e montou tendas de apoio. Até 15/11 não há anúncio de faixa fechada para romeiros em novembro: no dia 19, quem for pela Dutra caminha pelo acostamento com o trânsito normal ao lado. Use a Dutra só se a Rota da Luz estiver bloqueada. Se a RioSP anunciar a faixa, este aviso muda.",
-      "fontes": [
-        {
-          "nome": "Via Dutra fecha 45 km de faixa com cones para romeiros (outubro)",
-          "url": "https://clickpetroleoegas.com.br/40-mil-pessoas-a-pe-no-meio-dos-caminhoes-via-dutra-fecha-45-km-de-faixa-com-cones-e-leva-a-antt-plano-de-calcada-ate-aparecida-btl96-mhbb01/"
-        },
-        {
-          "nome": "Romaria Segura 2026 (NetCampos)",
-          "url": "https://www.netcampos.com/noticias/2026/09/romaria-segura-2026-dutra-aparecida-sao-jose-vidoca.html"
-        },
-        {
-          "nome": "RioSP sobre o fechamento da terceira faixa (Folha do Aço)",
-          "url": "https://folhadoaco.com.br/2026/10/10/romeiros-de-volta-redonda-e-barra-mansa-reclamam-de-falta-de-interdicao-de-faixa-na-via-dutra-riosp-afirma-que-programou-acoes-de-seguranca/"
-        },
-        {
-          "nome": "29 pontos de apoio na romaria (Meon)",
-          "url": "https://www.meon.com.br/noticias/vale-do-paraiba-regiao/aparecida/romaria-para-aparecida-2026-tera-29-pontos-de-apoio-para-peregrinos-veja-detalhes"
-        }
-      ]
+     "nome": "Romaria Segura 2026 (NetCampos)",
+     "url": "https://www.netcampos.com/noticias/2026/09/romaria-segura-2026-dutra-aparecida-sao-jose-vidoca.html"
     },
     {
-      "id": "dutra-obras",
-      "nivel": "atencao",
-      "rota": "dutra",
-      "titulo": "Obras na Dutra entre Pindamonhangaba e Aparecida",
-      "texto": "Depois das romarias, a RioSP retomou obras de recuperação do pavimento no Vale do Paraíba, com interdições pontuais de faixas (por exemplo, no km 81, em Roseira). As obras da 3ª e da 4ª faixa entre Pindamonhangaba e Aparecida seguem cronograma próprio. Em trecho de obra, o acostamento pode estar estreito ou desviado. Até 15/11 não há cronograma divulgado para os dias 17 a 20/11 nesse trecho. Confirme com a RioSP: 0800 017 35 36.",
-      "fontes": [
-        {
-          "nome": "Obras de pavimento após a romaria; km 81 em Roseira (Vale360)",
-          "url": "https://www.vale360news.com.br/via-dutra-tera-obras-de-recuperacao-do-pavimento-apos-romaria-km-81-em-roseira-tera-interdicoes/"
-        },
-        {
-          "nome": "Dutra retoma obras após as romarias (012 News)",
-          "url": "https://www.012news.com.br/vale-do-paraiba-via-dutra-retoma-obras-de-pavimentacao-apos-periodo-de-romarias/"
-        },
-        {
-          "nome": "Via Dutra terá obras no Vale após romarias (OVALE)",
-          "url": "https://sampi.net.br/ovale/noticias/3011591/vale-do-paraiba/2026/10/via-dutra-tera-obras-no-vale-apos-periodo-de-romarias"
-        }
-      ]
+     "nome": "RioSP sobre o fechamento da terceira faixa (Folha do Aço)",
+     "url": "https://folhadoaco.com.br/2026/10/10/romeiros-de-volta-redonda-e-barra-mansa-reclamam-de-falta-de-interdicao-de-faixa-na-via-dutra-riosp-afirma-que-programou-acoes-de-seguranca/"
     },
     {
-      "id": "dutra-caminho-consciente",
-      "nivel": "info",
-      "rota": "dutra",
-      "titulo": "Na Dutra, siga o Caminho Consciente",
-      "texto": "Mapa oficial da CCR RioSP, PRF, ANTT e MPF: caminhe de frente para os carros, respeite a sinalização, use roupa clara e colete refletivo, caminhe de dia e se hidrate. Travessias seguras neste trecho: km 99 (Pindamonhangaba) e Ponte do Exército Brasileiro, no km 82 (Roseira). Emergência na rodovia: PRF 191.",
-      "fontes": [
-        {
-          "nome": "Novo mapa de percurso para romeiros (MPF)",
-          "url": "https://www.mpf.mp.br/o-mpf/unidades/pr-sp/noticias/apos-atuacao-do-mpf-romeiros-ganham-novo-mapa-de-percurso-ate-santuario-de-nossa-senhora-aparecida-em-sp"
-        }
-      ]
-    },
-    {
-      "id": "operacao-romeiros",
-      "nivel": "info",
-      "rota": "todas",
-      "titulo": "Operação Romeiros da PM segue até 29/11",
-      "texto": "A Polícia Militar mantém a Operação Romeiros no Circuito da Fé até 29 de novembro, com policiamento reforçado na região de Aparecida.",
-      "fontes": [
-        {
-          "nome": "10 milhões de romeiros esperados no Vale (OVALE)",
-          "url": "https://sampi.net.br/ovale/noticias/3002245/vale-do-paraiba/2026/09/aparecida-e-regiao-10-milhoes-de-romeiros-sao-esperados-no-vale-"
-        }
-      ]
-    },
-    {
-      "id": "feriado-20",
-      "nivel": "info",
-      "rota": "todas",
-      "titulo": "20/11 é feriado nacional",
-      "texto": "Dia Nacional de Zumbi e da Consciência Negra. Espere mais movimento nas estradas e em Aparecida a partir da noite do dia 19.",
-      "fontes": [
-        {
-          "nome": "Lei 14.759/2023",
-          "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm"
-        }
-      ]
-    },
-    {
-      "id": "fe-sem-bloqueio",
-      "nivel": "ok",
-      "rota": "fe",
-      "titulo": "Caminho da Fé: nenhum bloqueio anunciado para novembro",
-      "texto": "Até 15/11 não encontramos comunicado de interdição da Estrada do Gomeral, da estrada Caminho da Fé em Guaratinguetá nem da chegada por Potim. Confirme na véspera com a Associação dos Amigos do Caminho da Fé pelo WhatsApp e com a Defesa Civil de Guaratinguetá (199).",
-      "fontes": [
-        {
-          "nome": "Associação dos Amigos do Caminho da Fé",
-          "url": "https://caminhodafe.com.br/ptbr/comunicados/"
-        }
-      ]
-    },
-    {
-      "id": "fe-gomeral-meia-pista",
-      "nivel": "atencao",
-      "rota": "fe",
-      "titulo": "Estrada do Gomeral: trechos danificados por chuvas",
-      "texto": "A Defesa Civil de Guaratinguetá sinalizou um trecho da estrada de acesso ao Gomeral, entre as igrejas de São Lázaro e Milagres, que ficou em meia pista depois de chuvas fortes (março de 2026). Em dezembro de 2025, as chuvas danificaram a cabeceira de uma ponte perto do restaurante Tao do Gomeral. Não encontramos atualização para novembro: atenção a esses pontos.",
-      "fontes": [
-        {
-          "nome": "Defesa Civil sinaliza trecho da estrada do Gomeral (Prefeitura de Guaratinguetá)",
-          "url": "https://guaratingueta.sp.gov.br/defesa-civil-sinaliza-trecho-da-estrada-de-acesso-ao-gomeral-de-forma-preventiva/"
-        },
-        {
-          "nome": "Chuvas e danos na Estrada Cênica (Portal R3)",
-          "url": "https://www.portalr3.com.br/2025/12/29/chuvas-danos-cacapava-guaratingueta-estrada-cenica"
-        }
-      ]
-    },
-    {
-      "id": "fe-terra-chuva",
-      "nivel": "atencao",
-      "rota": "fe",
-      "titulo": "Serra em estrada de terra: com chuva, barro e carro só 4x4",
-      "texto": "O ponto de saída e a descida ficam em estrada de terra na Serra da Mantiqueira. Peregrinos relatam lamaçais na descida das Pedrinhas e recomendam carro 4x4 com chuva, mesmo pouca. Se chover na véspera, combine com o motorista um carro adequado ou confirme as condições antes de subir.",
-      "fontes": [
-        {
-          "nome": "Relatos do trecho Campos do Jordão–Gomeral (Peregrino da Esperança)",
-          "url": "https://peregrinodaesperanca.com.br/campos-do-jordao"
-        },
-        {
-          "nome": "Travessia Campos do Jordão–Aparecida (Turismo de Aventura)",
-          "url": "https://www.turismodeaventura.eco.br/caminhodafe"
-        }
-      ]
-    },
-    {
-      "id": "fe-descida",
-      "nivel": "info",
-      "rota": "fe",
-      "titulo": "Descida longa: de 1.700 m para 630 m de altitude",
-      "texto": "Os 35 km descem cerca de 1.100 m, com curvas fechadas na Estrada do Gomeral. Use tênis com boa aderência, cuide dos joelhos na descida e leve água: há poucos pontos de apoio no alto da serra. Emergência: SAMU 192, Defesa Civil 199.",
-      "fontes": [
-        {
-          "nome": "Mapa oficial do Caminho da Fé",
-          "url": "https://caminhodafe.com.br/ptbr/"
-        }
-      ]
+     "nome": "29 pontos de apoio na romaria (Meon)",
+     "url": "https://www.meon.com.br/noticias/vale-do-paraiba-regiao/aparecida/romaria-para-aparecida-2026-tera-29-pontos-de-apoio-para-peregrinos-veja-detalhes"
     }
-  ]
+   ]
+  },
+  {
+   "id": "finados",
+   "nivel": "info",
+   "rota": "todas",
+   "titulo": "2/11/2027 é feriado de Finados (terça-feira)",
+   "texto": "Espere muito movimento nas estradas e em Aparecida, principalmente se houver emenda com a segunda-feira (1/11). Saia cedo, de madrugada, para andar com menos calor e chegar com luz do dia.",
+   "fontes": [
+    {
+     "nome": "Lei 10.607/2002 (feriados nacionais)",
+     "url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10607.htm"
+    }
+   ]
+  },
+  {
+   "id": "luz-planejamento",
+   "nivel": "info",
+   "rota": "luz",
+   "titulo": "Rota da Luz: sem informações para 2027 ainda",
+   "texto": "Os 50 km finais saem de Taubaté e passam por Pindamonhangaba, Moreira César e Roseira até a Praça da Fé. Perto da data, os alertas de bloqueio e obras serão conferidos de novo. Confirme na véspera com a Associação dos Amigos da Rota da Luz pelo WhatsApp.",
+   "fontes": [
+    {
+     "nome": "Associação dos Amigos da Rota da Luz",
+     "url": "https://www.amigosdarotadaluz.org/rotadaluz-mapas"
+    }
+   ]
+  },
+  {
+   "id": "dutra-caminho-consciente",
+   "nivel": "info",
+   "rota": "dutra",
+   "titulo": "Na Dutra, siga o Caminho Consciente",
+   "texto": "Mapa oficial da CCR RioSP, PRF, ANTT e MPF: caminhe de frente para os carros, respeite a sinalização, use roupa clara e colete refletivo, caminhe de dia e se hidrate. Travessias seguras neste trecho: km 99 (Pindamonhangaba) e Ponte do Exército Brasileiro, no km 82 (Roseira). Emergência na rodovia: PRF 191.",
+   "fontes": [
+    {
+     "nome": "Novo mapa de percurso para romeiros (MPF)",
+     "url": "https://www.mpf.mp.br/o-mpf/unidades/pr-sp/noticias/apos-atuacao-do-mpf-romeiros-ganham-novo-mapa-de-percurso-ate-santuario-de-nossa-senhora-aparecida-em-sp"
+    }
+   ]
+  },
+  {
+   "id": "dutra-obras",
+   "nivel": "info",
+   "rota": "dutra",
+   "titulo": "Obras da 3ª e 4ª faixa na Dutra no Vale do Paraíba",
+   "texto": "A RioSP tem obras de ampliação e de pavimento no trecho entre São José dos Campos e Aparecida. Em trecho de obra, o acostamento pode estar estreito ou interditado. A situação será conferida de novo perto da data.",
+   "fontes": [
+    {
+     "nome": "Obras de pavimento após a romaria; km 81 em Roseira (Vale360)",
+     "url": "https://www.vale360news.com.br/via-dutra-tera-obras-de-recuperacao-do-pavimento-apos-romaria-km-81-em-roseira-tera-interdicoes/"
+    },
+    {
+     "nome": "Dutra retoma obras após as romarias (012 News)",
+     "url": "https://www.012news.com.br/vale-do-paraiba-via-dutra-retoma-obras-de-pavimentacao-apos-periodo-de-romarias/"
+    },
+    {
+     "nome": "Via Dutra terá obras no Vale após romarias (OVALE)",
+     "url": "https://sampi.net.br/ovale/noticias/3011591/vale-do-paraiba/2026/10/via-dutra-tera-obras-no-vale-apos-periodo-de-romarias"
+    }
+   ]
+  },
+  {
+   "id": "fe-terra-chuva",
+   "nivel": "atencao",
+   "rota": "fe",
+   "titulo": "Serra em estrada de terra: com chuva, barro e carro só 4x4",
+   "texto": "O ponto de saída e a descida ficam em estrada de terra na Serra da Mantiqueira. Peregrinos relatam lamaçais na descida das Pedrinhas e recomendam carro 4x4 com chuva, mesmo pouca. Se chover na véspera, combine com o motorista um carro adequado ou confirme as condições antes de subir.",
+   "fontes": [
+    {
+     "nome": "Relatos do trecho Campos do Jordão–Gomeral (Peregrino da Esperança)",
+     "url": "https://peregrinodaesperanca.com.br/campos-do-jordao"
+    },
+    {
+     "nome": "Travessia Campos do Jordão–Aparecida (Turismo de Aventura)",
+     "url": "https://www.turismodeaventura.eco.br/caminhodafe"
+    }
+   ]
+  },
+  {
+   "id": "fe-descida",
+   "nivel": "info",
+   "rota": "fe",
+   "titulo": "Serra: sobe até quase 2.000 m e depois desce para 630 m",
+   "texto": "Saindo de Campos do Jordão (cerca de 1.560 m), os primeiros 7 km sobem até quase 2.000 m de altitude; depois vem a descida longa pela Estrada do Gomeral até 630 m, com curvas fechadas. Use tênis com boa aderência, cuide dos joelhos e leve água: há poucos pontos de apoio no alto da serra. Emergência: SAMU 192, Defesa Civil 199.",
+   "fontes": [
+    {
+     "nome": "Mapa oficial do Caminho da Fé",
+     "url": "https://caminhodafe.com.br/ptbr/"
+    }
+   ]
+  },
+  {
+   "id": "fe-gomeral-meia-pista",
+   "nivel": "info",
+   "rota": "fe",
+   "titulo": "Estrada do Gomeral: histórico de danos por chuvas",
+   "texto": "A Defesa Civil de Guaratinguetá sinalizou um trecho da estrada de acesso ao Gomeral, entre as igrejas de São Lázaro e Milagres, que ficou em meia pista depois de chuvas fortes (março de 2026). Em dezembro de 2025, as chuvas danificaram a cabeceira de uma ponte perto do restaurante Tao do Gomeral. Perto da data, a situação será conferida de novo: atenção a esses pontos.",
+   "fontes": [
+    {
+     "nome": "Defesa Civil sinaliza trecho da estrada do Gomeral (Prefeitura de Guaratinguetá)",
+     "url": "https://guaratingueta.sp.gov.br/defesa-civil-sinaliza-trecho-da-estrada-de-acesso-ao-gomeral-de-forma-preventiva/"
+    },
+    {
+     "nome": "Chuvas e danos na Estrada Cênica (Portal R3)",
+     "url": "https://www.portalr3.com.br/2025/12/29/chuvas-danos-cacapava-guaratingueta-estrada-cenica"
+    }
+   ]
+  }
+ ]
 }

@@ -18,7 +18,7 @@ window.PARADAS = [
   },
   {
     id: 'graal-dutra', nome: 'Graal Market Dutra', onde: 'Via Dutra, km 182,5 · Guararema (SP)',
-    horas: '24 horas', para: 'café e banheiro', obs: 'Restaurante, cafeteria, conveniência e banheiros. Último descanso antes de Pindamonhangaba.',
+    horas: '24 horas', para: 'café e banheiro', obs: 'Restaurante, cafeteria, conveniência e banheiros. Último descanso antes do ponto de saída.',
     p: [-23.3417578, -46.1535531], q: 'Graal Market Dutra, Guararema, SP',
   },
 ];

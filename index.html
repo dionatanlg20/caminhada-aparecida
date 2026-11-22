@@ -4,16 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Caminhada a Aparecida</title>
-<meta name="description" content="Os 35 km finais a pé até Aparecida, pela Rota da Luz ou pelo Caminho da Fé: ponto de saída, instruções passo a passo, mapa, alertas e acompanhamento ao vivo.">
+<meta name="description" content="Peregrinação a pé até Aparecida em 2 de novembro de 2027, pela Rota da Luz, pela Via Dutra ou pelo Caminho da Fé: ponto de saída, instruções passo a passo, mapa, alertas e acompanhamento ao vivo.">
 <meta name="theme-color" content="#0f2a4f">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
 <div class="app" id="app">
+
+  <!-- ABERTURA: contagem regressiva (aparece toda vez que o app é aberto) -->
+  <div class="capa" id="capa" hidden>
+    <div class="capa-box" role="dialog" aria-labelledby="capaNum">
+      <div class="capa-ic">⛪</div>
+      <div class="capa-pre" id="capaPre">Faltam</div>
+      <div class="capa-num" id="capaNum">--</div>
+      <div class="capa-dias" id="capaDias">dias para a sua peregrinação</div>
+      <div class="capa-data" id="capaData"></div>
+      <div class="capa-grid">
+        <div><b id="capaKm">--</b><span>a pé</span></div>
+        <div><b id="capaCam">--</b><span>caminho</span></div>
+        <div><b id="capaSaida">--</b><span>saída</span></div>
+      </div>
+      <p class="capa-st" id="capaSt"></p>
+      <button class="btn primary wide" id="btnCapa">Ver minha rota</button>
+    </div>
+  </div>
 
   <!-- MAPA (metade de cima) -->
   <section class="map-area" id="mapArea">
@@ -32,6 +50,7 @@
 
   <!-- DASHBOARD (rola embaixo) -->
   <main class="dash" id="dash">
+    <button class="contagem" id="contagem" hidden><span class="cont-ic">⏳</span><span><b id="contTxt"></b><small id="contSub"></small></span></button>
     <div class="rota-seg" id="rotaSeg" role="radiogroup" aria-label="Caminho escolhido">
       <button data-r="luz" role="radio"><i class="dot luz"></i>Rota da Luz</button>
       <button data-r="dutra" role="radio"><i class="dot dutra"></i>Via Dutra</button>
@@ -117,13 +136,13 @@
           <div class="vias">
             <button class="via rota-op" id="rotaLuz" data-rota="luz">
               <span class="via-t">Rota da Luz</span>
-              <span class="via-d">Sai do sul de Pindamonhangaba · terreno plano, estradas rurais e cidades · termina na Praça da Fé</span>
-              <b>35 km</b>
+              <span class="via-d">Estradas rurais e cidades do Vale do Paraíba (Taubaté, Pindamonhangaba, Roseira) · terreno plano · termina na Praça da Fé</span>
+              <b class="km-cam">50,0 km</b>
             </button>
             <button class="via rota-op" id="rotaFe" data-rota="fe">
               <span class="via-t">Caminho da Fé</span>
-              <span class="via-d">Sai do alto da serra (Estrada do Gomeral, Guaratinguetá) · descida de 1.700 m para 630 m, quase toda em terra · termina no Santuário Nacional</span>
-              <b>35 km</b>
+              <span class="via-d">Desce a Serra da Mantiqueira (Campos do Jordão, Estrada do Gomeral, Guaratinguetá) · muita descida e estrada de terra · termina no Santuário Nacional</span>
+              <b class="km-cam">50,0 km</b>
             </button>
           </div>
         </div>
@@ -137,7 +156,7 @@
               <div class="muted" id="startSub">Onde o carro vai te deixar.</div>
             </div>
           </div>
-          <button class="btn primary wide" id="btnStart35">Usar o ponto dos 35 km da Rota da Luz</button>
+          <button class="btn primary wide" id="btnStart35">Usar o ponto de saída padrão</button>
           <form id="searchForm" class="search">
             <input id="searchInput" type="search" placeholder="Ou digite outro endereço (ex.: Rua Paraná, 120, Pindamonhangaba)" autocomplete="street-address">
             <button class="btn" type="submit">Buscar</button>
@@ -165,8 +184,8 @@
               <b id="viaLuzKm">--</b>
             </button>
             <button class="via" id="viaDutra" data-via="dutra">
-              <span class="via-t">Via Dutra <span class="tag warn">alternativa</span></span>
-              <span class="via-d">Pelo acostamento da rodovia. Use só se a Rota da Luz estiver bloqueada</span>
+              <span class="via-t">Via Dutra <span class="tag warn">rodovia</span></span>
+              <span class="via-d">Pela própria rodovia, na faixa liberada para os romeiros quando houver. Sai direto da Dutra</span>
               <span class="via-st" id="viaDutraSt"></span>
               <b id="viaDutraKm">--</b>
             </button>
@@ -258,10 +277,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=30"></script>
-<script src="rota-dutra.js?v=30"></script>
-<script src="rota-fe.js?v=30"></script>
-<script src="paradas.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="rota-oficial.js?v=31"></script>
+<script src="rota-dutra.js?v=31"></script>
+<script src="rota-fe.js?v=31"></script>
+<script src="paradas.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

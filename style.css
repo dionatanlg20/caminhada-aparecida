@@ -360,3 +360,26 @@ body.acomp .sec, body.acomp .etapas { display: none !important; }
 .par-bts .btn { padding: 7px 9px; font-size: .82rem; flex: 1 1 80px; text-align: center; }
 .par-ok { display: flex; align-items: center; gap: 6px; font-size: .85rem; margin-top: 2px; }
 .par-ok input { width: 18px; height: 18px; }
+
+/* Abertura: contagem regressiva */
+.capa { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(circle at 50% 20%, #1d4b8f 0%, #0f2a4f 55%, #08172d 100%); color: #fff; overflow-y: auto; }
+.capa-box { width: 100%; max-width: 420px; text-align: center; display: grid; gap: 6px; }
+.capa-ic { font-size: 2.6rem; }
+.capa-pre { font-size: 1.15rem; opacity: .85; min-height: 1.2em; }
+.capa-num { font-size: clamp(4.2rem, 24vw, 7rem); font-weight: 800; line-height: 1; letter-spacing: -.02em; color: #ffd76a; }
+.capa-dias { font-size: 1.2rem; font-weight: 600; }
+.capa-data { font-size: .95rem; opacity: .8; margin-bottom: 10px; }
+.capa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 6px; }
+.capa-grid div { background: rgba(255,255,255,.1); border-radius: 14px; padding: 10px 6px; display: grid; gap: 2px; min-width: 0; }
+.capa-grid b { font-size: 1rem; overflow-wrap: anywhere; }
+.capa-grid span { font-size: .75rem; opacity: .75; }
+.capa-st { font-size: .85rem; line-height: 1.35; opacity: .85; margin: 4px 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.08); }
+.capa-st.ok { background: rgba(30,160,90,.3); opacity: 1; }
+.capa .btn.primary { background: #ffd76a; color: #0f2a4f; border-color: #ffd76a; font-weight: 800; }
+.contagem { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; margin: 0 0 10px; padding: 10px 12px;
+  border-radius: 14px; border: 0; background: linear-gradient(90deg, #0f2a4f, #1d4b8f); color: #fff; font: inherit; cursor: pointer; }
+.contagem .cont-ic { font-size: 1.4rem; }
+.contagem b { display: block; font-size: .98rem; }
+.contagem small { display: block; font-size: .8rem; opacity: .8; }
+body.acomp .contagem { display: none !important; }
