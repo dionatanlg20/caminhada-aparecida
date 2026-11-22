@@ -1,7 +1,7 @@
 // Guarda os arquivos do app para abrir mesmo sem internet.
 // Mapas, satélite, rotas e busca de endereço sempre vêm da internet.
-const CACHE = 'caminhada-v35';
-const FILES = ['./', 'index.html', 'style.css?v=35', 'app.js?v=35', 'rota-oficial.js?v=35', 'rota-dutra.js?v=35', 'rota-fe.js?v=35', 'paradas.js?v=35', 'alertas.json', 'manifest.json', 'icon.svg',
+const CACHE = 'caminhada-v36';
+const FILES = ['./', 'index.html', 'style.css?v=36', 'app.js?v=36', 'rota-oficial.js?v=36', 'rota-dutra.js?v=36', 'rota-fe.js?v=36', 'paradas.js?v=36', 'alertas.json', 'manifest.json', 'icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css'];
 const SEMPRE_ONLINE = ['tile.openstreetmap.org', 'tiles.openfreemap.org', 'basemaps.cartocdn.com', 'arcgisonline.com',

@@ -34,6 +34,7 @@ const CAMINHADA_PADRAO = {
   paradaCadaH: 2, paradaMin: 30,                           // no carro: 30 min de parada a cada 2 h de estrada
   folga: 0.10,                                             // 10% a mais no tempo de estrada (trânsito do feriadão)
   preparoMin: 15,                                          // chegar ao ponto de saída 15 min antes de começar
+  pausaPeMin: 60,                                          // paradas na caminhada a pé (total)
   tomtomKey: '',                                           // chave da TomTom (trânsito); vazia = rota sem trânsito
 };
 let CAMINHADA = { ...CAMINHADA_PADRAO };
@@ -41,6 +42,10 @@ try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c && c.
 const KM_MAX = 60;               // os traçados cobrem os 62 km finais de cada caminho
 let KM_PADRAO = Math.min(KM_MAX, CAMINHADA.km);  // km até o término
 const VELOCIDADE = 4.5;          // km/h de caminhada
+// Tempo a pé para "km" de um trajeto de "total" km: andando + a parte proporcional das paradas (1 h no total)
+const pausaPeH = () => ((typeof CAMINHADA !== 'undefined' && CAMINHADA.pausaPeMin != null ? CAMINHADA.pausaPeMin : 60) / 60);
+const tempoPe = (km, total) => km / VELOCIDADE + pausaPeH() * (total > 0 ? Math.min(1, km / total) : 1);
+const txtPausa = () => `${fmtDur(pausaPeH())} de paradas`;
 const FORA_DO_CAMINHO = 0.06;    // km (60 m)
 const FORA_NA_DUTRA = 0.12;      // na rodovia o traçado segue o centro da pista: tolerância maior
 const NO_PONTO = 0.15;            // até 150 m do ponto de saída = chegou de carro
@@ -626,7 +631,7 @@ function refreshStats(n) {
   $('sAndado').textContent = state.km < 0.01 ? '0,0 km' : fmtDist(state.km);
   $('sTempo').textContent = fmtClock(elapsed());
   if (rest != null && rest > 0) {
-    const t = new Date(Date.now() + rest / VELOCIDADE * 3600000);
+    const t = new Date(Date.now() + tempoPe(rest, n.total) * 3600000);
     $('sChegada').textContent = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
   } else {
     $('sChegada').textContent = n.kind === 'arrived' ? 'agora' : '--';
@@ -670,7 +675,7 @@ function refreshEtapas() {
     ? `Você está no ponto de saída: ${state.start.title}`
     : `${state.start.title}${state.start.preset && !state.start.title.includes(saidaResumo()) ? `, ${saidaResumo()}` : ''}${d != null ? ` · você está a ${fmtDist(d)} daqui, em linha reta` : ''}`;
   $('et2tit').textContent = `A pé até ${FIM.ate}`;
-  $('et2sub').textContent = `${fmtDist(state.route.dist)} · cerca de ${fmtDur(state.route.dist / VELOCIDADE)} andando${chegou ? ' · pode começar!' : ''}`;
+  $('et2sub').textContent = `${fmtDist(state.route.dist)} · cerca de ${fmtDur(tempoPe(state.route.dist, state.route.dist))} com ${txtPausa()}${chegou ? ' · pode começar!' : ''}`;
 }
 
 // Paradas da viagem de carro (paradas.js)
@@ -722,7 +727,7 @@ function refreshTrajeto(n) {
     $('lnkWaze').href = `https://waze.com/ul?ll=${la},${ln}&navigate=yes`;
   }
   $('sumDist').textContent = r ? fmtDist(r.dist) : '--';
-  $('sumTime').textContent = r ? fmtDur(r.dist / VELOCIDADE) : '--';
+  $('sumTime').textContent = r ? fmtDur(tempoPe(r.dist, r.dist)) : '--';
   let info;
   if (!s) info = 'Escolha o ponto de saída.';
   else if (!r) info = routeError ? 'Sem internet para calcular o caminho até a trilha. Ele será calculado assim que houver conexão.' : 'Calculando…';
@@ -969,7 +974,7 @@ function planoViagem() {
   let saida = new Date(inicio - totalMin * 60000);
   saida = new Date(Math.floor(saida / 900000) * 900000); // arredonda para baixo, de 15 em 15 min
   const kmPe = state.route ? state.route.dist : KM_PADRAO;
-  const fim = new Date(+inicio + kmPe / VELOCIDADE * 3600000);
+  const fim = new Date(+inicio + tempoPe(kmPe, kmPe) * 3600000);
   return { v, estrada, nParadas, saida, chegaPonto, inicio, fim, kmPe };
 }
 function renderPlano() {
@@ -982,7 +987,7 @@ function renderPlano() {
     ['☕', `${pl.nParadas} parada${pl.nParadas === 1 ? '' : 's'} de ${CAMINHADA.paradaMin} min`, `uma a cada ${CAMINHADA.paradaCadaH} h de estrada · ${fmtDur(pl.estrada)} de estrada (${Math.round(pl.v.km)} km${pl.v.aprox ? ', estimativa' : ''}${pl.v.transito ? ', com o trânsito previsto para o horário' : ', sem trânsito + 10% de folga'})`],
     ['📍', `${diaCurto(pl.chegaPonto)}, ${hm(pl.chegaPonto)}`, `Chegada ao ponto de saída (${saidaResumo()})`],
     ['🚶', `${hm(pl.inicio)}`, `Início da caminhada (${km1(pl.kmPe)} km)`],
-    ['⛪', `≈ ${hm(pl.fim)}`, `Chegada ${FIM.chegada} (a ${km1(VELOCIDADE)} km/h, sem contar as pausas)`],
+    ['⛪', `≈ ${hm(pl.fim)}`, `Chegada ${FIM.chegada} (${fmtDur(pl.kmPe / VELOCIDADE)} andando a ${km1(VELOCIDADE)} km/h + ${txtPausa()})`],
   ];
   // posição atual (tempo real)
   if (me && !state.walking && state.start && dist(me, state.start.p) > NO_PONTO) {
@@ -1301,7 +1306,7 @@ function renderAcomp() {
   $('sAndado').textContent = p.al != null ? fmtDist(p.al) : '--';
   $('sTempo').textContent = idade < 60000 ? 'agora' : `há ${Math.round(idade / 60000)} min`;
   if (p.r != null && p.r > 0.05 && !acomp.fim) {
-    const eta = new Date(p.t + p.r / VELOCIDADE * 3600000);
+    const eta = new Date(p.t + tempoPe(p.r, p.tot) * 3600000);
     $('sChegada').textContent = `${String(eta.getHours()).padStart(2, '0')}:${String(eta.getMinutes()).padStart(2, '0')}`;
   } else $('sChegada').textContent = p.r != null && p.r <= 0.05 ? 'chegou' : '--';
   $('bar').style.width = p.tot ? `${Math.min(100, (p.al || 0) / p.tot * 100).toFixed(1)}%` : '0%';
