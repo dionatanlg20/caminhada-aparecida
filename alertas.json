@@ -1,12 +1,13 @@
 {
  "verificado": "2026-11-22",
  "atualizado": "2026-11-22T16:00",
- "para": "02/11/2027",
+ "para": "30/10/2027",
  "caminhada": {
-  "data": "2027-11-02",
+  "data": "2027-10-30",
   "km": 50,
   "kmOrigem": "planejamento",
-  "kmMotivo": ""
+  "kmMotivo": "",
+  "viagem": "Saída de Curitiba na sexta, 29/10, à noite"
  },
  "alertas": [
   {
@@ -14,7 +15,7 @@
    "nivel": "atencao",
    "rota": "dutra",
    "titulo": "Fechamento da faixa da Dutra para romeiros: aguardando anúncio para 2027",
-   "texto": "Ainda não há anúncio da RioSP, PRF ou ANTT de quantos km da Via Dutra serão fechados para os romeiros em 2027. Em 2026, na Romaria Segura (30/09 a 18/10), a terceira faixa foi fechada com cones em cerca de 45 km. O app usa 50 km, do seu planejamento. Quando sair o anúncio, a distância da caminhada é atualizada aqui (se for 45 km, passa a ser 45 km). Atenção: a faixa costuma ser fechada só no período da romaria de outubro; confirme se ela vale também para 2 de novembro.",
+   "texto": "Ainda não há anúncio da RioSP, PRF ou ANTT de quantos km da Via Dutra serão fechados para os romeiros em 2027. Em 2026, na Romaria Segura (30/09 a 18/10), a terceira faixa foi fechada com cones em cerca de 45 km. O app usa 50 km, do seu planejamento. Quando sair o anúncio, a distância da caminhada é atualizada aqui (se for 45 km, passa a ser 45 km). Atenção: em 2026 a faixa ficou fechada só até 18/10; confirme se em 2027 ela vale também para o sábado, 30 de outubro.",
    "fontes": [
     {
      "nome": "Via Dutra fecha 45 km de faixa com cones para romeiros (outubro)",
@@ -38,8 +39,8 @@
    "id": "finados",
    "nivel": "info",
    "rota": "todas",
-   "titulo": "2/11/2027 é feriado de Finados (terça-feira)",
-   "texto": "Espere muito movimento nas estradas e em Aparecida, principalmente se houver emenda com a segunda-feira (1/11). Saia cedo, de madrugada, para andar com menos calor e chegar com luz do dia.",
+   "titulo": "Feriadão de Finados: terça, 2/11/2027",
+   "texto": "A caminhada é no sábado, 30/10, começo do feriadão de Finados (muita gente emenda a segunda, 1/11). Espere estradas e Aparecida cheias, principalmente a Régis Bittencourt e a Dutra na sexta à noite. Comece a andar cedo para fugir do calor e chegar com luz do dia.",
    "fontes": [
     {
      "nome": "Lei 10.607/2002 (feriados nacionais)",

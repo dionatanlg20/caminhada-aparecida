@@ -383,3 +383,4 @@ body.acomp .sec, body.acomp .etapas { display: none !important; }
 .contagem b { display: block; font-size: .98rem; }
 .contagem small { display: block; font-size: .8rem; opacity: .8; }
 body.acomp .contagem { display: none !important; }
+.capa-viagem { font-size: .9rem; margin: -6px 0 10px; color: #ffd76a; }

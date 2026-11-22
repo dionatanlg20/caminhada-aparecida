@@ -27,7 +27,7 @@ const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', p: [-22.850521, -4
 // Caminhada planejada: data e distância. Valores do planejamento; alertas.json ("caminhada") pode mudar
 // a distância quando sair o anúncio de quantos km da Via Dutra serão fechados para os romeiros.
 const CFG_KEY = 'caminhada-aparecida-config';
-const CAMINHADA_PADRAO = { data: '2027-11-02', km: 50, kmOrigem: 'planejamento' };
+const CAMINHADA_PADRAO = { data: '2027-10-30', km: 50, kmOrigem: 'planejamento', viagem: 'Saída de Curitiba na sexta, 29/10, à noite' };
 let CAMINHADA = { ...CAMINHADA_PADRAO };
 try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c && c.km > 0 && c.data) CAMINHADA = { ...CAMINHADA_PADRAO, ...c }; } catch (e) { /* sem armazenamento */ }
 const KM_MAX = 60;               // os traçados cobrem os 62 km finais de cada caminho
@@ -865,6 +865,8 @@ function refreshCapa() {
   else if (n === 0) { pre.textContent = ''; num.textContent = 'Hoje'; dias.textContent = 'é o dia da sua peregrinação. Bom caminho! 🙏'; }
   else { pre.textContent = ''; num.textContent = '✓'; dias.textContent = 'Peregrinação realizada. Graças a Deus!'; }
   $('capaData').textContent = dataPorExtenso();
+  $('capaViagem').textContent = CAMINHADA.viagem ? `🚗 ${CAMINHADA.viagem}` : '';
+  $('capaViagem').hidden = !CAMINHADA.viagem;
   $('capaKm').textContent = `${km1(KM_PADRAO)} km`;
   $('capaCam').textContent = NOME_CAMINHO[caminho()].replace(' (alternativa)', '');
   $('capaSaida').textContent = saidaResumo();

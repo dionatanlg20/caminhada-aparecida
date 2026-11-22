@@ -1,6 +1,6 @@
 # Caminhada a Aparecida
 
-App para a peregrinação a pé até Aparecida em **2 de novembro de 2027**, pela Rota da Luz, pela Via Dutra ou pelo Caminho da Fé. Abre no navegador do celular e pode ser instalado na tela inicial.
+App para a peregrinação a pé até Aparecida em **sábado, 30 de outubro de 2027** (saída de Curitiba na sexta à noite), pela Rota da Luz, pela Via Dutra ou pelo Caminho da Fé. Abre no navegador do celular e pode ser instalado na tela inicial.
 
 - **Contagem regressiva:** toda vez que o app abre, mostra quantos dias faltam para a peregrinação, a distância, o caminho e a cidade de saída.
 - **Distância da caminhada:** 50 km pelo planejamento. Quando sair o anúncio de quantos km da Via Dutra serão fechados para os romeiros, basta mudar `caminhada.km` em `alertas.json` (ex.: 45): o app recalcula o ponto de saída dos três caminhos e avisa na tela. Os traçados cobrem os 62 km finais de cada caminho.
