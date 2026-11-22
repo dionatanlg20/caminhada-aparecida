@@ -34,6 +34,7 @@ const CAMINHADA_PADRAO = {
   paradaCadaH: 2, paradaMin: 30,                           // no carro: 30 min de parada a cada 2 h de estrada
   folga: 0.10,                                             // 10% a mais no tempo de estrada (trânsito do feriadão)
   preparoMin: 15,                                          // chegar ao ponto de saída 15 min antes de começar
+  tomtomKey: '',                                           // chave da TomTom (trânsito); vazia = rota sem trânsito
 };
 let CAMINHADA = { ...CAMINHADA_PADRAO };
 try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c && c.km > 0 && c.data) CAMINHADA = { ...CAMINHADA_PADRAO, ...c }; } catch (e) { /* sem armazenamento */ }
@@ -899,29 +900,66 @@ function estimarViagem() {
   let km = 0; for (let i = 1; i < pts.length; i++) km += dist(pts[i - 1], pts[i]) * 1.25;
   return { key: chaveViagem(), km, h: km / 75, aprox: true };
 }
+// Rota de carro passando pelos pontos. Com a chave da TomTom: tempo com trânsito (o de agora, ou o
+// previsto pelo histórico para o horário de saída). Sem a chave: tempo do mapa, sem trânsito (OSRM).
+const TOMTOM = 'https://api.tomtom.com/routing/1/calculateRoute';
+const chaveTransito = () => { try { return localStorage.getItem('caminhada-aparecida-tomtom') || CAMINHADA.tomtomKey || ''; } catch (e) { return CAMINHADA.tomtomKey || ''; } };
+async function rotaCarro(pts, saida) {
+  const key = chaveTransito();
+  if (key) {
+    try {
+      const locs = pts.map(([la, ln]) => `${la.toFixed(6)},${ln.toFixed(6)}`).join(':');
+      const dep = saida ? saida.toISOString().replace(/\.\d{3}Z$/, 'Z') : 'now';
+      const j = await getJSON(`${TOMTOM}/${locs}/json?key=${encodeURIComponent(key)}&traffic=true&travelMode=car&routeType=fastest&departAt=${dep}`);
+      const sm = j.routes[0].summary;
+      return { km: sm.lengthInMeters / 1000, h: sm.travelTimeInSeconds / 3600, atrasoMin: Math.round((sm.trafficDelayInSeconds || 0) / 60), transito: true };
+    } catch (e) { /* TomTom indisponível: usa o mapa sem trânsito */ }
+  }
+  const j = await getJSON(`${CARRO}/route/v1/driving/${pts.map(([la, ln]) => `${ln.toFixed(6)},${la.toFixed(6)}`).join('%3B')}?overview=false`);
+  const r = j.routes[0];
+  return { km: r.distance / 1000, h: r.duration / 3600, atrasoMin: 0, transito: false };
+}
 async function calcularViagem() {
   if (MODO_ACOMP || !state.start || buscandoViagem) return;
   const key = chaveViagem();
-  if (viagem && viagem.key === key && !viagem.aprox) return;
+  if (viagem && viagem.key === key && !viagem.aprox && (viagem.transito || !chaveTransito())) return;
   buscandoViagem = true;
   const pts = [CAMINHADA.origem.p, ...PARADAS.map((x) => x.p), state.start.p];
   try {
-    const j = await getJSON(`${CARRO}/route/v1/driving/${pts.map(([la, ln]) => `${ln.toFixed(6)},${la.toFixed(6)}`).join('%3B')}?overview=false`);
-    const r = j.routes[0];
+    // com trânsito, pede a previsão para o horário de saída planejado (estimado antes sem trânsito)
+    const pl = planoViagem();
+    const r = await rotaCarro(pts, pl && pl.saida > new Date() ? pl.saida : null);
     if (chaveViagem() === key) {
-      viagem = { key, km: r.distance / 1000, h: r.duration / 3600 };
+      viagem = { key, km: r.km, h: r.h, transito: r.transito, atrasoMin: r.atrasoMin };
       try { localStorage.setItem('caminhada-aparecida-viagem', JSON.stringify(viagem)); } catch (e) { /* ignora */ }
     }
   } catch (e) { /* sem internet: fica a estimativa */ }
   buscandoViagem = false;
   renderPlano();
 }
+
+// Em tempo real: com o GPS ligado antes de começar a andar, recalcula da posição atual até o ponto de
+// saída (passando pelas paradas que faltam) a cada 3 min ou 3 km. Com a chave da TomTom, usa o trânsito de agora.
+let agora = null, buscandoAgora = false;
+function calcularAgora() {
+  if (MODO_ACOMP || !me || !state.start || state.walking || buscandoAgora) return;
+  if (dist(me, state.start.p) <= NO_PONTO) { agora = null; return; }
+  const faltam = paradasQueFaltam();
+  const key = `${state.start.p.join(',')}|${faltam.map((x) => x.id).join(',')}`;
+  if (agora && agora.key === key && Date.now() - agora.t < 3 * 60000 && dist(agora.p, me) < 3) return;
+  buscandoAgora = true;
+  const p = me;
+  rotaCarro([p, ...faltam.map((x) => x.p), state.start.p], null)
+    .then((r) => { agora = { ...r, key, p, t: Date.now(), nParadas: faltam.length }; })
+    .catch(() => {})
+    .finally(() => { buscandoAgora = false; renderPlano(); });
+}
 const hm = (d) => `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
 const diaCurto = (d) => { const t = d.toLocaleDateString('pt-BR', { weekday: 'long' }).replace('-feira', ''); return `${t.charAt(0).toUpperCase()}${t.slice(1)} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; };
 function planoViagem() {
   if (!state.start) return null;
   const v = viagem && viagem.key === chaveViagem() ? viagem : estimarViagem();
-  const estrada = v.h * (1 + CAMINHADA.folga);
+  const estrada = v.h * (v.transito ? 1 : 1 + CAMINHADA.folga); // com trânsito previsto, sem folga extra
   const nParadas = Math.max(0, Math.ceil(estrada / CAMINHADA.paradaCadaH) - 1);
   const totalMin = Math.round(estrada * 60 + nParadas * CAMINHADA.paradaMin + CAMINHADA.preparoMin);
   const [y, m, d] = CAMINHADA.data.split('-').map(Number);
@@ -941,11 +979,24 @@ function renderPlano() {
   const o = CAMINHADA.origem.nome;
   const lin = [
     ['🚗', `${diaCurto(pl.saida)}, ${hm(pl.saida)}`, `Saída de ${o}`],
-    ['☕', `${pl.nParadas} parada${pl.nParadas === 1 ? '' : 's'} de ${CAMINHADA.paradaMin} min`, `uma a cada ${CAMINHADA.paradaCadaH} h de estrada · ${fmtDur(pl.estrada)} de estrada (${Math.round(pl.v.km)} km${pl.v.aprox ? ', estimativa' : ''})`],
+    ['☕', `${pl.nParadas} parada${pl.nParadas === 1 ? '' : 's'} de ${CAMINHADA.paradaMin} min`, `uma a cada ${CAMINHADA.paradaCadaH} h de estrada · ${fmtDur(pl.estrada)} de estrada (${Math.round(pl.v.km)} km${pl.v.aprox ? ', estimativa' : ''}${pl.v.transito ? ', com o trânsito previsto para o horário' : ', sem trânsito + 10% de folga'})`],
     ['📍', `${diaCurto(pl.chegaPonto)}, ${hm(pl.chegaPonto)}`, `Chegada ao ponto de saída (${saidaResumo()})`],
     ['🚶', `${hm(pl.inicio)}`, `Início da caminhada (${km1(pl.kmPe)} km)`],
     ['⛪', `≈ ${hm(pl.fim)}`, `Chegada ${FIM.chegada} (a ${km1(VELOCIDADE)} km/h, sem contar as pausas)`],
   ];
+  // posição atual (tempo real)
+  if (me && !state.walking && state.start && dist(me, state.start.p) > NO_PONTO) {
+    calcularAgora();
+    if (agora && dist(agora.p, me) < 20) {
+      const chega = new Date(Date.now() + agora.h * 3600000 + agora.nParadas * CAMINHADA.paradaMin * 60000);
+      const dif = Math.round((pl.chegaPonto - chega) / 60000);
+      const situacao = Math.abs(dif) < 2 * 24 * 60
+        ? (dif >= 5 ? ` · ${fmtDur(dif / 60)} adiantado` : dif <= -5 ? ` · ${fmtDur(-dif / 60)} atrasado para começar às ${hm(pl.inicio)}` : ' · no horário')
+        : '';
+      lin.unshift(['📡', `Saindo de onde você está agora: chega às ${hm(chega)}`,
+        `${Math.round(agora.km)} km · ${fmtDur(agora.h)} de estrada ${agora.transito ? `com o trânsito de agora${agora.atrasoMin >= 5 ? ` (${fmtDur(agora.atrasoMin / 60)} de lentidão)` : ''}` : '(sem trânsito)'}${agora.nParadas ? ` + ${agora.nParadas} parada${agora.nParadas > 1 ? 's' : ''} de ${CAMINHADA.paradaMin} min` : ''}${situacao}. Atualiza sozinho com o GPS ligado.`]);
+    }
+  }
   const html = lin.map(([ic, t, d]) => `<li><span class="pl-ic">${ic}</span><span><b>${escapeHtml(t)}</b><small>${escapeHtml(d)}</small></span></li>`).join('');
   caixas.forEach((c) => {
     c.hidden = false;
@@ -953,7 +1004,7 @@ function renderPlano() {
     if (ul.innerHTML !== html) ul.innerHTML = html;
   });
   if ($('capaViagem')) $('capaViagem').textContent = `🚗 Saída de ${o}: ${diaCurto(pl.saida).toLowerCase()}, às ${hm(pl.saida)}`;
-  if (!viagem || viagem.key !== chaveViagem() || viagem.aprox) calcularViagem();
+  if (!viagem || viagem.key !== chaveViagem() || viagem.aprox || (chaveTransito() && !viagem.transito)) calcularViagem();
 }
 
 let capaEscondidaEm = 0;
