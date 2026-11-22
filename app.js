@@ -27,7 +27,14 @@ const SANTUARIO = { nome: 'Santuário Nacional de Aparecida', p: [-22.850521, -4
 // Caminhada planejada: data e distância. Valores do planejamento; alertas.json ("caminhada") pode mudar
 // a distância quando sair o anúncio de quantos km da Via Dutra serão fechados para os romeiros.
 const CFG_KEY = 'caminhada-aparecida-config';
-const CAMINHADA_PADRAO = { data: '2027-10-30', km: 50, kmOrigem: 'planejamento', viagem: 'Saída de Curitiba na sexta, 29/10, à noite' };
+const CAMINHADA_PADRAO = {
+  data: '2027-10-30', km: 50, kmOrigem: 'planejamento',
+  inicio: '05:00',                                         // hora de começar a andar
+  origem: { nome: 'Curitiba', p: [-25.4284, -49.2733] },   // de onde sai de carro na véspera
+  paradaCadaH: 2, paradaMin: 30,                           // no carro: 30 min de parada a cada 2 h de estrada
+  folga: 0.10,                                             // 10% a mais no tempo de estrada (trânsito do feriadão)
+  preparoMin: 15,                                          // chegar ao ponto de saída 15 min antes de começar
+};
 let CAMINHADA = { ...CAMINHADA_PADRAO };
 try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c && c.km > 0 && c.data) CAMINHADA = { ...CAMINHADA_PADRAO, ...c }; } catch (e) { /* sem armazenamento */ }
 const KM_MAX = 60;               // os traçados cobrem os 62 km finais de cada caminho
@@ -865,8 +872,7 @@ function refreshCapa() {
   else if (n === 0) { pre.textContent = ''; num.textContent = 'Hoje'; dias.textContent = 'é o dia da sua peregrinação. Bom caminho! 🙏'; }
   else { pre.textContent = ''; num.textContent = '✓'; dias.textContent = 'Peregrinação realizada. Graças a Deus!'; }
   $('capaData').textContent = dataPorExtenso();
-  $('capaViagem').textContent = CAMINHADA.viagem ? `🚗 ${CAMINHADA.viagem}` : '';
-  $('capaViagem').hidden = !CAMINHADA.viagem;
+  renderPlano();
   $('capaKm').textContent = `${km1(KM_PADRAO)} km`;
   $('capaCam').textContent = NOME_CAMINHO[caminho()].replace(' (alternativa)', '');
   $('capaSaida').textContent = saidaResumo();
@@ -880,6 +886,76 @@ function refreshCapa() {
   $('contTxt').textContent = n > 1 ? `Faltam ${n.toLocaleString('pt-BR')} dias para a sua peregrinação` : n === 1 ? 'Falta 1 dia: é amanhã!' : n === 0 ? 'Hoje é o dia da sua peregrinação!' : '';
   $('contSub').textContent = `${CAMINHADA.data.split('-').reverse().join('/')} · ${km1(KM_PADRAO)} km · ${NOME_CAMINHO[caminho()].replace(' (alternativa)', '')}${conf ? '' : ' · distância do planejamento'}`;
 }
+// ----------------------------- plano da viagem -----------------------------
+// Horário de saída de Curitiba na véspera para começar a andar às 5h: tempo de estrada (rota de carro
+// passando pelas paradas) + 10% de folga + 30 min de parada a cada 2 h de estrada + 15 min de preparo.
+const CARRO = 'https://routing.openstreetmap.de/routed-car';
+let viagem = null, buscandoViagem = false;
+try { viagem = JSON.parse(localStorage.getItem('caminhada-aparecida-viagem') || 'null'); } catch (e) { viagem = null; }
+const chaveViagem = () => state.start ? `${CAMINHADA.origem.p.join(',')}|${PARADAS.map((x) => x.id).join(',')}|${state.start.p.join(',')}` : '';
+function estimarViagem() {
+  // sem internet: linha reta passando pelas paradas × 1,25, a 75 km/h
+  const pts = [CAMINHADA.origem.p, ...PARADAS.map((x) => x.p), state.start.p];
+  let km = 0; for (let i = 1; i < pts.length; i++) km += dist(pts[i - 1], pts[i]) * 1.25;
+  return { key: chaveViagem(), km, h: km / 75, aprox: true };
+}
+async function calcularViagem() {
+  if (MODO_ACOMP || !state.start || buscandoViagem) return;
+  const key = chaveViagem();
+  if (viagem && viagem.key === key && !viagem.aprox) return;
+  buscandoViagem = true;
+  const pts = [CAMINHADA.origem.p, ...PARADAS.map((x) => x.p), state.start.p];
+  try {
+    const j = await getJSON(`${CARRO}/route/v1/driving/${pts.map(([la, ln]) => `${ln.toFixed(6)},${la.toFixed(6)}`).join('%3B')}?overview=false`);
+    const r = j.routes[0];
+    if (chaveViagem() === key) {
+      viagem = { key, km: r.distance / 1000, h: r.duration / 3600 };
+      try { localStorage.setItem('caminhada-aparecida-viagem', JSON.stringify(viagem)); } catch (e) { /* ignora */ }
+    }
+  } catch (e) { /* sem internet: fica a estimativa */ }
+  buscandoViagem = false;
+  renderPlano();
+}
+const hm = (d) => `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
+const diaCurto = (d) => { const t = d.toLocaleDateString('pt-BR', { weekday: 'long' }).replace('-feira', ''); return `${t.charAt(0).toUpperCase()}${t.slice(1)} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; };
+function planoViagem() {
+  if (!state.start) return null;
+  const v = viagem && viagem.key === chaveViagem() ? viagem : estimarViagem();
+  const estrada = v.h * (1 + CAMINHADA.folga);
+  const nParadas = Math.max(0, Math.ceil(estrada / CAMINHADA.paradaCadaH) - 1);
+  const totalMin = Math.round(estrada * 60 + nParadas * CAMINHADA.paradaMin + CAMINHADA.preparoMin);
+  const [y, m, d] = CAMINHADA.data.split('-').map(Number);
+  const [hh, mm] = CAMINHADA.inicio.split(':').map(Number);
+  const inicio = new Date(y, m - 1, d, hh, mm);
+  const chegaPonto = new Date(inicio - CAMINHADA.preparoMin * 60000);
+  let saida = new Date(inicio - totalMin * 60000);
+  saida = new Date(Math.floor(saida / 900000) * 900000); // arredonda para baixo, de 15 em 15 min
+  const kmPe = state.route ? state.route.dist : KM_PADRAO;
+  const fim = new Date(+inicio + kmPe / VELOCIDADE * 3600000);
+  return { v, estrada, nParadas, saida, chegaPonto, inicio, fim, kmPe };
+}
+function renderPlano() {
+  const pl = planoViagem();
+  const caixas = [$('capaPlano'), $('planoBox')].filter(Boolean);
+  if (!pl) { caixas.forEach((c) => { c.hidden = true; }); return; }
+  const o = CAMINHADA.origem.nome;
+  const lin = [
+    ['🚗', `${diaCurto(pl.saida)}, ${hm(pl.saida)}`, `Saída de ${o}`],
+    ['☕', `${pl.nParadas} parada${pl.nParadas === 1 ? '' : 's'} de ${CAMINHADA.paradaMin} min`, `uma a cada ${CAMINHADA.paradaCadaH} h de estrada · ${fmtDur(pl.estrada)} de estrada (${Math.round(pl.v.km)} km${pl.v.aprox ? ', estimativa' : ''})`],
+    ['📍', `${diaCurto(pl.chegaPonto)}, ${hm(pl.chegaPonto)}`, `Chegada ao ponto de saída (${saidaResumo()})`],
+    ['🚶', `${hm(pl.inicio)}`, `Início da caminhada (${km1(pl.kmPe)} km)`],
+    ['⛪', `≈ ${hm(pl.fim)}`, `Chegada ${FIM.chegada} (a ${km1(VELOCIDADE)} km/h, sem contar as pausas)`],
+  ];
+  const html = lin.map(([ic, t, d]) => `<li><span class="pl-ic">${ic}</span><span><b>${escapeHtml(t)}</b><small>${escapeHtml(d)}</small></span></li>`).join('');
+  caixas.forEach((c) => {
+    c.hidden = false;
+    const ul = c.querySelector('ul');
+    if (ul.innerHTML !== html) ul.innerHTML = html;
+  });
+  if ($('capaViagem')) $('capaViagem').textContent = `🚗 Saída de ${o}: ${diaCurto(pl.saida).toLowerCase()}, às ${hm(pl.saida)}`;
+  if (!viagem || viagem.key !== chaveViagem() || viagem.aprox) calcularViagem();
+}
+
 let capaEscondidaEm = 0;
 function mostrarCapa(on) {
   const capa = $('capa');

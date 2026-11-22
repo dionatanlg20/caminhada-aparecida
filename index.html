@@ -10,7 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 <div class="app" id="app">
@@ -23,12 +23,13 @@
       <div class="capa-num" id="capaNum">--</div>
       <div class="capa-dias" id="capaDias">dias para a sua peregrinação</div>
       <div class="capa-data" id="capaData"></div>
-      <div class="capa-viagem" id="capaViagem" hidden></div>
+      <div class="capa-viagem" id="capaViagem"></div>
       <div class="capa-grid">
         <div><b id="capaKm">--</b><span>a pé</span></div>
         <div><b id="capaCam">--</b><span>caminho</span></div>
         <div><b id="capaSaida">--</b><span>saída</span></div>
       </div>
+      <div class="plano capa-plano" id="capaPlano" hidden><ul></ul></div>
       <p class="capa-st" id="capaSt"></p>
       <button class="btn primary wide" id="btnCapa">Ver minha rota</button>
     </div>
@@ -76,6 +77,7 @@
     <div class="bar"><i id="bar"></i></div>
 
     <div class="etapas card" id="etapas" hidden>
+      <div class="plano" id="planoBox" hidden><div class="card-label">Plano da viagem</div><ul></ul></div>
       <div class="etapa" id="etapa1">
         <span class="num" id="et1num">1</span>
         <div class="et-txt"><b>De carro até o ponto de saída</b><small id="et1sub"></small></div>
@@ -278,10 +280,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="rota-oficial.js?v=32"></script>
-<script src="rota-dutra.js?v=32"></script>
-<script src="rota-fe.js?v=32"></script>
-<script src="paradas.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="rota-oficial.js?v=33"></script>
+<script src="rota-dutra.js?v=33"></script>
+<script src="rota-fe.js?v=33"></script>
+<script src="paradas.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>
