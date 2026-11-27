@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe41261045123456000187550010000014901719248657" versao="4.00">
+<ide><cUF>41</cUF><natOp>VENDA</natOp><mod>55</mod><serie>1</serie><nNF>1490</nNF><dhEmi>2026-10-28T10:15:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+<emit><CNPJ>45123456000187</CNPJ><xNome>ACO FORTE DISTRIBUIDORA LTDA</xNome></emit>
+<dest><CNPJ>11222333000181</CNPJ><xNome>ATOM ENGENHARIA LTDA</xNome></dest>
+<det nItem="1"><prod><cProd>X</cProd><xProd>ITEM</xProd><uCom>UN</uCom><qCom>1.0000</qCom><vProd>3000.00</vProd></prod></det><total><ICMSTot><vProd>3000.00</vProd><vNF>3000.00</vNF></ICMSTot></total>
+</infNFe></NFe><protNFe><infProt><chNFe>41261045123456000187550010000014901719248657</chNFe><cStat>100</cStat></infProt></protNFe></nfeProc>

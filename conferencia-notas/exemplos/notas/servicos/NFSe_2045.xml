@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infNFSe Id="NFS41069021255667788000186000000000204526113926554867">
+<xLocEmi>Curitiba</xLocEmi><nNFSe>2045</nNFSe><dhProc>2026-11-18T09:00:00-03:00</dhProc>
+<emit><CNPJ>55667788000186</CNPJ><xNome>LOCAMAQ LOCACAO DE EQUIPAMENTOS LTDA</xNome></emit>
+<valores><vLiq>12160.00</vLiq></valores>
+<DPS versao="1.00"><infDPS Id="DPS1"><dhEmi>2026-11-18T08:59:00-03:00</dhEmi><serie>900</serie><nDPS>2045</nDPS>
+<prest><CNPJ>55667788000186</CNPJ></prest><toma><CNPJ>11222333000181</CNPJ><xNome>ATOM ENGENHARIA LTDA</xNome></toma>
+<serv><cServ><xDescServ>Locacao de escavadeira hidraulica</xDescServ></cServ></serv>
+<valores><vServPrest><vServ>12800.00</vServ></vServPrest></valores></infDPS></DPS>
+</infNFSe></NFSe>

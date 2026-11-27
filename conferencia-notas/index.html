@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conferência de Notas x TOTVS</title>
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<header class="topo">
+  <div class="topo-conteudo">
+    <img id="logo" class="logo" alt="Atom">
+    <div class="topo-titulos">
+      <h1>Conferência de Notas x TOTVS RM</h1>
+      <p>Notas fiscais de entrada não recebidas (NF-e modelo 55, NFS-e, CT-e)</p>
+    </div>
+    <button id="btnConfig" class="btn-topo" title="Logo e configurações">Logo / Configurações</button>
+  </div>
+</header>
+
+<main class="conteudo">
+  <p class="aviso-local">Tudo é processado aqui no seu computador. Nenhum arquivo sai da sua máquina.</p>
+
+  <div class="passos">
+    <!-- 1. Notas -->
+    <section class="cartao" id="passoNotas">
+      <h2><span class="num">1</span> Notas fiscais da pasta</h2>
+      <p class="ajuda">XML, PDF, JPEG/PNG, ZIP e RAR (inclusive compactado dentro de compactado e PDF com várias notas).</p>
+      <div class="soltar" id="areaSoltar">
+        <p><strong>Arraste a pasta ou os arquivos para cá</strong></p>
+        <p>ou</p>
+        <div class="botoes">
+          <label class="btn primario">Escolher pasta<input type="file" id="inPasta" webkitdirectory directory multiple hidden></label>
+          <label class="btn">Escolher arquivos<input type="file" id="inArquivos" multiple accept=".xml,.pdf,.zip,.rar,.jpg,.jpeg,.png,.webp,.bmp" hidden></label>
+        </div>
+      </div>
+      <div class="progresso" id="progNotas" hidden><div class="barra"><span></span></div><small></small></div>
+      <div id="resumoNotas" class="resumo-leitura"></div>
+    </section>
+
+    <!-- 2. TOTVS -->
+    <section class="cartao" id="passoTotvs">
+      <h2><span class="num">2</span> Movimentos de entrada da TOTVS</h2>
+      <p class="ajuda">Relatório exportado da TOTVS RM (Excel .xlsx/.xls, .csv ou .txt). Para não marcar como "não recebida" uma nota lançada depois, exporte alguns dias a mais depois do fim do período.</p>
+      <div class="botoes">
+        <label class="btn primario">Escolher relatório<input type="file" id="inTotvs" accept=".xlsx,.xls,.xlsm,.csv,.txt,.ods" hidden></label>
+        <select id="selAba" hidden></select>
+      </div>
+      <div id="resumoTotvs" class="resumo-leitura"></div>
+      <details id="detMapa" hidden>
+        <summary>Colunas do relatório (confira se o sistema reconheceu certo)</summary>
+        <div id="mapaColunas" class="mapa"></div>
+        <div id="previa" class="previa"></div>
+      </details>
+      <div id="tiposMov" class="tipos" hidden></div>
+      <details class="avancado">
+        <summary>Buscar direto da TOTVS (API do Dalvino — futuro)</summary>
+        <p class="ajuda">Quando a API estiver pronta, informe o endereço. Formato descrito em <code>API-FUTURA.md</code>.</p>
+        <div class="linha-campos">
+          <label>Endereço da API<input id="apiUrl" type="url" placeholder="http://servidor:porta/api"></label>
+          <label>Token<input id="apiToken" type="password" autocomplete="off"></label>
+          <button class="btn" id="btnApi" type="button">Buscar movimentos</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- 3. Parâmetros -->
+    <section class="cartao" id="passoParam">
+      <h2><span class="num">3</span> Período e filtros</h2>
+      <div class="linha-campos">
+        <label>De<input type="date" id="dtIni"></label>
+        <label>Até<input type="date" id="dtFim"></label>
+      </div>
+      <fieldset class="opcoes">
+        <legend>Período dos lançamentos na TOTVS pela</legend>
+        <label><input type="radio" name="baseMov" value="entrada" checked> Data de entrada (lançamento)</label>
+        <label><input type="radio" name="baseMov" value="emissao"> Data de emissão</label>
+      </fieldset>
+      <p class="ajuda">As notas da pasta são filtradas pela data de emissão. Cada nota é procurada em todos os movimentos do relatório: se foi lançada fora do período, aparece como "Recebida fora do período".</p>
+      <div class="linha-campos">
+        <label>Incluir notas emitidas até<span class="campo-sufixo"><input type="number" id="margem" min="0" max="365" value="0"> dias antes do início</span></label>
+      </div>
+      <label class="bloco">CNPJ(s) da empresa (destinatária)
+        <input id="cnpjEmpresa" placeholder="Ex.: 12.345.678/0001-90; 12.345.678/0002-71">
+        <small>Usado para ignorar notas emitidas pela própria empresa e notas de outro destinatário. Considera todas as filiais (raiz do CNPJ).</small>
+      </label>
+      <label class="bloco">Diferença de valor aceita (R$)<input type="number" id="tolerancia" min="0" step="0.01" value="1.00"></label>
+      <button id="btnConferir" class="btn primario grande" disabled>Conferir notas</button>
+      <p id="faltando" class="ajuda faltando"></p>
+    </section>
+  </div>
+
+  <!-- Resultado -->
+  <section class="cartao resultado" id="resultado" hidden>
+    <div class="resultado-topo">
+      <h2>Resultado da conferência <small id="periodoTxt"></small></h2>
+      <div class="botoes">
+        <button class="btn primario" id="btnZip">Baixar pacote ZIP (relatório + PDFs)</button>
+        <button class="btn" id="btnExcel">Excel</button>
+        <button class="btn" id="btnPdf">Relatório PDF</button>
+      </div>
+    </div>
+    <div class="progresso" id="progExport" hidden><div class="barra"><span></span></div><small></small></div>
+    <div class="kpis" id="kpis"></div>
+    <div id="alerta" class="alerta" hidden></div>
+    <div class="filtros">
+      <div class="chips" id="chips"></div>
+      <input type="search" id="busca" placeholder="Buscar fornecedor, CNPJ, número…">
+    </div>
+    <div class="tabela-rolagem"><table class="tabela" id="tabela"></table></div>
+  </section>
+</main>
+
+<dialog id="dlgConfig">
+  <form method="dialog">
+    <h3>Logo e configurações</h3>
+    <p>O logo aparece na tela, no Excel e no PDF. Escolha a imagem do logo da Atom (PNG ou JPEG). Fica salvo neste navegador.</p>
+    <div class="logo-previa"><img id="logoPrevia" alt=""></div>
+    <div class="botoes">
+      <label class="btn">Escolher logo<input type="file" id="inLogo" accept="image/png,image/jpeg" hidden></label>
+      <button class="btn" id="btnLogoRemover" type="button">Voltar ao provisório</button>
+    </div>
+    <div class="botoes direita"><button class="btn primario" value="ok">Fechar</button></div>
+  </form>
+</dialog>
+
+<script src="lib/jszip.min.js"></script>
+<script src="lib/unrar.bundle.js"></script>
+<script src="lib/xlsx.full.min.js"></script>
+<script src="lib/exceljs.min.js"></script>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script>
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/jspdf.plugin.autotable.min.js"></script>
+<script src="lib/zxing.min.js"></script>
+<script src="logo.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/leitor-arquivos.js"></script>
+<script src="js/parser-xml.js"></script>
+<script src="js/parser-imagem.js"></script>
+<script src="js/parser-pdf.js"></script>
+<script src="js/totvs.js"></script>
+<script src="js/conferencia.js"></script>
+<script src="js/exportar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
