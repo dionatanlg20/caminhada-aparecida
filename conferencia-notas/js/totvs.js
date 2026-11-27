@@ -31,9 +31,39 @@ CN.totvs = (function () {
     return linhas;
   }
 
+  // Relatório da TOTVS em PDF ("Relação de notas fiscais recebidas"):
+  // cada linha vira uma linha de planilha com cabeçalho padrão.
+  const RE_LINHA = /^(\d{2}\/\d{2}\/\d{4}) (\d{2}\/\d{2}\/\d{4}) (\d+) (?:(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{3}\.?\d{3}\.?\d{3}-?\d{2}) )?(.+)$/;
+  async function lerPdf(dados) {
+    CN.parserPdf.configurarPdfjs();
+    const pdf = await pdfjsLib.getDocument({ data: dados.slice(), isEvalSupported: false, verbosity: 0 }).promise;
+    const cab = ['Data Lanc', 'Data Emissao', 'Nº Nota', 'CNPJ', 'Razao Social', 'UF', 'Movimento', 'Vlr Bruto', 'Valor Liq.', 'Vencimento', 'Vlr Parc'];
+    const linhas = [cab];
+    let naoLidas = 0;
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const pg = await pdf.getPage(p);
+      const { texto } = await CN.parserPdf.textoDaPagina(pg);
+      for (const bruta of texto.split('\n')) {
+        const l = bruta.replace(/\s+/g, ' ').trim();
+        const m = l.match(RE_LINHA);
+        if (!m) { if (/^\d{2}\/\d{2}\/\d{4} \d{2}\/\d{2}\/\d{4}/.test(l)) naoLidas++; continue; }
+        const resto = m[5];
+        const mt = resto.match(/^(.*?) ?(?:([A-Z]{2}|--) )?(\d\.\d\.\d{2}) ?- ?(.*)$/);
+        const fimValores = resto.match(/(-?[\d.]+,\d{2}) (-?[\d.]+,\d{2}) (\d{2}\/\d{2}\/\d{4}) (-?[\d.]+,\d{2})$/);
+        if (!mt || !fimValores) { naoLidas++; continue; }
+        linhas.push([m[1], m[2], m[3], m[4] || '', mt[1].trim(), mt[2] && mt[2] !== '--' ? mt[2] : '', `${mt[3]} - ${mt[4].replace(/\s+CC\w+.*$/, '').trim()}`, fimValores[1], fimValores[2], fimValores[3], fimValores[4]]);
+      }
+      pg.cleanup();
+    }
+    await pdf.destroy();
+    if (linhas.length < 2) throw new Error('PDF sem linhas de movimento reconhecidas. Exporte o relatório em Excel ou CSV.');
+    return { abas: [{ nome: 'Relatório PDF', linhas }], naoLidas };
+  }
+
   /** Lê o arquivo e devolve { abas: [{nome, linhas}] } */
-  function lerArquivo(dados, nome) {
+  async function lerArquivo(dados, nome) {
     const e = (nome.split('.').pop() || '').toLowerCase();
+    if (e === 'pdf') return lerPdf(dados);
     if (e === 'csv' || e === 'txt') return { abas: [{ nome: nome, linhas: linhasCsv(decodificarTexto(dados)) }] };
     const wb = XLSX.read(dados, { type: 'array', cellDates: true, dense: false });
     return {
@@ -81,7 +111,7 @@ CN.totvs = (function () {
   /** Converte as linhas em movimentos padronizados. */
   function montarMovimentos(linhas, linhaCabecalho, mapa) {
     const pegar = (row, campo) => (mapa[campo] == null || mapa[campo] === '' ? '' : row[mapa[campo]]);
-    const out = [];
+    const out = [], vistos = new Set();
     for (let r = linhaCabecalho + 1; r < linhas.length; r++) {
       const row = linhas[r];
       if (!row || row.every((c) => c === '' || c == null)) continue;
@@ -89,6 +119,10 @@ CN.totvs = (function () {
       const chave = U.soDigitos(pegar(row, 'chave'));
       if (!numero && !chave) continue; // linha de total / subtítulo
       const tipoBruto = String(pegar(row, 'tipoMov') || '').trim();
+      // A mesma nota aparece uma vez por parcela: guarda só a primeira.
+      const chaveLinha = [tipoBruto, numero, chave, U.soDigitos(pegar(row, 'cnpj')), U.parseValor(pegar(row, 'valor')), String(pegar(row, 'dataEntrada'))].join('|');
+      if (vistos.has(chaveLinha)) continue;
+      vistos.add(chaveLinha);
       out.push({
         linha: r + 1,
         tipoMov: tipoBruto,

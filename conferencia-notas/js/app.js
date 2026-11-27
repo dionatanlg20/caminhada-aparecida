@@ -140,7 +140,8 @@
   async function carregarTotvs(f) {
     try {
       const dados = new Uint8Array(await f.arrayBuffer());
-      estado.totvs = CN.totvs.lerArquivo(dados, f.name);
+      $('resumoTotvs').innerHTML = '<p class="ajuda">Lendo relatório…</p>';
+      estado.totvs = await CN.totvs.lerArquivo(dados, f.name);
       estado.arquivoTotvs = f.name;
     } catch (e) {
       $('resumoTotvs').innerHTML = `<p class="faltando">Não foi possível ler o relatório: ${esc(e.message || e)}</p>`;
@@ -198,19 +199,21 @@
     }
     const datas = movs.map((x) => x.dataEntrada || x.dataEmissao).filter(Boolean).sort();
     $('resumoTotvs').innerHTML = `
-      <p class="ok">${movs.length} movimento(s) lido(s)${estado.arquivoTotvs && origem !== 'api' ? ` de ${esc(estado.arquivoTotvs)}` : ' da API'}</p>
+      <p class="ok">${movs.length} nota(s)/movimento(s) lido(s)${estado.arquivoTotvs && origem !== 'api' ? ` de ${esc(estado.arquivoTotvs)}` : ' da API'}</p>
       ${datas.length ? `<p class="ajuda">Datas no relatório: ${U.fmtData(datas[0])} a ${U.fmtData(datas[datas.length - 1])}</p>` : ''}
+      ${estado.totvs && estado.totvs.naoLidas ? `<p class="faltando">${estado.totvs.naoLidas} linha(s) do PDF não puderam ser lidas.</p>` : ''}
       ${faltam.length ? `<p class="faltando">Coluna não encontrada: ${faltam.map(esc).join('; ')}. Ajuste em "Colunas do relatório".</p>` : ''}`;
     // Tipos de movimento
     const cont = new Map();
     movs.forEach((x) => cont.set(x.tipoMovNorm || '(sem tipo)', (cont.get(x.tipoMovNorm || '(sem tipo)') || 0) + 1));
     const padrao = new Set(CN.config.tiposMovimento.map((t) => CN.totvs.normTipo(t.codigo)));
     const algumPadrao = [...cont.keys()].some((k) => padrao.has(k));
+    const entrada = (t) => CN.config.marcarTodasEntradas && /^1\.2\./.test(t);
     const desc = Object.fromEntries(CN.config.tiposMovimento.map((t) => [CN.totvs.normTipo(t.codigo), t.descricao]));
     const tipos = [...cont.entries()].sort((a, b) => a[0].localeCompare(b[0]));
     $('tiposMov').hidden = !tipos.length;
     $('tiposMov').innerHTML = `<h4>Tipos de movimento considerados</h4>` + tipos.map(([t, n]) =>
-      `<label><input type="checkbox" value="${esc(t)}" ${!algumPadrao || padrao.has(t) ? 'checked' : ''}> ${esc(t)}${desc[t] ? ` — ${esc(desc[t])}` : ''} <small>(${n})</small></label>`).join('');
+      `<label><input type="checkbox" value="${esc(t)}" ${!algumPadrao || padrao.has(t) || entrada(t) ? 'checked' : ''}> ${esc(t)}${desc[t] ? ` — ${esc(desc[t])}` : ''} <small>(${n})</small></label>`).join('');
     verificarPronto();
   }
 

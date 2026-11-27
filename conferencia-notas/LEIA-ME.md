@@ -19,9 +19,12 @@ computador, nenhum arquivo é enviado para fora.
      nota por nota;
    - PDF escaneado e foto (JPEG/PNG): lê o **código de barras** da chave de acesso;
    - ZIP e RAR, inclusive compactado dentro de compactado.
-4. **Passo 2 – TOTVS:** escolha o relatório de movimentos exportado da TOTVS
-   (Excel .xlsx/.xls, .csv ou .txt). O sistema acha sozinho a linha de cabeçalho e as colunas;
-   confira em *Colunas do relatório* e ajuste se precisar. Marque os tipos de movimento.
+4. **Passo 2 – TOTVS:** escolha o relatório de movimentos exportado da TOTVS:
+   o PDF **"Relação de notas fiscais recebidas"** (lido linha a linha, juntando as parcelas
+   da mesma nota) ou Excel .xlsx/.xls, .csv ou .txt. O sistema acha sozinho a linha de cabeçalho e as colunas;
+   confira em *Colunas do relatório* e ajuste se precisar. Marque os tipos de movimento: por padrão vêm marcados **todos os tipos de entrada 1.2.xx**
+   encontrados (1.2.01, 1.2.04, 1.2.05, 1.2.06, 1.2.08, 1.2.12, 1.2.19, 1.2.26…), para uma nota lançada
+   em outro tipo não aparecer como não recebida.
 5. **Passo 3 – Período:** informe o período (ex.: 01/11 a 30/11), se o período dos
    lançamentos é pela data de **entrada** ou de **emissão**, e o CNPJ da empresa.
 6. Clique em **Conferir notas** e depois em **Baixar pacote ZIP**.
