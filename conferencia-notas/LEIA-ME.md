@@ -9,7 +9,14 @@ computador, nenhum arquivo é enviado para fora.
 
 ## Como usar
 
-1. Copie a pasta `conferencia-notas` inteira para o seu computador.
+**Jeito mais fácil:** baixe o arquivo único `Conferencia-Notas-TOTVS.html` e dê dois cliques
+(abre no Chrome ou Edge). Ele já tem tudo dentro, não precisa de pasta nem extrair nada.
+Depois de mudar o código, gere de novo com `python ferramentas/gerar_arquivo_unico.py`.
+
+Ou, com a pasta completa:
+
+1. **Extraia** o ZIP (botão direito → *Extrair tudo*). Abrir o `index.html` de dentro do ZIP
+   sem extrair não funciona.
 2. Dê dois cliques em `index.html` (abre no Chrome ou Edge).
 3. **Passo 1 – Notas:** clique em *Escolher pasta* (ou arraste a pasta para a tela).
    Lê, inclusive dentro de subpastas:
