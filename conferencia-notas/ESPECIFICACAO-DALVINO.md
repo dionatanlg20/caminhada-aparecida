@@ -1,6 +1,6 @@
 # Conferência de Notas x TOTVS RM — especificação para reimplementar
 
-Acompanha o arquivo `Conferencia-Notas-TOTVS-codigo-fonte.html`, que é a aplicação
+Acompanha o arquivo `Conferencia-Notas-TOTVS-codigo-fonte.html`, que é a aplicação oficial
 funcionando (HTML + CSS + JavaScript puro, sem framework). Este documento resume as regras para
 que a versão na aplicação do Dalvino dê **exatamente o mesmo resultado**.
 
@@ -12,15 +12,36 @@ como 821756), 1 cancelada (Tania 2).**
 
 ---
 
-## Prompt sugerido para o ChatGPT
+## Prompt para colar no ChatGPT
 
-> Anexei `Conferencia-Notas-TOTVS-codigo-fonte.html` (aplicação funcionando) e
-> `ESPECIFICACAO-DALVINO.md` (regras). Quero reproduzir essa funcionalidade na minha aplicação
-> [descrever: linguagem, framework, banco, onde ficam as notas]. Mantenha **exatamente** as
-> regras de leitura dos documentos, de cruzamento com a TOTVS, as situações e o formato dos
-> arquivos gerados descritos na especificação. Em vez do relatório da TOTVS em PDF/Excel, os
-> movimentos virão da consulta SQL da seção 3. Comece pela regra de cruzamento (seção 4) com
-> testes usando o resultado de referência.
+Anexar no ChatGPT: `Conferencia-Notas-TOTVS-codigo-fonte.html`, este `ESPECIFICACAO-DALVINO.md`,
+os scripts `sql/01` a `sql/04` e `referencia/conferencia_novembro_2026.json`. Depois colar:
+
+```text
+Você vai implementar na nossa plataforma a "Conferência de Notas x TOTVS RM" da Atom
+Engenharia Elétrica. Ela já existe e funciona: o arquivo Conferencia-Notas-TOTVS-codigo-fonte.html
+é a versão oficial (HTML + JavaScript puro) e o ESPECIFICACAO-DALVINO.md descreve as regras.
+
+Regras obrigatórias:
+1. Reproduza EXATAMENTE a leitura das notas (seção 2), a regra de cruzamento (seção 4),
+   as situações e os arquivos gerados (seção 5). Não simplifique nem "melhore" regras.
+   Em caso de dúvida, o comportamento do código do HTML é o correto.
+2. Os movimentos da TOTVS vêm do banco pela procedure conf.sp_MovimentosEntrada
+   (sql/03_movimentos_totvs.sql), e não mais do relatório em PDF.
+3. O resultado de cada conferência é gravado chamando conf.sp_GravarConferencia
+   (sql/04_gravar_e_consultar.sql) com um JSON no formato de
+   referencia/conferencia_novembro_2026.json (mesmos nomes de campos).
+4. Visual padrão Atom: azul #1F3864 e o logo oficial (img/logo-atom.png).
+5. Critério de aceite: com o 11.zip e os movimentos de novembro/2026, o resultado tem
+   que ser igual ao conferencia_novembro_2026.json: 42 notas, 37 recebidas,
+   3 NÃO RECEBIDAS (R$ 519,18: Amaral e Castro 1511, Ortobona 2, 2º Tabelionato 2391),
+   1 provável (Telefônica 621756, lançada na TOTVS como 821756), 1 cancelada.
+
+Nossa plataforma: [descrever aqui a linguagem, o framework, o banco e onde ficam as notas].
+
+Comece me mostrando o plano de arquivos e a regra de cruzamento implementada com testes
+que usem o resultado de referência. Depois a leitura dos XML, dos PDFs e o pacote ZIP.
+```
 
 ---
 
@@ -80,18 +101,8 @@ com o mesmo CNPJ (ou a mesma raiz).
 `cnpj`, `fornecedor`, `valor` (bruto), `chave`, `idmov`, `cancelado` (status `C`).
 **Parcelas repetidas** da mesma nota viram um único movimento.
 
-Consulta sugerida (conferir nomes no ambiente):
-
-```sql
-SELECT M.IDMOV, M.CODTMV, M.NUMEROMOV, M.SERIE, M.DATAEMISSAO, M.DATAENTRADA,
-       F.CGCCFO, F.NOME, M.VALORBRUTO, M.CHAVEACESSONFE, M.STATUS
-FROM TMOV M
-JOIN FCFO F ON F.CODCOLIGADA = M.CODCOLCFO AND F.CODCFO = M.CODCFO
-WHERE M.CODTMV LIKE '1.2.%'
-  AND M.DATAENTRADA BETWEEN @inicio AND DATEADD(day, 60, @fim)
-```
-
-Buscar **até 60 dias depois do fim**, para achar notas lançadas mais tarde.
+Na plataforma, os movimentos vêm de `conf.sp_MovimentosEntrada` (`sql/03_movimentos_totvs.sql`),
+que já busca **até 60 dias depois do fim**, para achar notas lançadas mais tarde.
 
 **Relatório em PDF (layout atual):** cada linha
 `DataLanc DataEmissao Nº CNPJ? RazaoSocial UF? Movimento - descrição CCusto %ICMS Base VlrICMS VlrBruto VlrLiq Vencimento VlrParc`
@@ -138,6 +149,7 @@ Buscar **até 60 dias depois do fim**, para achar notas lançadas mais tarde.
 - `Relatorio notas nao recebidas.xlsx` — abas: *Não recebidas* (com total), *Conferir*,
   *Todas as notas* (cores por situação), *TOTVS sem documento*, *Parâmetros*. Título com logo,
   cabeçalho azul `#1F3864` com fonte branca em negrito, filtros, painel congelado.
+- `conferencia.json` — resultado completo, no formato de `conf.sp_GravarConferencia`.
 - `Relatorio notas nao recebidas.pdf` — paisagem, logo, quadros-resumo, tabela das não recebidas
   e página dos movimentos sem nota.
 - `Notas nao recebidas/` — um PDF por nota:
@@ -155,7 +167,31 @@ Azul `#1F3864` (cabeçalho e botões), fundo `#F3F5F9`, logo Atom Engenharia El�
 topo. Tela em 3 passos (Notas · TOTVS · Período e filtros), quadros-resumo clicáveis, filtros
 por situação, busca e botão "PDF" por nota.
 
-## 7. Bibliotecas usadas (versões exatas)
+## 7. Banco de dados (scripts oficiais — SQL Server 2016 SP1+)
+
+Rodar em um banco **da plataforma** (nunca dentro do banco da TOTVS), nesta ordem:
+
+| Script | O que faz |
+|---|---|
+| `sql/01_estrutura.sql` | Schema `conf` e tabelas: `TipoMovimento`, `Situacao`, `Parametro`, `Conferencia` (cada execução + resumo), `ConferenciaNota` (uma linha por nota), `ConferenciaMovSemNota` |
+| `sql/02_dados_iniciais.sql` | Tipos 1.2.01…1.2.26, as 8 situações (mesmos textos da tela), parâmetros (CNPJ 04779058000136, tolerância 1,00, folga 60 dias, coligada) |
+| `sql/03_movimentos_totvs.sql` | Sinônimos para `TMOV`/`FCFO` da TOTVS e `conf.sp_MovimentosEntrada @Inicio, @Fim, @Base, @DiasFolga, @Tipos` (somente leitura) |
+| `sql/04_gravar_e_consultar.sql` | `conf.sp_GravarConferencia @Json` (grava tudo numa transação e devolve o Id) e as views `vw_ResumoConferencia`, `vw_NotasConferencia`, `vw_NotasNaoRecebidas` |
+| `referencia/05_teste_referencia.sql` | Grava a conferência real de novembro, confere os totais (tudo "OK") e desfaz (ROLLBACK) |
+
+**Ajustar antes de rodar o 03:** nome do banco da TOTVS nos sinônimos (padrão `CORPORE`) e o
+campo da data de lançamento ("Data Lanc" do relatório — usar o mesmo campo da sentença SQL do
+relatório "Relação de notas fiscais recebidas"). Conferir se a versão tem `TMOV.CHAVEACESSONFE`.
+O teste da procedure é comparar com o relatório: novembro/2026 com `@DiasFolga = 0` → 325 notas.
+
+Situações (código no banco → texto na tela): `NAO_RECEBIDA` → NÃO RECEBIDA, `CONFERIR` →
+Conferir manualmente, `PROVAVEL` → Provavelmente recebida, `FORA_PERIODO` → Recebida fora do
+período, `RECEBIDA` → Recebida, `OUTRO_DEST` → Outro destinatário, `EMITIDA` → Emitida pela
+empresa, `CANCELADA` → Cancelada.
+
+O ZIP gerado também traz `conferencia.json` — é exatamente o JSON que `sp_GravarConferencia` recebe.
+
+## 8. Bibliotecas usadas (versões exatas)
 
 jszip 3.10.1 · xlsx (SheetJS) 0.18.5 · exceljs 4.4.0 · pdfjs-dist 3.11.174 · pdf-lib 1.17.1 ·
 jspdf 2.5.2 + jspdf-autotable 3.8.4 · @zxing/library 0.21.3 · node-unrar-js 2.0.2.

@@ -90,8 +90,8 @@ substitui o DANFE). O ZIP abre normalmente no WinRAR.
 
 ## Logo
 
-O logo da Atom Engenharia Elétrica já vem embutido (`logo.js`; original em `img/logo-atom.png`)
-e sai na tela, no Excel e no PDF. Para trocar, use **Logo / Configurações** na tela.
+O logo oficial da Atom Engenharia Elétrica vem embutido em `logo.js` (original em
+`img/logo-atom.png`) e sai na tela, no Excel e no PDF. Não existe logo alternativo.
 
 ## Teste com os exemplos
 

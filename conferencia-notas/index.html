@@ -9,12 +9,11 @@
 <body>
 <header class="topo">
   <div class="topo-conteudo">
-    <img id="logo" class="logo" alt="Atom">
+    <img id="logo" class="logo" alt="Atom Engenharia Elétrica">
     <div class="topo-titulos">
       <h1>Conferência de Notas x TOTVS RM</h1>
       <p>Notas fiscais de entrada não recebidas (NF-e modelo 55, NFS-e, CT-e)</p>
     </div>
-    <button id="btnConfig" class="btn-topo" title="Logo e configurações">Logo / Configurações</button>
   </div>
 </header>
 
@@ -111,18 +110,6 @@
   </section>
 </main>
 
-<dialog id="dlgConfig">
-  <form method="dialog">
-    <h3>Logo e configurações</h3>
-    <p>O logo aparece na tela, no Excel e no PDF. Escolha a imagem do logo da Atom (PNG ou JPEG). Fica salvo neste navegador.</p>
-    <div class="logo-previa"><img id="logoPrevia" alt=""></div>
-    <div class="botoes">
-      <label class="btn">Escolher logo<input type="file" id="inLogo" accept="image/png,image/jpeg" hidden></label>
-      <button class="btn" id="btnLogoRemover" type="button">Voltar ao provisório</button>
-    </div>
-    <div class="botoes direita"><button class="btn primario" value="ok">Fechar</button></div>
-  </form>
-</dialog>
 
 <script src="lib/jszip.min.js"></script>
 <script src="lib/unrar.bundle.js"></script>

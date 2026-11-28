@@ -8,22 +8,8 @@ CN.exportar = (function () {
   const AZUL_RGB = [31, 56, 100];
 
   // ---------- Logo ----------
-  function logoDataUrl() {
-    try { const l = localStorage.getItem('cn_logo'); if (l) return l; } catch (e) { /* sem armazenamento */ }
-    if (window.ATOM_LOGO) return window.ATOM_LOGO;
-    return logoProvisorio();
-  }
-  function logoProvisorio() {
-    if (logoProvisorio.cache) return logoProvisorio.cache;
-    const c = document.createElement('canvas'); c.width = 360; c.height = 120;
-    const x = c.getContext('2d');
-    x.fillStyle = '#1F3864'; x.beginPath(); x.arc(60, 60, 46, 0, Math.PI * 2); x.fill();
-    x.strokeStyle = '#fff'; x.lineWidth = 5;
-    for (const a of [0, 60, 120]) { x.save(); x.translate(60, 60); x.rotate((a * Math.PI) / 180); x.beginPath(); x.ellipse(0, 0, 36, 13, 0, 0, Math.PI * 2); x.stroke(); x.restore(); }
-    x.fillStyle = '#fff'; x.beginPath(); x.arc(60, 60, 6, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#1F3864'; x.font = 'bold 64px Arial'; x.textBaseline = 'middle'; x.fillText('ATOM', 122, 64);
-    return (logoProvisorio.cache = c.toDataURL('image/png'));
-  }
+  // Logo oficial da Atom (logo.js). Não há logo alternativo.
+  function logoDataUrl() { return window.ATOM_LOGO; }
   async function tamanhoImagem(url) {
     const img = new Image(); await new Promise((ok) => { img.onload = ok; img.onerror = ok; img.src = url; });
     return { w: img.naturalWidth || 3, h: img.naturalHeight || 1 };
@@ -266,6 +252,47 @@ CN.exportar = (function () {
     return new Uint8Array(pdf.output('arraybuffer'));
   }
 
+  // ---------- JSON para a plataforma (conf.sp_GravarConferencia) ----------
+  const COD_SITUACAO = () => ({
+    [S().NAO]: 'NAO_RECEBIDA', [S().MANUAL]: 'CONFERIR', [S().PROVAVEL]: 'PROVAVEL', [S().FORA]: 'FORA_PERIODO',
+    [S().RECEBIDA]: 'RECEBIDA', [S().OUTRO_DEST]: 'OUTRO_DEST', [S().EMITIDA]: 'EMITIDA', [S().CANCELADA]: 'CANCELADA'
+  });
+  function gerarJson(conf, usuario) {
+    const p = conf.params, r = conf.resumo, cod = COD_SITUACAO();
+    const nulo = (v) => (v === '' || v == null ? null : v);
+    return {
+      conferencia: {
+        dataInicio: p.inicio, dataFim: p.fim, baseDataMovimento: p.baseMov === 'emissao' ? 'EMISSAO' : 'ENTRADA',
+        margemDias: p.margemDias || 0, cnpjEmpresa: (p.cnpjsEmpresa || []).join(';'), toleranciaValor: p.toleranciaValor,
+        tiposMovimento: [...(p.tipos || [])].filter(Boolean).sort().join(';'),
+        origemMovimentos: /\.pdf$/i.test(p.arquivoTotvs || '') ? 'RELATORIO_PDF' : /^API/.test(p.arquivoTotvs || '') ? 'TOTVS_SQL' : 'EXCEL',
+        usuario: usuario || 'conferencia-html',
+        qtdNotas: r.notas, qtdRecebidas: r.recebidas, qtdForaPeriodo: r.fora, qtdProvaveis: r.provaveis,
+        qtdNaoRecebidas: r.naoRecebidas, qtdConferirManual: r.manuais, qtdOutras: r.outras, qtdTotvsSemNota: r.semDocumento,
+        valorNaoRecebido: Math.round(r.valorNaoRecebido * 100) / 100
+      },
+      notas: conf.resultado.map((x) => {
+        const d = x.doc, m = x.movimento;
+        return {
+          situacao: cod[x.status], tipoDocumento: d.tipo, modelo: nulo(d.modelo), chaveAcesso: nulo(d.chave),
+          numero: nulo(d.numero), serie: nulo(d.serie), dataEmissao: nulo(d.dataEmissao), anoMesChave: nulo(d.anoMesChave),
+          emitenteCnpj: nulo(d.emitCnpj), emitenteNome: nulo(d.emitNome), destinatarioCnpj: nulo(d.destCnpj),
+          valor: d.valor, fonte: d.fonte, confianca: d.confianca, cancelada: !!d.cancelada,
+          arquivosOrigem: d.anexos.map((a) => a.origem.caminho + (a.paginas && a.totalPaginasArquivo > 1 ? ` (pág. ${a.paginas.map((n) => n + 1).join(', ')})` : '')).join(' | '),
+          nomeArquivoPacote: x.status === S().NAO ? nomeBase(d) + '.pdf' : null,
+          observacao: nulo(x.observacao),
+          movIdmov: m && m.idmov ? Number(m.idmov) || null : null, movCodTmv: m ? m.tipoMovNorm : null, movNumero: m ? m.numero : null,
+          movDataEntrada: m ? m.dataEntrada : null, movDataEmissao: m ? m.dataEmissao : null, movValor: m ? m.valor : null,
+          comoEncontrada: nulo(x.como)
+        };
+      }),
+      movimentosSemNota: conf.semDocumento.map((m) => ({
+        idmov: Number(m.idmov) || null, codTmv: m.tipoMovNorm, numero: m.numero, serie: nulo(m.serie),
+        fornecedorCnpj: nulo(m.cnpj), fornecedorNome: nulo(m.fornecedor), dataEmissao: m.dataEmissao, dataEntrada: m.dataEntrada, valor: m.valor
+      }))
+    };
+  }
+
   // ---------- Pacote ZIP ----------
   async function gerarPacote(conf, aoProgresso) {
     const zip = new JSZip();
@@ -274,6 +301,7 @@ CN.exportar = (function () {
     zip.file('Relatorio notas nao recebidas.xlsx', await gerarExcel(conf));
     aoProgresso && aoProgresso('Gerando relatório em PDF…', 0.1);
     zip.file('Relatorio notas nao recebidas.pdf', await gerarRelatorioPdf(conf));
+    zip.file('conferencia.json', JSON.stringify(gerarJson(conf), null, 2));
     const pasta = zip.folder('Notas nao recebidas');
     const nao = conf.resultado.filter((r) => r.status === S().NAO);
     const usados = new Set();
@@ -303,5 +331,5 @@ CN.exportar = (function () {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  return { gerarExcel, gerarRelatorioPdf, gerarPacote, pdfDaNota, nomeBase, baixar, logoDataUrl, siglaTipo };
+  return { gerarExcel, gerarRelatorioPdf, gerarPacote, gerarJson, pdfDaNota, nomeBase, baixar, logoDataUrl, siglaTipo };
 })();

@@ -46,14 +46,6 @@
     $('btnExcel').addEventListener('click', () => exportar('excel'));
     $('btnPdf').addEventListener('click', () => exportar('pdf'));
 
-    $('btnConfig').addEventListener('click', () => { $('logoPrevia').src = CN.exportar.logoDataUrl(); $('dlgConfig').showModal(); });
-    $('inLogo').addEventListener('change', async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      const url = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(f); });
-      try { localStorage.setItem('cn_logo', url); } catch (err) { alert('Não foi possível salvar o logo neste navegador (imagem grande demais?).'); }
-      atualizarLogo(); $('logoPrevia').src = CN.exportar.logoDataUrl(); e.target.value = '';
-    });
-    $('btnLogoRemover').addEventListener('click', () => { try { localStorage.removeItem('cn_logo'); } catch (e) { /* ignora */ } atualizarLogo(); $('logoPrevia').src = CN.exportar.logoDataUrl(); });
     verificarPronto();
   }
 

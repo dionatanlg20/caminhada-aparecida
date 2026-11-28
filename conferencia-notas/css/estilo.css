@@ -28,8 +28,6 @@ code { background: var(--azul-claro); padding: 1px 5px; border-radius: 4px; font
 .topo-titulos { flex: 1; min-width: 0; }
 .topo h1 { font-size: 20px; font-weight: 600; }
 .topo p { margin: 2px 0 0; opacity: .85; font-size: 13px; }
-.btn-topo { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; padding: 7px 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; }
-.btn-topo:hover { background: rgba(255,255,255,.12); }
 
 .conteudo { max-width: 1400px; margin: 0 auto; padding: 16px 20px 48px; }
 .aviso-local { margin: 0 0 14px; color: var(--texto-2); font-size: 13px; }
@@ -135,14 +133,8 @@ details summary { cursor: pointer; color: var(--azul); font-weight: 600; font-si
 .st-neutro { background: #EEF0F4; color: var(--texto-2); }
 .vazio { padding: 24px; text-align: center; color: var(--texto-2); }
 
-dialog { border: none; border-radius: 12px; padding: 22px; max-width: 460px; width: calc(100% - 32px); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
-dialog h3 { color: var(--azul); margin-bottom: 8px; }
-dialog p { color: var(--texto-2); font-size: 13px; }
-.logo-previa { background: var(--fundo); border-radius: 8px; padding: 14px; text-align: center; margin: 10px 0; }
-.logo-previa img { max-height: 70px; max-width: 100%; }
 
 @media (max-width: 600px) {
   .topo-conteudo, .conteudo { padding-left: 16px; padding-right: 16px; }
   .topo h1 { font-size: 16px; }
-  .btn-topo { display: none; }
 }

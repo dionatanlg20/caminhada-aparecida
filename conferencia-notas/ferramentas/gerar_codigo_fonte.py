@@ -25,9 +25,6 @@ def js(m):
         return ('<!-- Leitor de RAR: node-unrar-js 2.0.2 (WebAssembly) empacotado com o .wasm embutido.\n'
                 '     Arquivo lib/unrar.bundle.js da pasta completa. Sem ele, só ZIP é aberto. -->\n'
                 '<script src="lib/unrar.bundle.js"></script>')
-    if src == 'logo.js':
-        return ('<script>\n/* Logo: na pasta completa fica em logo.js (base64 de img/logo-atom.png).\n'
-                '   Numa aplicação servida por HTTP pode ser só a URL da imagem. */\nwindow.ATOM_LOGO = null;\n</script>')
     codigo = open(os.path.join(BASE, src), encoding='utf-8').read()
     codigo = re.sub(r'</(script)', r'<\\/\1', codigo, flags=re.I)
     return f'<script>\n/* ===================== {src} ===================== */\n' + codigo + '\n</script>'
