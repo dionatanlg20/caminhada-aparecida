@@ -156,7 +156,7 @@ CN.exportar = (function () {
     const periodo = `${U.fmtData(conf.params.inicio)} a ${U.fmtData(conf.params.fim)}`;
     const cabecalho = () => {
       pdf.setFillColor(...AZUL_RGB); pdf.rect(0, 0, W, 3, 'F');
-      const h = 12; pdf.addImage(logo, formatoImg(logo), 10, 7, h * tam.w / tam.h, h, 'logo', 'FAST');
+      const h = 17; pdf.addImage(logo, formatoImg(logo), 10, 5, h * tam.w / tam.h, h, 'logo', 'FAST');
       pdf.setTextColor(...AZUL_RGB); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
       pdf.text('Notas fiscais não recebidas na TOTVS RM', W - 10, 12, { align: 'right' });
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(90);

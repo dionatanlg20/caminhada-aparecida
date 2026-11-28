@@ -83,9 +83,8 @@ substitui o DANFE). O ZIP abre normalmente no WinRAR.
 
 ## Logo
 
-Na tela, clique em **Logo / Configurações** e escolha a imagem do logo da Atom. Ele fica salvo
-no navegador e sai na tela, no Excel e no PDF. Para deixar fixo para todos, cole o logo em base64
-em `logo.js`.
+O logo da Atom Engenharia Elétrica já vem embutido (`logo.js`; original em `img/logo-atom.png`)
+e sai na tela, no Excel e no PDF. Para trocar, use **Logo / Configurações** na tela.
 
 ## Teste com os exemplos
 
