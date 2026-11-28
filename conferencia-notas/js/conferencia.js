@@ -48,6 +48,15 @@ CN.conferencia = (function () {
     return unicos;
   }
 
+  // Números com o mesmo tamanho e um dígito trocado, ou dois dígitos vizinhos invertidos.
+  function numeroParecido(a, b) {
+    if (!a || !b || a === b || a.length !== b.length || a.length < 3) return false;
+    const dif = [];
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) dif.push(i);
+    if (dif.length === 1) return true;
+    return dif.length === 2 && dif[1] === dif[0] + 1 && a[dif[0]] === b[dif[1]] && a[dif[1]] === b[dif[0]];
+  }
+
   function dentro(iso, ini, fim) { return !!iso && iso >= ini && iso <= fim; }
 
   /**
@@ -85,12 +94,13 @@ CN.conferencia = (function () {
     const dataMov = (m) => (params.baseMov === 'emissao' ? m.dataEmissao || m.dataEntrada : m.dataEntrada || m.dataEmissao);
 
     // Índices
-    const idx = { chave: new Map(), cnpjNum: new Map(), raizNum: new Map(), num: new Map() };
+    const idx = { chave: new Map(), cnpjNum: new Map(), raizNum: new Map(), num: new Map(), raiz: new Map() };
     const add = (mapa, k, m) => { if (!k) return; if (!mapa.has(k)) mapa.set(k, []); mapa.get(k).push(m); };
     for (const m of movs) {
       add(idx.chave, m.chave, m);
       if (m.cnpj && m.numero) { add(idx.cnpjNum, `${m.cnpj}|${m.numero}`, m); add(idx.raizNum, `${m.cnpj.slice(0, 8)}|${m.numero}`, m); }
       add(idx.num, m.numero, m);
+      if (m.cnpj) add(idx.raiz, m.cnpj.slice(0, 8), m);
     }
     const valorBate = (a, b) => a != null && b != null && Math.abs(a - b) <= Math.max(tol, Math.abs(a) * 0.005);
 
@@ -101,6 +111,9 @@ CN.conferencia = (function () {
         if (idx.cnpjNum.has(k)) return { m: idx.cnpjNum.get(k), como: 'CNPJ + número', exato: true };
         const kr = `${d.emitCnpj.slice(0, 8)}|${d.numero}`;
         if (idx.raizNum.has(kr)) return { m: idx.raizNum.get(kr), como: 'raiz do CNPJ + número (filial diferente)', exato: false };
+        // Mesmo fornecedor e valor, número diferente em 1 dígito: provável erro de digitação.
+        const parecidos = (idx.raiz.get(d.emitCnpj.slice(0, 8)) || []).filter((m) => valorBate(m.valor, d.valor) && numeroParecido(m.numero, d.numero));
+        if (parecidos.length) return { m: parecidos, como: `mesmo fornecedor e valor, mas na TOTVS o número é ${parecidos[0].numero} (possível erro de digitação)`, exato: false };
       }
       if (d.numero && idx.num.has(d.numero)) {
         const cands = idx.num.get(d.numero);
