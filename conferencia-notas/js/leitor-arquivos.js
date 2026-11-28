@@ -60,6 +60,7 @@ CN.leitor = (function () {
       stats.compactados++;
       let internos;
       try {
+        if (tipo === 'rar' && !window.UnrarLib) throw new Error('leitor de RAR não carregado (lib/unrar.bundle.js)');
         internos = tipo === 'zip' ? await abrirZip(dados) : await window.UnrarLib.extrair(dados);
       } catch (e) {
         const msg = String(e && e.message || e);

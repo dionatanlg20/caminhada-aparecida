@@ -1,0 +1,2328 @@
+<!doctype html>
+<!--
+  Conferência de Notas x TOTVS RM — código-fonte da aplicação (Atom Engenharia Elétrica)
+  Regras e especificação: ESPECIFICACAO-DALVINO.md
+-->
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conferência de Notas x TOTVS</title>
+<style>
+:root {
+  --azul: #1F3864;
+  --azul-2: #2E5597;
+  --azul-claro: #E8EEF8;
+  --fundo: #F3F5F9;
+  --cartao: #FFFFFF;
+  --texto: #1D2433;
+  --texto-2: #5B6478;
+  --borda: #D9DEE8;
+  --vermelho: #B4231A;
+  --vermelho-claro: #FDECEB;
+  --amarelo: #8A5A00;
+  --amarelo-claro: #FFF4D6;
+  --verde: #1E7B45;
+  --verde-claro: #E5F4EB;
+  --azul-info-claro: #E8F0FB;
+  --raio: 10px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); color: var(--texto); font: 14px/1.45 "Segoe UI", Roboto, Arial, sans-serif; }
+h1, h2, h3 { margin: 0; }
+code { background: var(--azul-claro); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+.topo { background: var(--azul); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.topo-conteudo { max-width: 1400px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 16px; }
+.logo { height: 56px; max-width: 200px; object-fit: contain; background: #fff; border-radius: 8px; padding: 2px 6px; }
+.topo-titulos { flex: 1; min-width: 0; }
+.topo h1 { font-size: 20px; font-weight: 600; }
+.topo p { margin: 2px 0 0; opacity: .85; font-size: 13px; }
+.btn-topo { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; padding: 7px 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; }
+.btn-topo:hover { background: rgba(255,255,255,.12); }
+
+.conteudo { max-width: 1400px; margin: 0 auto; padding: 16px 20px 48px; }
+.aviso-local { margin: 0 0 14px; color: var(--texto-2); font-size: 13px; }
+.passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .passos { grid-template-columns: 1fr; } }
+
+.cartao { background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); padding: 18px; }
+.cartao h2 { font-size: 16px; color: var(--azul); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--azul); color: #fff; font-size: 13px; }
+.ajuda { color: var(--texto-2); font-size: 12.5px; margin: 6px 0 10px; }
+.faltando { color: var(--amarelo); }
+
+.soltar { border: 2px dashed var(--borda); border-radius: var(--raio); padding: 18px; text-align: center; transition: .15s; }
+.soltar p { margin: 2px 0 8px; }
+.soltar.ativo { border-color: var(--azul-2); background: var(--azul-claro); }
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.cartao > .botoes, .resultado-topo .botoes { justify-content: flex-start; }
+.botoes.direita { justify-content: flex-end; margin-top: 14px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--borda); background: #fff; color: var(--azul); padding: 8px 14px; border-radius: 7px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px; }
+.btn:hover { border-color: var(--azul-2); }
+.btn.primario { background: var(--azul); border-color: var(--azul); color: #fff; }
+.btn.primario:hover { background: var(--azul-2); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.grande { width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 8px; }
+.btn.mini { padding: 3px 8px; font-size: 12px; font-weight: 600; }
+
+select, input[type=date], input[type=number], input[type=url], input[type=password], input:not([type]), input[type=search] {
+  font: inherit; padding: 7px 9px; border: 1px solid var(--borda); border-radius: 6px; background: #fff; color: var(--texto); width: 100%;
+}
+input:focus, select:focus { outline: 2px solid var(--azul-claro); border-color: var(--azul-2); }
+.linha-campos { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end; }
+.linha-campos > label { flex: 1; min-width: 130px; font-size: 12.5px; color: var(--texto-2); display: flex; flex-direction: column; gap: 3px; }
+.campo-sufixo { display: flex; align-items: center; gap: 8px; color: var(--texto); }
+.campo-sufixo input { width: 80px; }
+label.bloco { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--texto-2); margin-bottom: 10px; }
+label.bloco small { font-size: 11.5px; }
+.opcoes { border: 1px solid var(--borda); border-radius: 7px; padding: 6px 10px 8px; margin: 0 0 4px; }
+.opcoes legend { font-size: 12.5px; color: var(--texto-2); padding: 0 4px; }
+.opcoes label { display: block; margin: 3px 0; }
+
+.progresso { margin-top: 12px; }
+.barra { height: 8px; background: var(--azul-claro); border-radius: 4px; overflow: hidden; }
+.barra span { display: block; height: 100%; width: 0; background: var(--azul-2); transition: width .2s; }
+.progresso small { color: var(--texto-2); display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.resumo-leitura { margin-top: 12px; font-size: 13px; }
+.resumo-leitura .ok { color: var(--verde); font-weight: 600; }
+.resumo-leitura ul { margin: 6px 0; padding-left: 18px; }
+.resumo-leitura details { margin-top: 6px; }
+.resumo-leitura details li { word-break: break-all; font-size: 12px; color: var(--texto-2); }
+.pilulas { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.pilula { background: var(--azul-claro); color: var(--azul); border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+.pilula.aviso { background: var(--amarelo-claro); color: var(--amarelo); }
+
+details summary { cursor: pointer; color: var(--azul); font-weight: 600; font-size: 13px; margin: 8px 0; }
+.mapa { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 12.5px; }
+.mapa select { padding: 4px 6px; }
+.mapa .obrig::after { content: " *"; color: var(--vermelho); }
+.previa { overflow-x: auto; margin-top: 10px; }
+.previa table { border-collapse: collapse; font-size: 11.5px; }
+.previa td, .previa th { border: 1px solid var(--borda); padding: 3px 6px; white-space: nowrap; }
+.previa th { background: var(--azul); color: #fff; }
+.tipos { margin-top: 10px; border-top: 1px solid var(--borda); padding-top: 10px; }
+.tipos h4 { margin: 0 0 6px; font-size: 13px; color: var(--azul); }
+.tipos label { display: inline-flex; align-items: center; gap: 5px; margin: 3px 12px 3px 0; font-size: 13px; }
+.avancado { margin-top: 10px; border-top: 1px solid var(--borda); padding-top: 4px; }
+
+.resultado { margin-top: 16px; }
+.resultado-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.resultado-topo h2 small { color: var(--texto-2); font-weight: 400; font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; background: #FAFBFD; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.kpi:hover { border-color: var(--azul-2); }
+.kpi span { display: block; font-size: 12px; color: var(--texto-2); }
+.kpi strong { font-size: 24px; color: var(--azul); font-variant-numeric: tabular-nums; }
+.kpi small { display: block; color: var(--texto-2); font-size: 12px; }
+.kpi.perigo { background: var(--vermelho-claro); border-color: #F3C5C1; }
+.kpi.perigo strong { color: var(--vermelho); }
+.kpi.atencao strong { color: var(--amarelo); }
+.alerta { background: var(--vermelho-claro); color: var(--vermelho); border: 1px solid #F3C5C1; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-weight: 600; }
+.alerta.ok { background: var(--verde-claro); color: var(--verde); border-color: #BFE3CD; }
+
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.filtros input { max-width: 320px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.chip { border: 1px solid var(--borda); background: #fff; border-radius: 20px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer; color: var(--texto); }
+.chip.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+
+.tabela-rolagem { overflow: auto; max-height: 70vh; border: 1px solid var(--borda); border-radius: 8px; }
+.tabela { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.tabela th { position: sticky; top: 0; background: var(--azul); color: #fff; text-align: left; padding: 8px; font-weight: 600; white-space: nowrap; z-index: 1; }
+.tabela td { padding: 7px 8px; border-bottom: 1px solid #EDF0F5; vertical-align: top; }
+.tabela tr:hover td { background: #F7F9FC; }
+.tabela .valor { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tabela .nowrap { white-space: nowrap; }
+.tabela .origem { color: var(--texto-2); font-size: 11.5px; word-break: break-all; max-width: 280px; }
+.tabela .obs { color: var(--texto-2); font-size: 12px; max-width: 320px; }
+.status { display: inline-block; border-radius: 4px; padding: 2px 7px; font-weight: 700; font-size: 11.5px; white-space: nowrap; }
+.st-nao { background: var(--vermelho-claro); color: var(--vermelho); }
+.st-ok { background: var(--verde-claro); color: var(--verde); }
+.st-fora { background: var(--azul-info-claro); color: var(--azul-2); }
+.st-atencao { background: var(--amarelo-claro); color: var(--amarelo); }
+.st-neutro { background: #EEF0F4; color: var(--texto-2); }
+.vazio { padding: 24px; text-align: center; color: var(--texto-2); }
+
+dialog { border: none; border-radius: 12px; padding: 22px; max-width: 460px; width: calc(100% - 32px); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+dialog h3 { color: var(--azul); margin-bottom: 8px; }
+dialog p { color: var(--texto-2); font-size: 13px; }
+.logo-previa { background: var(--fundo); border-radius: 8px; padding: 14px; text-align: center; margin: 10px 0; }
+.logo-previa img { max-height: 70px; max-width: 100%; }
+
+@media (max-width: 600px) {
+  .topo-conteudo, .conteudo { padding-left: 16px; padding-right: 16px; }
+  .topo h1 { font-size: 16px; }
+  .btn-topo { display: none; }
+}
+
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-conteudo">
+    <img id="logo" class="logo" alt="Atom">
+    <div class="topo-titulos">
+      <h1>Conferência de Notas x TOTVS RM</h1>
+      <p>Notas fiscais de entrada não recebidas (NF-e modelo 55, NFS-e, CT-e)</p>
+    </div>
+    <button id="btnConfig" class="btn-topo" title="Logo e configurações">Logo / Configurações</button>
+  </div>
+</header>
+
+<main class="conteudo">
+  <p class="aviso-local">Tudo é processado aqui no seu computador. Nenhum arquivo sai da sua máquina.</p>
+
+  <div class="passos">
+    <!-- 1. Notas -->
+    <section class="cartao" id="passoNotas">
+      <h2><span class="num">1</span> Notas fiscais da pasta</h2>
+      <p class="ajuda">XML, PDF, JPEG/PNG, ZIP e RAR (inclusive compactado dentro de compactado e PDF com várias notas).</p>
+      <div class="soltar" id="areaSoltar">
+        <p><strong>Arraste a pasta ou os arquivos para cá</strong></p>
+        <p>ou</p>
+        <div class="botoes">
+          <label class="btn primario">Escolher pasta<input type="file" id="inPasta" webkitdirectory directory multiple hidden></label>
+          <label class="btn">Escolher arquivos<input type="file" id="inArquivos" multiple accept=".xml,.pdf,.zip,.rar,.jpg,.jpeg,.png,.webp,.bmp" hidden></label>
+        </div>
+      </div>
+      <div class="progresso" id="progNotas" hidden><div class="barra"><span></span></div><small></small></div>
+      <div id="resumoNotas" class="resumo-leitura"></div>
+    </section>
+
+    <!-- 2. TOTVS -->
+    <section class="cartao" id="passoTotvs">
+      <h2><span class="num">2</span> Movimentos de entrada da TOTVS</h2>
+      <p class="ajuda">Relatório exportado da TOTVS RM (PDF "Relação de notas fiscais recebidas", Excel, .csv ou .txt). Para não marcar como "não recebida" uma nota lançada depois, exporte alguns dias a mais depois do fim do período.</p>
+      <div class="botoes">
+        <label class="btn primario">Escolher relatório<input type="file" id="inTotvs" accept=".xlsx,.xls,.xlsm,.csv,.txt,.ods,.pdf" hidden></label>
+        <select id="selAba" hidden></select>
+      </div>
+      <div id="resumoTotvs" class="resumo-leitura"></div>
+      <details id="detMapa" hidden>
+        <summary>Colunas do relatório (confira se o sistema reconheceu certo)</summary>
+        <div id="mapaColunas" class="mapa"></div>
+        <div id="previa" class="previa"></div>
+      </details>
+      <div id="tiposMov" class="tipos" hidden></div>
+      <details class="avancado">
+        <summary>Buscar direto da TOTVS (API do Dalvino — futuro)</summary>
+        <p class="ajuda">Quando a API estiver pronta, informe o endereço. Formato descrito em <code>API-FUTURA.md</code>.</p>
+        <div class="linha-campos">
+          <label>Endereço da API<input id="apiUrl" type="url" placeholder="http://servidor:porta/api"></label>
+          <label>Token<input id="apiToken" type="password" autocomplete="off"></label>
+          <button class="btn" id="btnApi" type="button">Buscar movimentos</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- 3. Parâmetros -->
+    <section class="cartao" id="passoParam">
+      <h2><span class="num">3</span> Período e filtros</h2>
+      <div class="linha-campos">
+        <label>De<input type="date" id="dtIni"></label>
+        <label>Até<input type="date" id="dtFim"></label>
+      </div>
+      <fieldset class="opcoes">
+        <legend>Período dos lançamentos na TOTVS pela</legend>
+        <label><input type="radio" name="baseMov" value="entrada" checked> Data de entrada (lançamento)</label>
+        <label><input type="radio" name="baseMov" value="emissao"> Data de emissão</label>
+      </fieldset>
+      <p class="ajuda">As notas da pasta são filtradas pela data de emissão. Cada nota é procurada em todos os movimentos do relatório: se foi lançada fora do período, aparece como "Recebida fora do período".</p>
+      <div class="linha-campos">
+        <label>Incluir notas emitidas até<span class="campo-sufixo"><input type="number" id="margem" min="0" max="365" value="0"> dias antes do início</span></label>
+      </div>
+      <label class="bloco">CNPJ(s) da empresa (destinatária)
+        <input id="cnpjEmpresa" placeholder="Ex.: 12.345.678/0001-90; 12.345.678/0002-71">
+        <small>Usado para ignorar notas emitidas pela própria empresa e notas de outro destinatário. Considera todas as filiais (raiz do CNPJ).</small>
+      </label>
+      <label class="bloco">Diferença de valor aceita (R$)<input type="number" id="tolerancia" min="0" step="0.01" value="1.00"></label>
+      <button id="btnConferir" class="btn primario grande" disabled>Conferir notas</button>
+      <p id="faltando" class="ajuda faltando"></p>
+    </section>
+  </div>
+
+  <!-- Resultado -->
+  <section class="cartao resultado" id="resultado" hidden>
+    <div class="resultado-topo">
+      <h2>Resultado da conferência <small id="periodoTxt"></small></h2>
+      <div class="botoes">
+        <button class="btn primario" id="btnZip">Baixar pacote ZIP (relatório + PDFs)</button>
+        <button class="btn" id="btnExcel">Excel</button>
+        <button class="btn" id="btnPdf">Relatório PDF</button>
+      </div>
+    </div>
+    <div class="progresso" id="progExport" hidden><div class="barra"><span></span></div><small></small></div>
+    <div class="kpis" id="kpis"></div>
+    <div id="alerta" class="alerta" hidden></div>
+    <div class="filtros">
+      <div class="chips" id="chips"></div>
+      <input type="search" id="busca" placeholder="Buscar fornecedor, CNPJ, número…">
+    </div>
+    <div class="tabela-rolagem"><table class="tabela" id="tabela"></table></div>
+  </section>
+</main>
+
+<dialog id="dlgConfig">
+  <form method="dialog">
+    <h3>Logo e configurações</h3>
+    <p>O logo aparece na tela, no Excel e no PDF. Escolha a imagem do logo da Atom (PNG ou JPEG). Fica salvo neste navegador.</p>
+    <div class="logo-previa"><img id="logoPrevia" alt=""></div>
+    <div class="botoes">
+      <label class="btn">Escolher logo<input type="file" id="inLogo" accept="image/png,image/jpeg" hidden></label>
+      <button class="btn" id="btnLogoRemover" type="button">Voltar ao provisório</button>
+    </div>
+    <div class="botoes direita"><button class="btn primario" value="ok">Fechar</button></div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- Leitor de RAR: node-unrar-js 2.0.2 (WebAssembly) empacotado com o .wasm embutido.
+     Arquivo lib/unrar.bundle.js da pasta completa. Sem ele, só ZIP é aberto. -->
+<script src="lib/unrar.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+/* Logo: na pasta completa fica em logo.js (base64 de img/logo-atom.png).
+   Numa aplicação servida por HTTP pode ser só a URL da imagem. */
+window.ATOM_LOGO = null;
+</script>
+<script>
+/* ===================== js/config.js ===================== */
+/* Configurações padrão da Conferência de Notas x TOTVS RM.
+   Pode editar este arquivo à vontade: ele só tem valores iniciais da tela. */
+window.CN = window.CN || {};
+
+CN.config = {
+  // Tipos de movimento de entrada da TOTVS RM que entram na conferência.
+  // 1.2.04 e 1.2.06 = serviços, 1.2.12 = recebimento de materiais.
+  tiposMovimento: [
+    { codigo: '1.2.04', descricao: 'Entrada de serviço' },
+    { codigo: '1.2.06', descricao: 'Entrada de serviço' },
+    { codigo: '1.2.12', descricao: 'Recebimento de materiais' },
+    { codigo: '1.2.01', descricao: 'NF de recebimento' },
+    { codigo: '1.2.05', descricao: 'Efetivação' },
+    { codigo: '1.2.08', descricao: 'Conhecimento de transporte (CT-e)' },
+    { codigo: '1.2.19', descricao: 'Contratos' },
+    { codigo: '1.2.26', descricao: 'NF de materiais' }
+  ],
+
+  // true = marca todos os tipos de entrada (1.2.xx) encontrados no relatório.
+  // Evita marcar como "não recebida" uma nota lançada em outro tipo (1.2.01, 1.2.08…).
+  marcarTodasEntradas: true,
+
+  // CNPJ(s) da empresa (destinatária das notas). Deixe vazio para não filtrar.
+  // Ex.: ['12.345.678/0001-90']
+  cnpjsEmpresa: [],
+
+  // Diferença de valor aceita para dizer que nota e movimento batem (R$).
+  toleranciaValor: 1.00,
+
+  // Cor padrão Atom (azul corporativo) usada na tela, no Excel e no PDF.
+  corPrimaria: '#1F3864',
+
+  // Nomes de coluna que o sistema reconhece no relatório da TOTVS.
+  // A comparação ignora maiúsculas, acentos e pontuação.
+  colunasTotvs: {
+    tipoMov:     ['codtmv', 'tipo de movimento', 'tipo movimento', 'tipo mov', 'cod tipo movimento', 'codigo do tipo de movimento', 'tmv', 'tipo', 'movimento'],
+    numero:      ['numeromov', 'n nota', 'no nota', 'nota', 'numero do movimento', 'n do movimento', 'numero movimento', 'numero da nota', 'numero nota', 'numero nf', 'numero da nf', 'n nf', 'nota fiscal', 'nf', 'numero documento', 'numero do documento', 'documento', 'numero', 'n'],
+    serie:       ['serie', 'serie nf', 'serie da nota'],
+    dataEmissao: ['dataemissao', 'data emissao', 'data de emissao', 'dt emissao', 'emissao'],
+    dataEntrada: ['dataentrada', 'data lanc', 'dt lanc', 'data entrada', 'data de entrada', 'dt entrada', 'data lancamento', 'data de lancamento', 'dt lancamento', 'data do lancamento', 'data movimento', 'data do movimento', 'dataextra1', 'entrada'],
+    cnpj:        ['cgccfo', 'cnpj', 'cpf cnpj', 'cnpj cpf', 'cnpj fornecedor', 'cnpj do fornecedor', 'cpf/cnpj', 'cnpj/cpf', 'cgc'],
+    fornecedor:  ['nome', 'fornecedor', 'razao social', 'nome do fornecedor', 'nome fornecedor', 'cliente fornecedor', 'cliente/fornecedor', 'nome cli for', 'nomefantasia', 'nome fantasia'],
+    codFornecedor: ['codcfo', 'cod fornecedor', 'codigo fornecedor', 'codigo do fornecedor', 'cod cli for'],
+    valor:       ['valorbruto', 'valor bruto', 'vlr bruto', 'valor total', 'valorliquido', 'valor liquido', 'valor da nota', 'valor nf', 'valor', 'vlr', 'total'],
+    chave:       ['chaveacessonfe', 'chave de acesso', 'chave acesso', 'chave nfe', 'chave da nfe', 'chaveacesso', 'chave'],
+    idmov:       ['idmov', 'id mov', 'id movimento'],
+    status:      ['status', 'situacao', 'status do movimento']
+  },
+
+  rotulosCampos: {
+    tipoMov: 'Tipo de movimento', numero: 'Número da nota', serie: 'Série',
+    dataEmissao: 'Data de emissão', dataEntrada: 'Data de entrada (lançamento)',
+    cnpj: 'CNPJ do fornecedor', fornecedor: 'Nome do fornecedor', codFornecedor: 'Código do fornecedor',
+    valor: 'Valor', chave: 'Chave de acesso', idmov: 'IDMOV', status: 'Status'
+  }
+};
+
+</script>
+<script>
+/* ===================== js/util.js ===================== */
+window.CN = window.CN || {};
+
+CN.util = (function () {
+  const soDigitos = (s) => String(s == null ? '' : s).replace(/\D/g, '');
+
+  // Número da nota sem zeros à esquerda. Em "NF 000015" vira "15".
+  // Se houver vários grupos de números (ex.: "000015-1"), usa o maior.
+  function numNota(s) {
+    if (s == null) return '';
+    if (typeof s === 'number') return String(Math.trunc(s));
+    const grupos = String(s).match(/\d+/g);
+    if (!grupos) return '';
+    const maior = grupos.reduce((a, b) => (b.length > a.length ? b : a));
+    return maior.replace(/^0+/, '') || '0';
+  }
+
+  function parseValor(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    let s = String(v).replace(/R\$|\s/gi, '').replace(/[^\d.,-]/g, '');
+    if (!s) return null;
+    const temV = s.includes(','), temP = s.includes('.');
+    if (temV && temP) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(/,/g, '');
+    } else if (temV) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (temP && /^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+      s = s.replace(/\./g, '');
+    }
+    const n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const isoDe = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+
+  // Converte vários formatos de data em 'AAAA-MM-DD' (ou null).
+  function parseData(v) {
+    if (v == null || v === '') return null;
+    if (v instanceof Date) {
+      if (isNaN(v)) return null;
+      // SheetJS cria datas em UTC à meia-noite; somar 12h evita cair no dia anterior.
+      const d = new Date(v.getTime() + 12 * 3600 * 1000);
+      return isoDe(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+    }
+    if (typeof v === 'number') {
+      if (v > 20000 && v < 80000) { // número de série do Excel
+        const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+        return isoDe(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+      }
+      return null;
+    }
+    const s = String(v).trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return isoDe(+m[1], +m[2], +m[3]);
+    m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+    if (m) {
+      let y = +m[3]; if (y < 100) y += 2000;
+      if (+m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) return isoDe(y, +m[2], +m[1]);
+    }
+    m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (m) return isoDe(+m[1], +m[2], +m[3]);
+    return null;
+  }
+
+  function fmtData(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function addDias(iso, dias) {
+    const [y, m, d] = iso.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + dias));
+    return isoDe(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+  }
+
+  const fmtMoedaF = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtMoeda = (v) => (v == null ? '' : fmtMoedaF.format(v));
+
+  function fmtCNPJ(s) {
+    const d = soDigitos(s);
+    if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    return s || '';
+  }
+
+  function normTexto(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toUpperCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // Cabeçalho de coluna normalizado para comparação.
+  function normCabecalho(s) {
+    return normTexto(s).toLowerCase().replace(/[º°ª]/g, '').replace(/[^a-z0-9/ ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  // Semelhança simples entre nomes (0 a 1), por palavras significativas.
+  const PALAVRAS_IGNORADAS = new Set(['LTDA', 'ME', 'EPP', 'SA', 'S/A', 'EIRELI', 'DE', 'DA', 'DO', 'DOS', 'DAS', 'E', 'COMERCIO', 'SERVICOS', 'INDUSTRIA', 'CIA', 'MEI']);
+  function semelhancaNome(a, b) {
+    const t = (x) => new Set(normTexto(x).replace(/[^A-Z0-9 ]/g, ' ').split(' ').filter((p) => p.length > 1 && !PALAVRAS_IGNORADAS.has(p)));
+    const A = t(a), B = t(b);
+    if (!A.size || !B.size) return 0;
+    let comum = 0; A.forEach((p) => { if (B.has(p)) comum++; });
+    return comum / Math.min(A.size, B.size);
+  }
+
+  function nomeArquivoSeguro(s, max = 120) {
+    let r = String(s).normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (r.length > max) r = r.slice(0, max).trim();
+    return r.replace(/[. ]+$/, '');
+  }
+
+  // Valida chave de acesso NF-e / CT-e / NFC-e (44 dígitos, DV módulo 11).
+  function chaveNFeValida(ch) {
+    if (!/^\d{44}$/.test(ch)) return false;
+    let soma = 0, peso = 2;
+    for (let i = 42; i >= 0; i--) { soma += +ch[i] * peso; peso = peso === 9 ? 2 : peso + 1; }
+    const resto = soma % 11;
+    const dv = resto < 2 ? 0 : 11 - resto;
+    return dv === +ch[43];
+  }
+
+  function cnpjValido(c) {
+    const d = soDigitos(c);
+    if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
+    const calc = (n) => {
+      const pesos = n === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+      const s = pesos.reduce((acc, p, i) => acc + +d[i] * p, 0);
+      const r = s % 11; return r < 2 ? 0 : 11 - r;
+    };
+    return calc(12) === +d[12] && calc(13) === +d[13];
+  }
+
+  // Extrai os dados que a chave de 44 dígitos carrega.
+  function dadosDaChave(ch) {
+    return {
+      uf: ch.slice(0, 2), ano: 2000 + +ch.slice(2, 4), mes: +ch.slice(4, 6),
+      cnpj: ch.slice(6, 20), modelo: ch.slice(20, 22), serie: String(+ch.slice(22, 25)),
+      numero: String(+ch.slice(25, 34))
+    };
+  }
+
+  // Chave da NFS-e Padrão Nacional (50 dígitos).
+  function dadosChaveNFSe(ch) {
+    if (!/^\d{50}$/.test(ch)) return null;
+    const tpInsc = ch[8];
+    const insc = ch.slice(9, 23);
+    return {
+      cMun: ch.slice(0, 7), cnpj: tpInsc === '1' ? insc.slice(3) : insc,
+      numero: String(+ch.slice(23, 36)), ano: 2000 + +ch.slice(36, 38), mes: +ch.slice(38, 40)
+    };
+  }
+
+  const tipoFamilia = (modelo) => (modelo === '55' || modelo === '65' ? 'NF' : modelo === '57' ? 'CT' : modelo === 'NFSe' ? 'NFSE' : '');
+
+  const esperar = () => new Promise((r) => setTimeout(r, 0));
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  return {
+    soDigitos, numNota, parseValor, parseData, fmtData, addDias, fmtMoeda, fmtCNPJ, normTexto,
+    normCabecalho, semelhancaNome, nomeArquivoSeguro, chaveNFeValida, cnpjValido, dadosDaChave, dadosChaveNFSe,
+    tipoFamilia, esperar, escapeHtml
+  };
+})();
+
+</script>
+<script>
+/* ===================== js/leitor-arquivos.js ===================== */
+/* Lê a pasta escolhida e abre compactados (ZIP e RAR, inclusive um dentro do outro). */
+window.CN = window.CN || {};
+
+CN.leitor = (function () {
+  const EXT_IMAGEM = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'];
+  const ext = (nome) => { const m = /\.([^.\/\\]+)$/.exec(nome); return m ? m[1].toLowerCase() : ''; };
+
+  function classificar(nome) {
+    const e = ext(nome);
+    if (e === 'xml') return 'xml';
+    if (e === 'pdf') return 'pdf';
+    if (EXT_IMAGEM.includes(e)) return 'imagem';
+    if (e === 'zip') return 'zip';
+    if (e === 'rar') return 'rar';
+    return 'outro';
+  }
+
+  // Reconhece pelo conteúdo quando a extensão não ajuda.
+  function classificarPorConteudo(dados, padrao) {
+    const b = dados;
+    if (b.length > 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04) return 'zip';
+    if (b.length > 6 && b[0] === 0x52 && b[1] === 0x61 && b[2] === 0x72 && b[3] === 0x21) return 'rar';
+    if (b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';
+    if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8) return 'imagem';
+    if (b.length > 4 && b[0] === 0x89 && b[1] === 0x50) return 'imagem';
+    if (padrao === 'outro') {
+      const ini = new TextDecoder().decode(b.slice(0, 200)).trim();
+      if (ini.startsWith('<?xml') || /^<\w/.test(ini)) return 'xml';
+    }
+    return padrao;
+  }
+
+  /**
+   * Recebe a lista de File (input/drag) e devolve as entradas já expandidas:
+   * [{ nome, caminho, tipo: 'xml'|'pdf'|'imagem', dados: Uint8Array }]
+   */
+  async function lerArquivos(files, aoProgresso) {
+    const saida = [], ignorados = [], erros = [];
+    const stats = { compactados: 0 };
+    let i = 0;
+    for (const f of files) {
+      i++;
+      const caminho = f.webkitRelativePath || f._caminho || f.name;
+      aoProgresso && aoProgresso(`Lendo ${caminho}`, i / files.length);
+      try {
+        const dados = new Uint8Array(await f.arrayBuffer());
+        await processar(f.name, caminho, dados, saida, ignorados, erros, stats, 0);
+      } catch (e) {
+        erros.push({ caminho, erro: e.message || String(e) });
+      }
+      if (i % 5 === 0) await CN.util.esperar();
+    }
+    return { entradas: saida, ignorados, erros, compactados: stats.compactados };
+  }
+
+  async function processar(nome, caminho, dados, saida, ignorados, erros, stats, nivel) {
+    const tipo = classificarPorConteudo(dados, classificar(nome));
+    if (tipo === 'zip' || tipo === 'rar') {
+      if (nivel > 5) { erros.push({ caminho, erro: 'Compactado dentro de compactado demais (mais de 5 níveis).' }); return; }
+      stats.compactados++;
+      let internos;
+      try {
+        if (tipo === 'rar' && !window.UnrarLib) throw new Error('leitor de RAR não carregado (lib/unrar.bundle.js)');
+        internos = tipo === 'zip' ? await abrirZip(dados) : await window.UnrarLib.extrair(dados);
+      } catch (e) {
+        const msg = String(e && e.message || e);
+        erros.push({ caminho, erro: /password|senha|encrypt/i.test(msg) ? 'Compactado protegido por senha.' : 'Não foi possível abrir o compactado: ' + msg });
+        return;
+      }
+      for (const it of internos) {
+        const nomeInterno = it.nome.split(/[\\/]/).pop();
+        if (!nomeInterno || nomeInterno.startsWith('.') || it.nome.includes('__MACOSX')) continue;
+        await processar(nomeInterno, `${caminho} › ${it.nome}`, it.dados, saida, ignorados, erros, stats, nivel + 1);
+      }
+      return;
+    }
+    if (tipo === 'outro') { ignorados.push(caminho); return; }
+    saida.push({ nome, caminho, tipo, dados });
+  }
+
+  async function abrirZip(dados) {
+    const zip = await JSZip.loadAsync(dados);
+    const out = [];
+    const nomes = Object.keys(zip.files);
+    for (const n of nomes) {
+      const f = zip.files[n];
+      if (f.dir) continue;
+      out.push({ nome: n, dados: await f.async('uint8array') });
+    }
+    return out;
+  }
+
+  // Arrastar e soltar pasta: percorre as entradas do navegador.
+  async function arquivosDoDrop(dataTransfer) {
+    const itens = [...(dataTransfer.items || [])].map((it) => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+    if (!itens.length) return [...dataTransfer.files];
+    const out = [];
+    async function andar(entry, prefixo) {
+      if (entry.isFile) {
+        const f = await new Promise((ok, erro) => entry.file(ok, erro));
+        f._caminho = prefixo + f.name;
+        out.push(f);
+      } else if (entry.isDirectory) {
+        const leitor = entry.createReader();
+        let lote;
+        do {
+          lote = await new Promise((ok, erro) => leitor.readEntries(ok, erro));
+          for (const e of lote) await andar(e, prefixo + entry.name + '/');
+        } while (lote.length);
+      }
+    }
+    for (const e of itens) await andar(e, '');
+    return out;
+  }
+
+  return { lerArquivos, arquivosDoDrop, ext };
+})();
+
+</script>
+<script>
+/* ===================== js/parser-xml.js ===================== */
+/* Lê XML de NF-e (modelo 55), NFC-e (65), CT-e (57), resumo de NF-e,
+   NFS-e Padrão Nacional, NFS-e ABRASF/municipais e eventos de cancelamento. */
+window.CN = window.CN || {};
+
+CN.parserXml = (function () {
+  const U = CN.util;
+
+  // Primeiro descendente com um dos nomes (ignora namespace e maiúsculas).
+  function achar(raiz, ...nomes) {
+    if (!raiz) return null;
+    const alvos = nomes.map((n) => n.toLowerCase());
+    const todos = raiz.getElementsByTagName('*');
+    for (const alvo of alvos) {
+      for (let i = 0; i < todos.length; i++) {
+        if (todos[i].localName.toLowerCase() === alvo) return todos[i];
+      }
+    }
+    return null;
+  }
+  // exato = true diferencia maiúsculas (ex.: infNFSe nacional x InfNfse ABRASF).
+  function todosCom(raiz, nome, exato = false) {
+    const out = [], alvo = exato ? nome : nome.toLowerCase();
+    const todos = raiz.getElementsByTagName('*');
+    for (let i = 0; i < todos.length; i++) {
+      const n = exato ? todos[i].localName : todos[i].localName.toLowerCase();
+      if (n === alvo) out.push(todos[i]);
+    }
+    return out;
+  }
+  // Caminho de nomes: txt(el, 'emit', 'CNPJ') -> procura emit, depois CNPJ dentro dele.
+  function txt(raiz, ...caminho) {
+    let el = raiz;
+    for (const parte of caminho) {
+      const opcoes = parte.split('|');
+      el = achar(el, ...opcoes);
+      if (!el) return '';
+    }
+    return (el.textContent || '').trim();
+  }
+  const filhoDireto = (el, nome) => el && [...el.children].find((c) => c.localName.toLowerCase() === nome.toLowerCase());
+
+  function base(origem) {
+    return {
+      tipo: '', modelo: '', chave: '', numero: '', serie: '', dataEmissao: null,
+      emitCnpj: '', emitNome: '', destCnpj: '', destNome: '', valor: null, valorLiquido: null,
+      fonte: 'XML', confianca: 'alta', origem, avisos: [], itens: []
+    };
+  }
+
+  function nfe(inf, origem, textoXml) {
+    const d = base(origem);
+    const ide = achar(inf, 'ide');
+    d.modelo = txt(ide, 'mod') || '55';
+    d.tipo = d.modelo === '65' ? 'NFC-e' : 'NF-e';
+    d.chave = U.soDigitos(inf.getAttribute('Id'));
+    d.numero = U.numNota(txt(ide, 'nNF'));
+    d.serie = txt(ide, 'serie');
+    d.dataEmissao = U.parseData(txt(ide, 'dhEmi|dEmi'));
+    const emit = achar(inf, 'emit'), dest = achar(inf, 'dest');
+    d.emitCnpj = U.soDigitos(txt(emit, 'CNPJ|CPF'));
+    d.emitNome = txt(emit, 'xNome');
+    d.destCnpj = U.soDigitos(txt(dest, 'CNPJ|CPF'));
+    d.destNome = txt(dest, 'xNome');
+    d.valor = U.parseValor(txt(inf, 'total', 'ICMSTot', 'vNF'));
+    d.itens = todosCom(inf, 'det').slice(0, 300).map((det) => ({
+      codigo: txt(det, 'cProd'), descricao: txt(det, 'xProd'), unidade: txt(det, 'uCom'),
+      quantidade: U.parseValor(txt(det, 'qCom')), valor: U.parseValor(txt(det, 'vProd'))
+    }));
+    d.xml = textoXml;
+    return d;
+  }
+
+  function resumoNfe(res, origem, textoXml) {
+    const d = base(origem);
+    d.chave = txt(res, 'chNFe');
+    const c = d.chave.length === 44 ? U.dadosDaChave(d.chave) : null;
+    d.modelo = c ? c.modelo : '55';
+    d.tipo = 'NF-e (resumo)';
+    d.numero = c ? c.numero : '';
+    d.serie = c ? c.serie : '';
+    d.emitCnpj = U.soDigitos(txt(res, 'CNPJ|CPF'));
+    d.emitNome = txt(res, 'xNome');
+    d.dataEmissao = U.parseData(txt(res, 'dhEmi'));
+    d.valor = U.parseValor(txt(res, 'vNF'));
+    if (txt(res, 'cSitNFe') === '3') d.cancelada = true;
+    d.xml = textoXml;
+    return d;
+  }
+
+  function cte(inf, origem, textoXml) {
+    const d = base(origem);
+    d.tipo = 'CT-e'; d.modelo = '57';
+    d.chave = U.soDigitos(inf.getAttribute('Id'));
+    const ide = achar(inf, 'ide');
+    d.numero = U.numNota(txt(ide, 'nCT'));
+    d.serie = txt(ide, 'serie');
+    d.dataEmissao = U.parseData(txt(ide, 'dhEmi'));
+    const emit = achar(inf, 'emit');
+    d.emitCnpj = U.soDigitos(txt(emit, 'CNPJ|CPF'));
+    d.emitNome = txt(emit, 'xNome');
+    // Tomador do serviço: pode ser remetente, destinatário ou outro.
+    const toma = achar(inf, 'toma4');
+    const dest = toma || achar(inf, 'dest');
+    d.destCnpj = U.soDigitos(txt(dest, 'CNPJ|CPF'));
+    d.destNome = txt(dest, 'xNome');
+    d.valor = U.parseValor(txt(inf, 'vPrest', 'vTPrest'));
+    d.xml = textoXml;
+    return d;
+  }
+
+  function nfseNacional(inf, origem, textoXml) {
+    const d = base(origem);
+    d.tipo = 'NFS-e'; d.modelo = 'NFSe';
+    d.chave = U.soDigitos(inf.getAttribute('Id'));
+    d.numero = U.numNota(txt(inf, 'nNFSe'));
+    const emit = filhoDireto(inf, 'emit') || achar(inf, 'emit');
+    d.emitCnpj = U.soDigitos(txt(emit, 'CNPJ|CPF'));
+    d.emitNome = txt(emit, 'xNome');
+    const dps = achar(inf, 'infDPS');
+    d.dataEmissao = U.parseData(txt(dps, 'dhEmi') || txt(inf, 'dhProc'));
+    d.serie = txt(dps, 'serie');
+    const toma = achar(dps, 'toma');
+    d.destCnpj = U.soDigitos(txt(toma, 'CNPJ|CPF'));
+    d.destNome = txt(toma, 'xNome');
+    if (!d.emitCnpj) { const prest = achar(dps, 'prest'); d.emitCnpj = U.soDigitos(txt(prest, 'CNPJ|CPF')); }
+    d.valor = U.parseValor(txt(dps, 'vServPrest', 'vServ')) ?? U.parseValor(txt(inf, 'valores', 'vLiq'));
+    d.valorLiquido = U.parseValor(txt(filhoDireto(inf, 'valores'), 'vLiq'));
+    d.descricaoServico = txt(dps, 'xDescServ');
+    d.xml = textoXml;
+    return d;
+  }
+
+  // ABRASF (1.0 e 2.x) e outros modelos municipais (ex.: São Paulo), por nomes comuns.
+  function nfseMunicipal(inf, origem, textoXml, raizDoc) {
+    const d = base(origem);
+    d.tipo = 'NFS-e'; d.modelo = 'NFSe';
+    d.numero = U.numNota(txt(inf, 'NumeroNFe|NumeroNfse|NumeroNota|Numero'));
+    d.chave = '';
+    d.dataEmissao = U.parseData(txt(inf, 'DataEmissaoNFe|DataEmissao|DataHoraEmissao|DtEmissao|dhEmi|Competencia'));
+    const prest = achar(inf, 'PrestadorServico', 'Prestador', 'IdentificacaoPrestador', 'CPFCNPJPrestador') ||
+      achar(raizDoc, 'PrestadorServico', 'Prestador');
+    d.emitCnpj = U.soDigitos(txt(prest, 'Cnpj|CNPJ|Cpf|CPF'));
+    d.emitNome = txt(prest, 'RazaoSocial|NomeFantasia') || txt(inf, 'RazaoSocialPrestador');
+    if (!d.emitNome) { const p2 = achar(raizDoc, 'PrestadorServico'); d.emitNome = txt(p2, 'RazaoSocial'); }
+    const toma = achar(inf, 'TomadorServico', 'Tomador', 'CPFCNPJTomador') || achar(raizDoc, 'TomadorServico', 'Tomador');
+    d.destCnpj = U.soDigitos(txt(toma, 'Cnpj|CNPJ|Cpf|CPF'));
+    d.destNome = txt(toma, 'RazaoSocial') || txt(inf, 'RazaoSocialTomador');
+    d.valor = U.parseValor(txt(inf, 'ValorServicos|ValorTotal|vServ')) ?? U.parseValor(txt(raizDoc, 'ValorServicos'));
+    d.valorLiquido = U.parseValor(txt(inf, 'ValorLiquidoNfse|ValorLiquido'));
+    if (d.valor == null) d.valor = d.valorLiquido;
+    d.descricaoServico = txt(inf, 'Discriminacao') || txt(raizDoc, 'Discriminacao');
+    d.confianca = d.numero && d.emitCnpj ? 'alta' : 'media';
+    d.xml = textoXml;
+    return d;
+  }
+
+  /** Devolve { documentos: [...], cancelamentos: [chaves], aviso } */
+  function ler(dados, origem) {
+    let texto = new TextDecoder('utf-8').decode(dados);
+    if (texto.includes('�')) texto = new TextDecoder('windows-1252').decode(dados);
+    texto = texto.replace(/^﻿/, '');
+    const doc = new DOMParser().parseFromString(texto, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+      return { documentos: [], cancelamentos: [], aviso: 'XML inválido ou corrompido.' };
+    }
+    const raiz = doc.documentElement;
+    const documentos = [], cancelamentos = [];
+
+    // Eventos (cancelamento NF-e 110111, NFS-e nacional 101101).
+    todosCom(raiz, 'infEvento').forEach((ev) => {
+      const tp = txt(ev, 'tpEvento');
+      const ch = txt(ev, 'chNFe|chCTe|chNFSe');
+      if (/^(110111|101101|110181)$/.test(tp) && ch) cancelamentos.push(U.soDigitos(ch));
+    });
+    todosCom(raiz, 'pedRegEvento').forEach((ev) => {
+      if (achar(ev, 'e101101')) { const ch = txt(ev, 'chNFSe'); if (ch) cancelamentos.push(U.soDigitos(ch)); }
+    });
+
+    todosCom(raiz, 'infNFe', true).forEach((inf) => documentos.push(nfe(inf, origem, texto)));
+    todosCom(raiz, 'resNFe').forEach((r) => documentos.push(resumoNfe(r, origem, texto)));
+    todosCom(raiz, 'infCte', true).forEach((inf) => documentos.push(cte(inf, origem, texto)));
+    todosCom(raiz, 'infNFSe', true).forEach((inf) => documentos.push(nfseNacional(inf, origem, texto)));
+
+    if (!documentos.length) {
+      // ABRASF: InfNfse dentro de CompNfse/Nfse. Outros: NFe (São Paulo) etc.
+      const comp = todosCom(raiz, 'CompNfse');
+      if (comp.length) {
+        comp.forEach((c) => {
+          const inf = achar(c, 'InfNfse') || c;
+          const d = nfseMunicipal(inf, origem, texto, c);
+          if (achar(c, 'NfseCancelamento') || achar(c, 'Cancelamento')) d.cancelada = true;
+          documentos.push(d);
+        });
+      } else {
+        const infs = todosCom(raiz, 'InfNfse');
+        if (infs.length) infs.forEach((inf) => documentos.push(nfseMunicipal(inf, origem, texto, inf.parentNode)));
+        else {
+          const nfsSP = todosCom(raiz, 'NFe').filter((n) => achar(n, 'NumeroNFe'));
+          if (nfsSP.length) nfsSP.forEach((n) => documentos.push(nfseMunicipal(n, origem, texto, n)));
+          else if (achar(raiz, 'Numero', 'NumeroNota', 'NumeroNfse') && achar(raiz, 'Cnpj', 'CNPJ')) {
+            const d = nfseMunicipal(raiz, origem, texto, raiz);
+            d.confianca = 'baixa';
+            d.avisos.push('Layout de XML não reconhecido; dados lidos por aproximação.');
+            documentos.push(d);
+          }
+        }
+      }
+    }
+
+    // Situação cancelada no próprio XML (alguns municípios / resumo).
+    documentos.forEach((d) => {
+      const sit = txt(raiz, 'cStat');
+      if (d.chave && cancelamentos.includes(d.chave)) d.cancelada = true;
+      if (sit === '101') d.cancelada = true; // 101 = cancelamento homologado
+    });
+
+    let aviso = '';
+    if (!documentos.length && !cancelamentos.length) aviso = 'XML sem nota fiscal reconhecida.';
+    return { documentos, cancelamentos, aviso };
+  }
+
+  return { ler };
+})();
+
+</script>
+<script>
+/* ===================== js/parser-imagem.js ===================== */
+/* Imagens (JPEG/PNG) e páginas escaneadas: lê o código de barras do DANFE
+   (chave de acesso de 44 dígitos) ou o QR Code da NFC-e / DANFSe. */
+window.CN = window.CN || {};
+
+CN.codigoBarras = (function () {
+  const U = CN.util;
+  let leitor = null;
+
+  function obterLeitor() {
+    if (leitor) return leitor;
+    const Z = window.ZXing;
+    const dicas = new Map();
+    dicas.set(Z.DecodeHintType.TRY_HARDER, true);
+    dicas.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128, Z.BarcodeFormat.QR_CODE, Z.BarcodeFormat.ITF, Z.BarcodeFormat.DATA_MATRIX]);
+    leitor = new Z.MultiFormatReader();
+    leitor.setHints(dicas);
+    return leitor;
+  }
+
+  function decodificarCanvas(canvas) {
+    const Z = window.ZXing;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const { width: w, height: h } = canvas;
+    const px = ctx.getImageData(0, 0, w, h).data;
+    const lum = new Uint8ClampedArray(w * h);
+    for (let i = 0, j = 0; i < px.length; i += 4, j++) lum[j] = (px[i] * 299 + px[i + 1] * 587 + px[i + 2] * 114) / 1000;
+    const fonte = new Z.RGBLuminanceSource(lum, w, h);
+    const bitmap = new Z.BinaryBitmap(new Z.HybridBinarizer(fonte));
+    try { return obterLeitor().decode(bitmap).getText(); } catch (e) { return null; }
+  }
+
+  function girar(canvas, graus) {
+    const c = document.createElement('canvas');
+    const r = graus % 180 !== 0;
+    c.width = r ? canvas.height : canvas.width; c.height = r ? canvas.width : canvas.height;
+    const ctx = c.getContext('2d');
+    ctx.translate(c.width / 2, c.height / 2); ctx.rotate((graus * Math.PI) / 180);
+    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    return c;
+  }
+
+  // Página inteira e depois "janelas" menores: textos ao lado do código de barras
+  // atrapalham a leitura da linha inteira, então procuramos em pedaços sobrepostos.
+  // O código do DANFE fica no topo, por isso as janelas de cima vêm primeiro.
+  function* recortes(canvas) {
+    yield canvas;
+    const h = canvas.height, w = canvas.width;
+    const altura = Math.max(120, Math.round(h * 0.12));
+    const passoY = Math.round(altura / 2);
+    for (const fracL of [0.55, 0.4]) {
+      const largura = Math.round(w * fracL), passoX = Math.round(largura / 3);
+      for (let y = 0; y < h; y += passoY) {
+        for (let x = 0; x + largura <= w + passoX - 1; x += passoX) {
+          const x0 = Math.min(x, w - largura), y0 = Math.min(y, h - altura);
+          const c = document.createElement('canvas');
+          c.width = largura; c.height = altura;
+          c.getContext('2d').drawImage(canvas, x0, y0, largura, altura, 0, 0, largura, altura);
+          yield c;
+        }
+        if (y + altura >= h) break;
+      }
+    }
+  }
+
+  /** Procura chave de acesso no canvas. Devolve { chave, textoLido } ou null. */
+  function lerChaveDoCanvas(canvas) {
+    for (const g of [0, 90, 270]) {
+      const base = g ? girar(canvas, g) : canvas;
+      for (const c of recortes(base)) {
+        const t = decodificarCanvas(c);
+        if (!t) continue;
+        const chave = chaveNoTexto(t);
+        if (chave) return { chave, textoLido: t };
+      }
+    }
+    return null;
+  }
+
+  function chaveNoTexto(t) {
+    const nums = (t.match(/\d{44,50}/g) || []);
+    for (const n of nums) {
+      if (n.length === 44 && U.chaveNFeValida(n)) return n;
+      if (n.length === 50 && U.dadosChaveNFSe(n)) return n;
+      for (let i = 0; i + 44 <= n.length; i++) { const s = n.slice(i, i + 44); if (U.chaveNFeValida(s)) return s; }
+    }
+    return null;
+  }
+
+  async function carregarImagem(dados, nome) {
+    const tipo = /png$/i.test(nome) ? 'image/png' : /webp$/i.test(nome) ? 'image/webp' : /bmp$/i.test(nome) ? 'image/bmp' : /gif$/i.test(nome) ? 'image/gif' : 'image/jpeg';
+    const url = URL.createObjectURL(new Blob([dados], { type: tipo }));
+    try {
+      const img = new Image();
+      await new Promise((ok, erro) => { img.onload = ok; img.onerror = () => erro(new Error('Imagem inválida.')); img.src = url; });
+      const escala = Math.min(1, 3600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * escala); c.height = Math.round(img.naturalHeight * escala);
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      return c;
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  /** Documento a partir de uma imagem de nota. */
+  async function lerImagem(entrada) {
+    const canvas = await carregarImagem(entrada.dados, entrada.nome);
+    const achou = lerChaveDoCanvas(canvas);
+    const d = {
+      tipo: '', modelo: '', chave: '', numero: '', serie: '', dataEmissao: null,
+      emitCnpj: '', emitNome: '', destCnpj: '', destNome: '', valor: null,
+      fonte: 'Imagem', confianca: 'baixa', origem: entrada, avisos: [], itens: []
+    };
+    if (achou) preencherPelaChave(d, achou.chave);
+    else d.avisos.push('Não foi possível ler o código de barras da imagem. Conferir manualmente.');
+    return d;
+  }
+
+  function preencherPelaChave(d, chave) {
+    d.chave = chave;
+    if (chave.length === 44) {
+      const c = U.dadosDaChave(chave);
+      d.modelo = c.modelo; d.tipo = c.modelo === '57' ? 'CT-e' : c.modelo === '65' ? 'NFC-e' : 'NF-e';
+      d.numero = c.numero; d.serie = c.serie; d.emitCnpj = c.cnpj;
+      d.anoMesChave = `${c.ano}-${String(c.mes).padStart(2, '0')}`;
+    } else {
+      const c = U.dadosChaveNFSe(chave);
+      d.modelo = 'NFSe'; d.tipo = 'NFS-e'; d.numero = c.numero; d.emitCnpj = c.cnpj;
+      d.anoMesChave = `${c.ano}-${String(c.mes).padStart(2, '0')}`;
+    }
+    d.confianca = 'media';
+    d.avisos.push('Dados lidos do código de barras (sem data exata de emissão nem valor).');
+  }
+
+  return { lerImagem, lerChaveDoCanvas, chaveNoTexto, preencherPelaChave, carregarImagem };
+})();
+
+</script>
+<script>
+/* ===================== js/parser-pdf.js ===================== */
+/* Lê PDFs de DANFE (NF-e), DANFSe / NFS-e municipal e CT-e.
+   Um PDF pode ter várias notas (ex.: um ano inteiro): cada página é lida,
+   e páginas da mesma nota são agrupadas. */
+window.CN = window.CN || {};
+
+CN.parserPdf = (function () {
+  const U = CN.util;
+  const RE_DINHEIRO = /^-?(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}$/;
+  const RE_DINHEIRO_G = /(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  const RE_DATA = /\b(\d{2})\/(\d{2})\/(\d{4})\b/;
+  const RE_CNPJ_G = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+
+  function configurarPdfjs() {
+    if (window.pdfjsLib && !configurarPdfjs.ok) {
+      // O worker é carregado na própria página (funciona abrindo o HTML direto do disco).
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+      configurarPdfjs.ok = true;
+    }
+  }
+
+  async function textoDaPagina(pagina) {
+    const tc = await pagina.getTextContent();
+    const itens = tc.items.filter((i) => i.str && i.str.trim()).map((i) => ({
+      str: i.str.trim(), n: U.normTexto(i.str), x: i.transform[4], y: i.transform[5], w: i.width || i.str.length * 4, h: Math.abs(i.transform[3]) || 8
+    }));
+    // Monta linhas por posição vertical.
+    const ord = [...itens].sort((a, b) => b.y - a.y || a.x - b.x);
+    const linhas = [];
+    for (const it of ord) {
+      const l = linhas[linhas.length - 1];
+      if (l && Math.abs(l.y - it.y) < 3) l.itens.push(it); else linhas.push({ y: it.y, itens: [it] });
+    }
+    const texto = linhas.map((l) => l.itens.sort((a, b) => a.x - b.x).map((i) => i.str).join(' ')).join('\n');
+    return { itens, texto };
+  }
+
+  // Valor perto de um rótulo: à direita na mesma linha ou logo abaixo, na mesma coluna.
+  function valorPerto(itens, rotulos, teste, { abaixoMax = 40 } = {}) {
+    for (const rot of rotulos) {
+      const labels = itens.filter((i) => i.n.includes(rot));
+      for (const lb of labels) {
+        // Mesmo item: "VALOR TOTAL: 1.234,56"
+        const resto = lb.str.slice(lb.n.indexOf(rot) + rot.length).replace(/^[\s:.\-–]+/, '');
+        const r1 = teste(resto); if (r1) return r1;
+        const cand = [];
+        for (const it of itens) {
+          if (it === lb) continue;
+          const dy = lb.y - it.y; // positivo = abaixo
+          const direita = Math.abs(dy) < 3 && it.x >= lb.x + lb.w - 2 && it.x - (lb.x + lb.w) < 220;
+          const abaixo = dy > 2 && dy < abaixoMax && it.x < lb.x + Math.max(lb.w, 60) + 10 && it.x + it.w > lb.x - 15;
+          if (!direita && !abaixo) continue;
+          const v = teste(it.str); if (!v) continue;
+          cand.push({ v, dist: direita ? it.x - lb.x : dy * 3 + Math.abs(it.x - lb.x) * 0.2 });
+        }
+        if (cand.length) return cand.sort((a, b) => a.dist - b.dist)[0].v;
+      }
+    }
+    return null;
+  }
+
+  const testeDinheiro = (s) => { const m = String(s).match(RE_DINHEIRO_G); return m && RE_DINHEIRO.test(m[0].trim()) ? U.parseValor(m[0]) : null; };
+  const testeData = (s) => { const m = String(s).match(RE_DATA); return m ? U.parseData(m[0]) : null; };
+  const testeNumero = (s) => { const m = String(s).trim().match(/^(?:N[º°O.]*\s*)?(\d{1,15}(?:\.\d{3})*)$/i); return m ? U.numNota(m[1]) : null; };
+  const testeNome = (s) => { const t = String(s).trim(); return t.length > 3 && /[A-Za-zÀ-ú]{3}/.test(t) && !/^(CNPJ|CPF|INSCRI|ENDERE|MUNIC|NOME|RAZAO|RAZÃO)/i.test(t) ? t : null; };
+
+  function chavesNoTexto(texto) {
+    const out = { nfe: null, nfse: null };
+    const blocos = texto.match(/\d[\d .]{42,80}\d/g) || [];
+    for (const b of blocos) {
+      const dig = U.soDigitos(b);
+      if (!out.nfe) for (let i = 0; i + 44 <= dig.length; i++) { const s = dig.slice(i, i + 44); if (U.chaveNFeValida(s) && ['55', '57', '65'].includes(s.slice(20, 22))) { out.nfe = s; break; } }
+      if (!out.nfse && dig.length === 50) { const c = U.dadosChaveNFSe(dig); if (c && U.cnpjValido(c.cnpj)) out.nfse = dig; }
+    }
+    return out;
+  }
+
+  function cnpjsNoTexto(texto) {
+    const vistos = [];
+    (texto.match(RE_CNPJ_G) || []).forEach((c) => { const d = U.soDigitos(c); if (U.cnpjValido(d) && !vistos.includes(d)) vistos.push(d); });
+    return vistos;
+  }
+
+  /** Extrai os dados de uma página. */
+  function analisarPagina({ itens, texto }, ctx) {
+    const N = U.normTexto(texto);
+    const r = { temTexto: texto.replace(/\s/g, '').length > 30, cnpjsTexto: [], chave: '', tipo: '', numero: '', serie: '', dataEmissao: null, emitCnpj: '', emitNome: '', destCnpj: '', valor: null, folha: null };
+    const ch = chavesNoTexto(texto);
+    const ehNfse = /NFS-?E|NOTA FISCAL (ELETRONICA )?DE SERVICO|PRESTADOR DE SERVICO|DANFSE/.test(N) && !/DANFE\b/.test(N);
+    const ehCte = /DACTE|CONHECIMENTO DE TRANSPORTE/.test(N);
+
+    if (ch.nfe && !ehNfse) {
+      const c = U.dadosDaChave(ch.nfe);
+      Object.assign(r, { chave: ch.nfe, modelo: c.modelo, tipo: c.modelo === '57' ? 'CT-e' : c.modelo === '65' ? 'NFC-e' : 'NF-e', numero: c.numero, serie: c.serie, emitCnpj: c.cnpj, anoMesChave: `${c.ano}-${String(c.mes).padStart(2, '0')}` });
+    } else if (ch.nfse) {
+      const c = U.dadosChaveNFSe(ch.nfse);
+      Object.assign(r, { chave: ch.nfse, modelo: 'NFSe', tipo: 'NFS-e', numero: c.numero, emitCnpj: c.cnpj, anoMesChave: `${c.ano}-${String(c.mes).padStart(2, '0')}` });
+    } else if (ehNfse) {
+      r.tipo = 'NFS-e'; r.modelo = 'NFSe';
+    } else if (ehCte) { r.tipo = 'CT-e'; r.modelo = '57'; }
+    else if (/DANFE|NOTA FISCAL ELETRONICA/.test(N)) { r.tipo = 'NF-e'; r.modelo = '55'; }
+
+    // Número (quando não veio da chave)
+    if (!r.numero) {
+      r.numero = valorPerto(itens, ['NUMERO DA NFS-E', 'NUMERO DA NFSE', 'NUMERO DA NOTA', 'N DA NOTA', 'Nº DA NOTA', 'NUMERO NFS-E', 'NFS-E N', 'NUMERO DO DOCUMENTO', 'NUMERO'], testeNumero) || '';
+      if (!r.numero) {
+        const m = N.match(/(?:NUMERO DA NFS-?E|NUMERO DA NOTA(?: FISCAL)?|NFS-?E\s*N[º°O.]*|NOTA FISCAL[^\n]{0,40}N[º°O.]+)\s*[:\-]?\s*(\d[\d.]{0,14})/);
+        if (m) r.numero = U.numNota(m[1]);
+      }
+    }
+    // Data de emissão
+    r.dataEmissao = valorPerto(itens, ['DATA DA EMISSAO', 'DATA DE EMISSAO', 'DATA E HORA DA EMISSAO', 'DATA/HORA DA EMISSAO', 'DATA HORA EMISSAO', 'EMISSAO DA NFS-E', 'DATA EMISSAO', 'EMISSAO'], testeData);
+    if (!r.dataEmissao) {
+      const m = N.match(/EMISS[AÃ]O[^\d\n]{0,30}(\d{2}\/\d{2}\/\d{4})/);
+      if (m) r.dataEmissao = U.parseData(m[1]);
+    }
+    // Valor total
+    r.valor = valorPerto(itens, r.tipo === 'NFS-e'
+      ? ['VALOR TOTAL DA NFS-E', 'VALOR TOTAL DA NOTA', 'VALOR TOTAL DO SERVICO', 'VALOR TOTAL DOS SERVICOS', 'VALOR DO SERVICO', 'VALOR DOS SERVICOS', 'VALOR BRUTO', 'VALOR TOTAL', 'VALOR LIQUIDO']
+      : r.tipo === 'CT-e' ? ['VALOR TOTAL DO SERVICO', 'VALOR TOTAL DA PRESTACAO', 'VALOR TOTAL']
+        : ['VALOR TOTAL DA NOTA', 'V. TOTAL DA NOTA', 'VALOR TOTAL DA NF', 'VALOR TOTAL'], testeDinheiro);
+    if (r.valor == null) {
+      const m = N.match(/VALOR (?:TOTAL|DOS SERVICOS|DO SERVICO|LIQUIDO)[^\d\n]{0,40}(\d{1,3}(?:\.\d{3})*,\d{2})/);
+      if (m) r.valor = U.parseValor(m[1]);
+    }
+    // Emitente / prestador
+    const m = texto.match(/RECEBEMOS DE\s+(.+?)\s+OS PRODUTOS/i);
+    if (m) r.emitNome = m[1].trim();
+    if (!r.emitNome) {
+      const prest = itens.filter((i) => /PRESTADOR|EMITENTE/.test(i.n)).sort((a, b) => b.y - a.y)[0];
+      const abaixoDo = prest ? itens.filter((i) => i.y <= prest.y + 2) : itens;
+      r.emitNome = valorPerto(abaixoDo, ['NOME/RAZAO SOCIAL', 'NOME / RAZAO SOCIAL', 'RAZAO SOCIAL', 'NOME EMPRESARIAL', 'NOME'], testeNome, { abaixoMax: 30 }) || '';
+    }
+    // CNPJs: emitente = primeiro que não é da empresa; destinatário = o da empresa.
+    const cnpjs = cnpjsNoTexto(texto);
+    r.cnpjsTexto = cnpjs;
+    const raizes = ctx.raizesEmpresa || [];
+    const daEmpresa = cnpjs.find((c) => raizes.includes(c.slice(0, 8)));
+    if (daEmpresa) r.destCnpj = daEmpresa;
+    if (!r.emitCnpj) {
+      const outros = cnpjs.filter((c) => !raizes.includes(c.slice(0, 8)));
+      r.emitCnpj = outros[0] || (raizes.length ? '' : cnpjs[0] || '');
+      if (!raizes.length && cnpjs[1]) r.destCnpj = cnpjs[1];
+    } else if (!r.destCnpj) {
+      r.destCnpj = cnpjs.find((c) => c !== r.emitCnpj) || '';
+    }
+    const f = N.match(/FOLHA\s*(\d+)\s*(?:\/|DE)\s*(\d+)/);
+    if (f) r.folha = [+f[1], +f[2]];
+    return r;
+  }
+
+  const identidade = (r) => r.chave || (r.emitCnpj && r.numero ? `${r.emitCnpj}|${r.numero}` : r.numero ? `?|${r.numero}` : '');
+
+  /** Lê um PDF e devolve uma lista de documentos (uma nota por grupo de páginas). */
+  async function lerPdf(entrada, ctx, aoProgresso) {
+    configurarPdfjs();
+    let pdf;
+    try {
+      pdf = await pdfjsLib.getDocument({ data: entrada.dados.slice(), isEvalSupported: false, disableFontFace: true, verbosity: 0 }).promise;
+    } catch (e) {
+      const msg = /password/i.test(e && e.name + e.message) ? 'PDF protegido por senha.' : 'PDF inválido: ' + (e.message || e);
+      return { documentos: [], aviso: msg };
+    }
+    const paginas = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const pg = await pdf.getPage(p);
+      const t = await textoDaPagina(pg);
+      let r = analisarPagina(t, ctx);
+      if (!r.temTexto) {
+        // Página escaneada: tenta o código de barras.
+        const lido = await barrasDaPagina(pg);
+        if (lido) {
+          const d = { avisos: [] }; CN.codigoBarras.preencherPelaChave(d, lido);
+          r = Object.assign(r, { chave: d.chave, tipo: d.tipo, modelo: d.modelo, numero: d.numero, serie: d.serie, emitCnpj: d.emitCnpj, anoMesChave: d.anoMesChave, porBarras: true });
+        }
+      }
+      paginas.push(r);
+      pg.cleanup();
+      if (aoProgresso && (p % 3 === 0 || p === pdf.numPages)) aoProgresso(p, pdf.numPages);
+      if (p % 4 === 0) await U.esperar();
+    }
+    await pdf.destroy();
+
+    // Agrupa páginas consecutivas da mesma nota.
+    const grupos = [];
+    paginas.forEach((r, i) => {
+      const id = identidade(r);
+      const atual = grupos[grupos.length - 1];
+      const continuacao = r.folha && r.folha[0] > 1;
+      if (atual && (!id || id === atual.id || (continuacao && !r.chave))) { atual.paginas.push(i); mesclar(atual.dados, r); }
+      else grupos.push({ id, paginas: [i], dados: { ...r } });
+    });
+
+    const documentos = grupos.map((g) => {
+      const r = g.dados;
+      const d = {
+        tipo: r.tipo || 'Não identificado', modelo: r.modelo || '', chave: r.chave, numero: r.numero, serie: r.serie,
+        dataEmissao: r.dataEmissao, anoMesChave: r.anoMesChave, emitCnpj: r.emitCnpj, emitNome: r.emitNome,
+        destCnpj: r.destCnpj, destNome: '', valor: r.valor, cnpjsTexto: r.cnpjsTexto, cnpjDaChave: !!r.chave, fonte: 'PDF', origem: entrada,
+        paginas: g.paginas, totalPaginasArquivo: paginas.length, avisos: [], itens: []
+      };
+      d.confianca = r.chave && !r.porBarras ? 'alta' : (d.numero && d.emitCnpj ? 'media' : 'baixa');
+      if (!r.temTexto && !r.porBarras) d.avisos.push('Página sem texto (escaneada) e sem código de barras legível. Conferir manualmente.');
+      else if (r.porBarras) d.avisos.push('Página escaneada: dados lidos do código de barras.');
+      if (!d.numero) d.avisos.push('Número da nota não encontrado no PDF.');
+      if (!d.emitCnpj) d.avisos.push('CNPJ do fornecedor não encontrado no PDF.');
+      if (!d.dataEmissao) d.avisos.push('Data de emissão não encontrada no PDF.');
+      return d;
+    });
+    return { documentos, aviso: '' };
+  }
+
+  function mesclar(a, b) {
+    for (const k of ['chave', 'tipo', 'modelo', 'numero', 'serie', 'dataEmissao', 'emitCnpj', 'emitNome', 'destCnpj', 'anoMesChave']) if (!a[k] && b[k]) a[k] = b[k];
+    if (a.valor == null && b.valor != null) a.valor = b.valor;
+    a.temTexto = a.temTexto || b.temTexto;
+    (b.cnpjsTexto || []).forEach((c) => { if (!a.cnpjsTexto.includes(c)) a.cnpjsTexto.push(c); });
+  }
+
+  // Página escaneada: primeiro lê as imagens embutidas na resolução original
+  // (redimensionar borra o código de barras); depois tenta renderizar a página.
+  async function barrasDaPagina(pg) {
+    try {
+      const ops = await pg.getOperatorList();
+      const O = pdfjsLib.OPS;
+      for (let i = 0; i < ops.fnArray.length; i++) {
+        if (ops.fnArray[i] !== O.paintImageXObject && ops.fnArray[i] !== O.paintJpegXObject) continue;
+        const nome = ops.argsArray[i][0];
+        const img = await new Promise((ok) => { try { pg.objs.get(nome, ok); } catch (e) { ok(null); } });
+        const c = canvasDaImagem(img);
+        if (!c || c.width < 300) continue;
+        const r = CN.codigoBarras.lerChaveDoCanvas(c);
+        if (r) return r.chave;
+      }
+    } catch (e) { /* segue para a renderização */ }
+    for (const escala of [2.78, 4.17, 2]) { // ~200, 300 e 144 dpi
+      try {
+        const vp = pg.getViewport({ scale: escala });
+        const c = document.createElement('canvas');
+        c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+        const r = CN.codigoBarras.lerChaveDoCanvas(c);
+        if (r) return r.chave;
+      } catch (e) { /* tenta a próxima escala */ }
+    }
+    return null;
+  }
+
+  function canvasDaImagem(img) {
+    if (!img) return null;
+    const w = img.width, h = img.height;
+    if (!w || !h) return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    if (img.bitmap) { ctx.drawImage(img.bitmap, 0, 0); return c; }
+    if (!img.data) return null;
+    const out = ctx.createImageData(w, h), d = img.data, o = out.data;
+    if (img.kind === 3) o.set(d.subarray(0, o.length));
+    else if (img.kind === 2) { for (let i = 0, j = 0; j < o.length; i += 3, j += 4) { o[j] = d[i]; o[j + 1] = d[i + 1]; o[j + 2] = d[i + 2]; o[j + 3] = 255; } }
+    else if (img.kind === 1) {
+      const linha = (w + 7) >> 3;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const bit = (d[y * linha + (x >> 3)] >> (7 - (x & 7))) & 1, v = bit ? 255 : 0, j = (y * w + x) * 4;
+        o[j] = o[j + 1] = o[j + 2] = v; o[j + 3] = 255;
+      }
+    } else return null;
+    ctx.putImageData(out, 0, 0);
+    return c;
+  }
+
+  return { lerPdf, analisarPagina, textoDaPagina, configurarPdfjs };
+})();
+
+</script>
+<script>
+/* ===================== js/totvs.js ===================== */
+/* Lê o relatório de movimentos da TOTVS RM (Excel, CSV ou TXT)
+   e, no futuro, a API de movimentos (ver API-FUTURA.md). */
+window.CN = window.CN || {};
+
+CN.totvs = (function () {
+  const U = CN.util;
+
+  function decodificarTexto(dados) {
+    let t = new TextDecoder('utf-8').decode(dados);
+    if (t.includes('�')) t = new TextDecoder('windows-1252').decode(dados);
+    return t.replace(/^﻿/, '');
+  }
+
+  function linhasCsv(texto) {
+    const amostra = texto.split(/\r?\n/).slice(0, 20).join('\n');
+    const delims = [';', '\t', ',', '|'];
+    const delim = delims.map((d) => [d, (amostra.match(new RegExp('\\' + d, 'g')) || []).length]).sort((a, b) => b[1] - a[1])[0][0];
+    const linhas = []; let campo = '', linha = [], aspas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (aspas) {
+        if (c === '"' && texto[i + 1] === '"') { campo += '"'; i++; } else if (c === '"') aspas = false; else campo += c;
+      } else if (c === '"') aspas = true;
+      else if (c === delim) { linha.push(campo); campo = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && texto[i + 1] === '\n') i++;
+        linha.push(campo); linhas.push(linha); linha = []; campo = '';
+      } else campo += c;
+    }
+    if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
+    return linhas;
+  }
+
+  // Relatório da TOTVS em PDF ("Relação de notas fiscais recebidas"):
+  // cada linha vira uma linha de planilha com cabeçalho padrão.
+  const RE_LINHA = /^(\d{2}\/\d{2}\/\d{4}) (\d{2}\/\d{2}\/\d{4}) (\d+) (?:(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{3}\.?\d{3}\.?\d{3}-?\d{2}) )?(.+)$/;
+  async function lerPdf(dados) {
+    CN.parserPdf.configurarPdfjs();
+    const pdf = await pdfjsLib.getDocument({ data: dados.slice(), isEvalSupported: false, verbosity: 0 }).promise;
+    const cab = ['Data Lanc', 'Data Emissao', 'Nº Nota', 'CNPJ', 'Razao Social', 'UF', 'Movimento', 'Vlr Bruto', 'Valor Liq.', 'Vencimento', 'Vlr Parc'];
+    const linhas = [cab];
+    let naoLidas = 0;
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const pg = await pdf.getPage(p);
+      const { texto } = await CN.parserPdf.textoDaPagina(pg);
+      for (const bruta of texto.split('\n')) {
+        const l = bruta.replace(/\s+/g, ' ').trim();
+        const m = l.match(RE_LINHA);
+        if (!m) { if (/^\d{2}\/\d{2}\/\d{4} \d{2}\/\d{2}\/\d{4}/.test(l)) naoLidas++; continue; }
+        const resto = m[5];
+        const mt = resto.match(/^(.*?) ?(?:([A-Z]{2}|--) )?(\d\.\d\.\d{2}) ?- ?(.*)$/);
+        const fimValores = resto.match(/(-?[\d.]+,\d{2}) (-?[\d.]+,\d{2}) (\d{2}\/\d{2}\/\d{4}) (-?[\d.]+,\d{2})$/);
+        if (!mt || !fimValores) { naoLidas++; continue; }
+        linhas.push([m[1], m[2], m[3], m[4] || '', mt[1].trim(), mt[2] && mt[2] !== '--' ? mt[2] : '', `${mt[3]} - ${mt[4].replace(/\s+CC\w+.*$/, '').trim()}`, fimValores[1], fimValores[2], fimValores[3], fimValores[4]]);
+      }
+      pg.cleanup();
+    }
+    await pdf.destroy();
+    if (linhas.length < 2) throw new Error('PDF sem linhas de movimento reconhecidas. Exporte o relatório em Excel ou CSV.');
+    return { abas: [{ nome: 'Relatório PDF', linhas }], naoLidas };
+  }
+
+  /** Lê o arquivo e devolve { abas: [{nome, linhas}] } */
+  async function lerArquivo(dados, nome) {
+    const e = (nome.split('.').pop() || '').toLowerCase();
+    if (e === 'pdf') return lerPdf(dados);
+    if (e === 'csv' || e === 'txt') return { abas: [{ nome: nome, linhas: linhasCsv(decodificarTexto(dados)) }] };
+    const wb = XLSX.read(dados, { type: 'array', cellDates: true, dense: false });
+    return {
+      abas: wb.SheetNames.map((n) => ({ nome: n, linhas: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) }))
+    };
+  }
+
+  function pontuar(cab, sinonimos) {
+    const c = U.normCabecalho(cab);
+    if (!c) return 0;
+    const cc = c.replace(/\s|\//g, '');
+    let melhor = 0;
+    sinonimos.forEach((s, i) => {
+      const sn = U.normCabecalho(s);
+      const sc = sn.replace(/\s|\//g, '');
+      const peso = 1 - i / (sinonimos.length * 2); // sinônimos do início valem mais
+      if (c === sn || cc === sc) melhor = Math.max(melhor, 3 * peso);
+      else if (sn.length > 3 && (c.startsWith(sn + ' ') || c.endsWith(' ' + sn) || c.includes(' ' + sn + ' '))) melhor = Math.max(melhor, 1.5 * peso);
+    });
+    return melhor;
+  }
+
+  /** Encontra a linha de cabeçalho e sugere qual coluna é cada campo. */
+  function detectarColunas(linhas) {
+    const S = CN.config.colunasTotvs;
+    let melhor = { linha: 0, nota: -1 };
+    for (let r = 0; r < Math.min(40, linhas.length); r++) {
+      const row = linhas[r] || [];
+      let nota = 0;
+      row.forEach((cel) => { if (typeof cel === 'string' && cel.trim()) { const m = Math.max(...Object.values(S).map((s) => pontuar(cel, s))); if (m > 0) nota += 1 + m / 3; } });
+      if (nota > melhor.nota) melhor = { linha: r, nota };
+    }
+    const cab = (linhas[melhor.linha] || []).map((c) => String(c == null ? '' : c).trim());
+    // Atribuição gulosa: maior pontuação primeiro, cada coluna uma vez.
+    const pares = [];
+    Object.entries(S).forEach(([campo, sin]) => cab.forEach((c, i) => { const p = pontuar(c, sin); if (p > 0) pares.push({ campo, i, p }); }));
+    pares.sort((a, b) => b.p - a.p);
+    const mapa = {}; const usadas = new Set();
+    for (const { campo, i } of pares) { if (mapa[campo] == null && !usadas.has(i)) { mapa[campo] = i; usadas.add(i); } }
+    return { linhaCabecalho: melhor.linha, cabecalho: cab, mapa };
+  }
+
+  const ehCancelado = (s) => /^(C|CANCELADO|CANCELADA|CANC)$/i.test(String(s || '').trim());
+
+  /** Converte as linhas em movimentos padronizados. */
+  function montarMovimentos(linhas, linhaCabecalho, mapa) {
+    const pegar = (row, campo) => (mapa[campo] == null || mapa[campo] === '' ? '' : row[mapa[campo]]);
+    const out = [], vistos = new Set();
+    for (let r = linhaCabecalho + 1; r < linhas.length; r++) {
+      const row = linhas[r];
+      if (!row || row.every((c) => c === '' || c == null)) continue;
+      const numero = U.numNota(pegar(row, 'numero'));
+      const chave = U.soDigitos(pegar(row, 'chave'));
+      if (!numero && !chave) continue; // linha de total / subtítulo
+      const tipoBruto = String(pegar(row, 'tipoMov') || '').trim();
+      // A mesma nota aparece uma vez por parcela: guarda só a primeira.
+      const chaveLinha = [tipoBruto, numero, chave, U.soDigitos(pegar(row, 'cnpj')), U.parseValor(pegar(row, 'valor')), String(pegar(row, 'dataEntrada'))].join('|');
+      if (vistos.has(chaveLinha)) continue;
+      vistos.add(chaveLinha);
+      out.push({
+        linha: r + 1,
+        tipoMov: tipoBruto,
+        tipoMovNorm: normTipo(tipoBruto),
+        numero: numero || (chave.length === 44 ? U.dadosDaChave(chave).numero : ''),
+        serie: String(pegar(row, 'serie') || '').trim(),
+        dataEmissao: U.parseData(pegar(row, 'dataEmissao')),
+        dataEntrada: U.parseData(pegar(row, 'dataEntrada')),
+        cnpj: U.soDigitos(pegar(row, 'cnpj')),
+        fornecedor: String(pegar(row, 'fornecedor') || '').trim(),
+        codFornecedor: String(pegar(row, 'codFornecedor') || '').trim(),
+        valor: U.parseValor(pegar(row, 'valor')),
+        chave: chave.length === 44 || chave.length === 50 ? chave : '',
+        idmov: String(pegar(row, 'idmov') || '').trim(),
+        cancelado: ehCancelado(pegar(row, 'status'))
+      });
+    }
+    return out;
+  }
+
+  // "1.2.06", "1206", "1.2.06 - Entrada de serviço" -> "1.2.06"
+  function normTipo(s) {
+    const t = String(s || '').trim();
+    let m = t.match(/\d+\.\d+\.\d+/);
+    if (m) return m[0].split('.').map((p, i) => (i === 2 ? p.padStart(2, '0') : String(+p))).join('.');
+    m = t.match(/^(\d)(\d)(\d{2})\b/);
+    if (m) return `${m[1]}.${m[2]}.${m[3]}`;
+    return t.toUpperCase();
+  }
+
+  /** Busca na API (quando o Dalvino publicar). Formato em API-FUTURA.md. */
+  async function buscarApi(urlBase, { inicio, fim, tipos, base, token }) {
+    const u = new URL(urlBase.replace(/\/+$/, '') + '/movimentos');
+    u.searchParams.set('inicio', inicio); u.searchParams.set('fim', fim);
+    u.searchParams.set('base', base); if (tipos && tipos.length) u.searchParams.set('tipos', tipos.join(','));
+    const resp = await fetch(u, { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+    if (!resp.ok) throw new Error(`A API respondeu ${resp.status}.`);
+    const json = await resp.json();
+    const lista = Array.isArray(json) ? json : json.movimentos || [];
+    return lista.map((m, i) => ({
+      linha: i + 1, tipoMov: m.tipoMovimento || '', tipoMovNorm: normTipo(m.tipoMovimento), numero: U.numNota(m.numero),
+      serie: m.serie || '', dataEmissao: U.parseData(m.dataEmissao), dataEntrada: U.parseData(m.dataEntrada),
+      cnpj: U.soDigitos(m.cnpjFornecedor), fornecedor: m.nomeFornecedor || '', codFornecedor: m.codFornecedor || '',
+      valor: U.parseValor(m.valor), chave: U.soDigitos(m.chaveAcesso), idmov: String(m.idmov || ''), cancelado: !!m.cancelado
+    }));
+  }
+
+  return { lerArquivo, detectarColunas, montarMovimentos, normTipo, buscarApi };
+})();
+
+</script>
+<script>
+/* ===================== js/conferencia.js ===================== */
+/* Cruza as notas da pasta com os movimentos de entrada da TOTVS RM. */
+window.CN = window.CN || {};
+
+CN.conferencia = (function () {
+  const U = CN.util;
+
+  const STATUS = {
+    RECEBIDA: 'Recebida',
+    FORA: 'Recebida fora do período',
+    PROVAVEL: 'Provavelmente recebida',
+    NAO: 'NÃO RECEBIDA',
+    MANUAL: 'Conferir manualmente',
+    CANCELADA: 'Cancelada',
+    EMITIDA: 'Emitida pela empresa',
+    OUTRO_DEST: 'Outro destinatário'
+  };
+
+  /** Junta a mesma nota vinda de arquivos diferentes (XML + PDF + imagem). */
+  function unificar(documentos, cancelamentos) {
+    const canc = new Set(cancelamentos);
+    const porChave = new Map(), porCnpjNum = new Map(), unicos = [];
+    const prioridade = { XML: 3, PDF: 2, Imagem: 1 };
+    for (const d of documentos) {
+      d.anexos = d.anexos || [{ fonte: d.fonte, origem: d.origem, paginas: d.paginas, totalPaginasArquivo: d.totalPaginasArquivo }];
+      const kc = d.chave && (d.chave.length === 44 || d.chave.length === 50) ? d.chave : '';
+      const kn = d.emitCnpj && d.numero ? `${d.emitCnpj}|${d.numero}` : '';
+      const existente = (kc && porChave.get(kc)) || (kn && porCnpjNum.get(kn));
+      if (existente) {
+        const [melhor, pior] = prioridade[d.fonte] > prioridade[existente.fonte] ? [d, existente] : [existente, d];
+        for (const k of ['chave', 'tipo', 'modelo', 'numero', 'serie', 'dataEmissao', 'emitCnpj', 'emitNome', 'destCnpj', 'destNome', 'valor', 'xml', 'anoMesChave', 'descricaoServico']) {
+          if (!existente[k] || (melhor === d && d[k])) existente[k] = melhor[k] || pior[k];
+        }
+        if (!existente.itens.length && d.itens.length) existente.itens = d.itens;
+        existente.fonte = melhor.fonte;
+        existente.confianca = [existente.confianca, d.confianca].includes('alta') ? 'alta' : [existente.confianca, d.confianca].includes('media') ? 'media' : 'baixa';
+        existente.cancelada = existente.cancelada || d.cancelada;
+        existente.avisos = melhor === d ? d.avisos : existente.avisos;
+        existente.anexos.push(...d.anexos);
+        if (existente.chave) porChave.set(existente.chave, existente);
+        if (existente.emitCnpj && existente.numero) porCnpjNum.set(`${existente.emitCnpj}|${existente.numero}`, existente);
+        continue;
+      }
+      unicos.push(d);
+      if (kc) porChave.set(kc, d);
+      if (kn) porCnpjNum.set(kn, d);
+    }
+    unicos.forEach((d) => { if (d.chave && canc.has(d.chave)) d.cancelada = true; });
+    return unicos;
+  }
+
+  // Números com o mesmo tamanho e um dígito trocado, ou dois dígitos vizinhos invertidos.
+  function numeroParecido(a, b) {
+    if (!a || !b || a === b || a.length !== b.length || a.length < 3) return false;
+    const dif = [];
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) dif.push(i);
+    if (dif.length === 1) return true;
+    return dif.length === 2 && dif[1] === dif[0] + 1 && a[dif[0]] === b[dif[1]] && a[dif[1]] === b[dif[0]];
+  }
+
+  function dentro(iso, ini, fim) { return !!iso && iso >= ini && iso <= fim; }
+
+  /**
+   * params: { inicio, fim, baseMov: 'entrada'|'emissao', margemDias, tipos: Set, raizesEmpresa: [], toleranciaValor }
+   */
+  function conferir(documentos, cancelamentos, movimentosTodos, params) {
+    const raizesEmp = params.raizesEmpresa || [];
+    // Cópia rasa: a conferência pode ser refeita com outros parâmetros.
+    const copias = documentos.map((d) => {
+      const c = { ...d, anexos: null, avisos: [...(d.avisos || [])], itens: d.itens || [] };
+      // PDF sem chave: decide quem é fornecedor e quem é a empresa pelos CNPJs da página.
+      if (c.fonte === 'PDF' && c.cnpjsTexto && c.cnpjsTexto.length && raizesEmp.length) {
+        const daEmp = c.cnpjsTexto.find((x) => raizesEmp.includes(x.slice(0, 8)));
+        const outro = c.cnpjsTexto.find((x) => !raizesEmp.includes(x.slice(0, 8)));
+        if (!c.cnpjDaChave && outro) c.emitCnpj = outro;
+        if (daEmp) c.destCnpj = daEmp;
+      }
+      return c;
+    });
+    const docs = unificar(copias, cancelamentos);
+    // Nota lida só pelo código de barras não traz o nome: busca em outras notas ou no cadastro da TOTVS.
+    const nomes = new Map();
+    docs.forEach((d) => { if (d.emitCnpj && d.emitNome) nomes.set(d.emitCnpj, d.emitNome); });
+    movimentosTodos.forEach((m) => { if (m.cnpj && m.fornecedor && !nomes.has(m.cnpj)) nomes.set(m.cnpj, m.fornecedor); });
+    docs.forEach((d) => {
+      if (d.emitNome || !d.emitCnpj) return;
+      const n = nomes.get(d.emitCnpj) || [...nomes.entries()].find(([c]) => c.slice(0, 8) === d.emitCnpj.slice(0, 8))?.[1];
+      if (n) d.emitNome = n;
+    });
+    const iniNotas = params.margemDias ? U.addDias(params.inicio, -params.margemDias) : params.inicio;
+    const raizes = params.raizesEmpresa || [];
+    const tol = params.toleranciaValor ?? 1;
+
+    const movs = movimentosTodos.filter((m) => !m.cancelado && (!params.tipos || !params.tipos.size || params.tipos.has(m.tipoMovNorm)));
+    const dataMov = (m) => (params.baseMov === 'emissao' ? m.dataEmissao || m.dataEntrada : m.dataEntrada || m.dataEmissao);
+
+    // Índices
+    const idx = { chave: new Map(), cnpjNum: new Map(), raizNum: new Map(), num: new Map(), raiz: new Map() };
+    const add = (mapa, k, m) => { if (!k) return; if (!mapa.has(k)) mapa.set(k, []); mapa.get(k).push(m); };
+    for (const m of movs) {
+      add(idx.chave, m.chave, m);
+      if (m.cnpj && m.numero) { add(idx.cnpjNum, `${m.cnpj}|${m.numero}`, m); add(idx.raizNum, `${m.cnpj.slice(0, 8)}|${m.numero}`, m); }
+      add(idx.num, m.numero, m);
+      if (m.cnpj) add(idx.raiz, m.cnpj.slice(0, 8), m);
+    }
+    const valorBate = (a, b) => a != null && b != null && Math.abs(a - b) <= Math.max(tol, Math.abs(a) * 0.005);
+
+    function procurar(d) {
+      if (d.chave && idx.chave.has(d.chave)) return { m: idx.chave.get(d.chave), como: 'chave de acesso', exato: true };
+      if (d.emitCnpj && d.numero) {
+        const k = `${d.emitCnpj}|${d.numero}`;
+        if (idx.cnpjNum.has(k)) return { m: idx.cnpjNum.get(k), como: 'CNPJ + número', exato: true };
+        const kr = `${d.emitCnpj.slice(0, 8)}|${d.numero}`;
+        if (idx.raizNum.has(kr)) return { m: idx.raizNum.get(kr), como: 'raiz do CNPJ + número (filial diferente)', exato: false };
+        // Mesmo fornecedor e valor, número diferente em 1 dígito: provável erro de digitação.
+        const parecidos = (idx.raiz.get(d.emitCnpj.slice(0, 8)) || []).filter((m) => valorBate(m.valor, d.valor) && numeroParecido(m.numero, d.numero));
+        if (parecidos.length) return { m: parecidos, como: `mesmo fornecedor e valor, mas na TOTVS o número é ${parecidos[0].numero} (possível erro de digitação)`, exato: false };
+      }
+      if (d.numero && idx.num.has(d.numero)) {
+        const cands = idx.num.get(d.numero);
+        const porValor = cands.filter((m) => valorBate(m.valor, d.valor));
+        const porNome = cands.filter((m) => d.emitNome && m.fornecedor && U.semelhancaNome(d.emitNome, m.fornecedor) >= 0.5);
+        const semCnpj = (lista) => lista.filter((m) => !m.cnpj || !d.emitCnpj);
+        const ambos = porValor.filter((m) => porNome.includes(m));
+        if (ambos.length) return { m: ambos, como: 'número + valor + nome do fornecedor', exato: !d.emitCnpj || ambos.some((m) => !m.cnpj) };
+        if (semCnpj(porValor).length) return { m: semCnpj(porValor), como: 'número + valor', exato: false };
+        if (semCnpj(porNome).length) return { m: semCnpj(porNome), como: 'número + nome do fornecedor', exato: false };
+      }
+      return null;
+    }
+
+    const resultado = [];
+    const movsUsados = new Set();
+    for (const d of docs) {
+      // Período: pela data de emissão; sem data, usa o mês da chave.
+      let noPeriodo, dataAproximada = false;
+      if (d.dataEmissao) noPeriodo = dentro(d.dataEmissao, iniNotas, params.fim);
+      else if (d.anoMesChave) { noPeriodo = d.anoMesChave >= iniNotas.slice(0, 7) && d.anoMesChave <= params.fim.slice(0, 7); dataAproximada = true; }
+      else noPeriodo = null; // sem data: entra como "conferir manualmente"
+      if (noPeriodo === false) continue;
+
+      const r = { doc: d, status: '', movimento: null, como: '', observacao: '' };
+      const achou = (d.numero || d.chave) ? procurar(d) : null;
+      if (achou) achou.m.forEach((m) => movsUsados.add(m));
+      const raizEmit = (d.emitCnpj || '').slice(0, 8);
+      const raizDest = (d.destCnpj || '').slice(0, 8);
+
+      if (d.cancelada) { r.status = STATUS.CANCELADA; r.observacao = 'Nota cancelada pelo emitente (evento/situação no XML).'; }
+      else if (raizes.length && raizEmit && raizes.includes(raizEmit)) { r.status = STATUS.EMITIDA; r.observacao = 'Nota emitida pela própria empresa (saída).'; }
+      else if (achou) {
+        const noPer = achou.m.find((m) => dentro(dataMov(m), params.inicio, params.fim)) || achou.m[0];
+        r.movimento = noPer; r.como = achou.como;
+        if (!achou.exato) { r.status = STATUS.PROVAVEL; r.observacao = `Encontrada por ${achou.como}. Confirme.`; }
+        else if (dentro(dataMov(noPer), params.inicio, params.fim) || !dataMov(noPer)) r.status = STATUS.RECEBIDA;
+        else { r.status = STATUS.FORA; r.observacao = `Lançada em ${U.fmtData(dataMov(noPer))} (movimento ${noPer.tipoMov} nº ${noPer.numero}).`; }
+        if (r.status !== STATUS.PROVAVEL && noPer.valor != null && d.valor != null && !valorBate(noPer.valor, d.valor))
+          r.observacao = (r.observacao ? r.observacao + ' ' : '') + `Valor diferente: nota ${U.fmtMoeda(d.valor)} x TOTVS ${U.fmtMoeda(noPer.valor)}.`;
+      } else if (raizes.length && raizDest && !raizes.includes(raizDest) && d.confianca === 'alta') {
+        r.status = STATUS.OUTRO_DEST; r.observacao = `Destinatário/tomador é outro CNPJ (${U.fmtCNPJ(d.destCnpj)}).`;
+      } else if (!d.numero || noPeriodo === null || d.confianca === 'baixa' && !d.emitCnpj) {
+        r.status = STATUS.MANUAL;
+        r.observacao = [noPeriodo === null ? 'Data de emissão não identificada.' : '', ...(d.avisos || [])].filter(Boolean).join(' ');
+      } else {
+        r.status = STATUS.NAO;
+        r.observacao = [dataAproximada ? 'Data aproximada (mês da chave de acesso).' : '', d.confianca !== 'alta' ? 'Dados lidos do PDF/imagem.' : ''].filter(Boolean).join(' ');
+      }
+      resultado.push(r);
+    }
+
+    // Movimentos no período sem documento na pasta (conferência inversa).
+    const semDocumento = movs.filter((m) => dentro(dataMov(m), params.inicio, params.fim) && !movsUsados.has(m));
+
+    const ordem = [STATUS.NAO, STATUS.MANUAL, STATUS.PROVAVEL, STATUS.FORA, STATUS.RECEBIDA, STATUS.OUTRO_DEST, STATUS.EMITIDA, STATUS.CANCELADA];
+    resultado.sort((a, b) => ordem.indexOf(a.status) - ordem.indexOf(b.status) || (a.doc.dataEmissao || '').localeCompare(b.doc.dataEmissao || '') || (a.doc.emitNome || '').localeCompare(b.doc.emitNome || ''));
+
+    const contar = (s) => resultado.filter((r) => r.status === s).length;
+    const resumo = {
+      notas: resultado.length,
+      recebidas: contar(STATUS.RECEBIDA), fora: contar(STATUS.FORA), provaveis: contar(STATUS.PROVAVEL),
+      naoRecebidas: contar(STATUS.NAO), manuais: contar(STATUS.MANUAL),
+      outras: contar(STATUS.CANCELADA) + contar(STATUS.EMITIDA) + contar(STATUS.OUTRO_DEST),
+      semDocumento: semDocumento.length, movimentosConsiderados: movs.length,
+      valorNaoRecebido: resultado.filter((r) => r.status === STATUS.NAO).reduce((s, r) => s + (r.doc.valor || 0), 0)
+    };
+    return { resultado, semDocumento, resumo, params };
+  }
+
+  return { conferir, unificar, STATUS };
+})();
+
+</script>
+<script>
+/* ===================== js/exportar.js ===================== */
+/* Gera o relatório (Excel e PDF), o PDF de cada nota não recebida e o pacote ZIP. */
+window.CN = window.CN || {};
+
+CN.exportar = (function () {
+  const U = CN.util;
+  const S = () => CN.conferencia.STATUS;
+  const AZUL = 'FF1F3864';
+  const AZUL_RGB = [31, 56, 100];
+
+  // ---------- Logo ----------
+  function logoDataUrl() {
+    try { const l = localStorage.getItem('cn_logo'); if (l) return l; } catch (e) { /* sem armazenamento */ }
+    if (window.ATOM_LOGO) return window.ATOM_LOGO;
+    return logoProvisorio();
+  }
+  function logoProvisorio() {
+    if (logoProvisorio.cache) return logoProvisorio.cache;
+    const c = document.createElement('canvas'); c.width = 360; c.height = 120;
+    const x = c.getContext('2d');
+    x.fillStyle = '#1F3864'; x.beginPath(); x.arc(60, 60, 46, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = '#fff'; x.lineWidth = 5;
+    for (const a of [0, 60, 120]) { x.save(); x.translate(60, 60); x.rotate((a * Math.PI) / 180); x.beginPath(); x.ellipse(0, 0, 36, 13, 0, 0, Math.PI * 2); x.stroke(); x.restore(); }
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(60, 60, 6, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#1F3864'; x.font = 'bold 64px Arial'; x.textBaseline = 'middle'; x.fillText('ATOM', 122, 64);
+    return (logoProvisorio.cache = c.toDataURL('image/png'));
+  }
+  async function tamanhoImagem(url) {
+    const img = new Image(); await new Promise((ok) => { img.onload = ok; img.onerror = ok; img.src = url; });
+    return { w: img.naturalWidth || 3, h: img.naturalHeight || 1 };
+  }
+  const formatoImg = (url) => (/^data:image\/jpe?g/i.test(url) ? 'JPEG' : 'PNG');
+
+  // ---------- Nomes ----------
+  function siglaTipo(d) {
+    if (d.modelo === 'NFSe' || /NFS/.test(d.tipo)) return 'NFS-e';
+    if (d.modelo === '57') return 'CT-e';
+    if (d.modelo === '65') return 'NFC-e';
+    return 'NF';
+  }
+  function nomeBase(d) {
+    const forn = d.emitNome || (d.emitCnpj ? 'CNPJ ' + U.fmtCNPJ(d.emitCnpj).replace(/\//g, '-') : 'Fornecedor não identificado');
+    const data = d.dataEmissao ? 'emissao ' + U.fmtData(d.dataEmissao).replace(/\//g, '-') : d.anoMesChave ? 'emissao ' + d.anoMesChave.split('-').reverse().join('-') : 'sem data';
+    return U.nomeArquivoSeguro(`${siglaTipo(d)} ${d.numero || 'sem numero'} - ${forn} - ${data}`);
+  }
+
+  const colunasNotas = [
+    { t: 'Item', k: (r, i) => i + 1, w: 6 },
+    { t: 'Fornecedor', k: (r) => r.doc.emitNome || '', w: 40 },
+    { t: 'CNPJ', k: (r) => U.fmtCNPJ(r.doc.emitCnpj), w: 20 },
+    { t: 'Tipo', k: (r) => r.doc.tipo, w: 10 },
+    { t: 'Nº da nota', k: (r) => r.doc.numero, w: 12 },
+    { t: 'Série', k: (r) => r.doc.serie || '', w: 7 },
+    { t: 'Emissão', k: (r) => (r.doc.dataEmissao ? U.fmtData(r.doc.dataEmissao) : r.doc.anoMesChave ? r.doc.anoMesChave.split('-').reverse().join('/') : ''), w: 12 },
+    { t: 'Valor (R$)', k: (r) => r.doc.valor, w: 15, moeda: true },
+    { t: 'Chave de acesso', k: (r) => r.doc.chave || '', w: 50 },
+    { t: 'Arquivo de origem', k: (r) => r.doc.anexos.map((a) => a.origem.caminho + (a.paginas && a.totalPaginasArquivo > 1 ? ` (pág. ${a.paginas.map((p) => p + 1).join(', ')})` : '')).join(' | '), w: 50 },
+    { t: 'Observação', k: (r) => r.observacao || '', w: 45 }
+  ];
+  const colunaStatus = { t: 'Situação', k: (r) => r.status, w: 24 };
+  const colunasTotvs = [
+    { t: 'Movimento TOTVS', k: (r) => (r.movimento ? `${r.movimento.tipoMov} nº ${r.movimento.numero}` : ''), w: 18 },
+    { t: 'Entrada TOTVS', k: (r) => (r.movimento && r.movimento.dataEntrada ? U.fmtData(r.movimento.dataEntrada) : ''), w: 13 },
+    { t: 'Como foi encontrada', k: (r) => r.como || '', w: 28 }
+  ];
+
+  // ---------- Excel ----------
+  async function gerarExcel(conf) {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Conferência de Notas x TOTVS RM';
+    const logo = logoDataUrl();
+    const idLogo = wb.addImage({ base64: logo, extension: formatoImg(logo).toLowerCase() === 'jpeg' ? 'jpeg' : 'png' });
+    const tam = await tamanhoImagem(logo);
+    const periodo = `${U.fmtData(conf.params.inicio)} a ${U.fmtData(conf.params.fim)}`;
+
+    function aba(nome, titulo, colunas, linhas, opcoes = {}) {
+      const ws = wb.addWorksheet(nome, { views: [{ state: 'frozen', ySplit: 3, showGridLines: false, zoomScale: 90 }] });
+      ws.columns = colunas.map((c) => ({ width: c.w }));
+      const ult = colunas.length;
+      ws.mergeCells(1, 1, 1, ult);
+      const t = ws.getCell(1, 1);
+      t.value = titulo; t.font = { size: 18, bold: true, color: { argb: AZUL } }; t.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(1).height = 48;
+      ws.addImage(idLogo, { tl: { col: 0.15, row: 0.15 }, ext: { width: Math.round(40 * tam.w / tam.h), height: 40 } });
+      ws.mergeCells(2, 1, 2, ult);
+      const s = ws.getCell(2, 1);
+      s.value = opcoes.subtitulo || `Período: ${periodo}   •   Gerado em ${new Date().toLocaleString('pt-BR')}`;
+      s.font = { size: 10, italic: true, color: { argb: 'FF555555' } }; s.alignment = { horizontal: 'center' };
+      const cab = ws.getRow(3);
+      colunas.forEach((c, i) => {
+        const cel = cab.getCell(i + 1);
+        cel.value = c.t; cel.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+        cel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cel.border = { top: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      });
+      cab.height = 32;
+      linhas.forEach((r, i) => {
+        const row = ws.addRow(colunas.map((c) => c.k(r, i)));
+        row.eachCell({ includeEmpty: true }, (cel, n) => {
+          cel.alignment = { vertical: 'top', wrapText: true };
+          cel.border = { left: { style: 'thin' }, right: { style: 'thin' }, bottom: { style: 'hair' } };
+          if (colunas[n - 1] && colunas[n - 1].moeda) cel.numFmt = '"R$" #,##0.00';
+        });
+        if (opcoes.cor) { const cor = opcoes.cor(r); if (cor) row.eachCell({ includeEmpty: true }, (cel) => { cel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: cor } }; }); }
+      });
+      if (linhas.length) ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3 + linhas.length, column: ult } };
+      if (opcoes.total) {
+        const row = ws.addRow(colunas.map((c, i) => (i === 0 ? 'Total' : c.moeda ? linhas.reduce((s, r) => s + (c.k(r) || 0), 0) : '')));
+        row.font = { bold: true };
+        row.eachCell((cel, n) => { if (colunas[n - 1].moeda) cel.numFmt = '"R$" #,##0.00'; cel.border = { top: { style: 'thin' } }; });
+      }
+      return ws;
+    }
+
+    const nao = conf.resultado.filter((r) => r.status === S().NAO);
+    aba('Não recebidas', 'Notas fiscais NÃO recebidas na TOTVS', colunasNotas, nao, { total: true });
+    const manuais = conf.resultado.filter((r) => r.status === S().MANUAL || r.status === S().PROVAVEL);
+    aba('Conferir', 'Notas para conferência manual', [...colunasNotas.slice(0, 1), colunaStatus, ...colunasNotas.slice(1), ...colunasTotvs], manuais);
+    const cores = { [S().NAO]: 'FFFDE2E1', [S().MANUAL]: 'FFFFF4D6', [S().PROVAVEL]: 'FFFFF4D6', [S().FORA]: 'FFE8F0FB' };
+    aba('Todas as notas', 'Todas as notas do período e a situação na TOTVS', [...colunasNotas.slice(0, 1), colunaStatus, ...colunasNotas.slice(1), ...colunasTotvs], conf.resultado, { cor: (r) => cores[r.status] });
+    aba('TOTVS sem documento', 'Movimentos de entrada na TOTVS sem nota na pasta', [
+      { t: 'Item', k: (m, i) => i + 1, w: 6 }, { t: 'Tipo de movimento', k: (m) => m.tipoMov, w: 16 },
+      { t: 'Nº', k: (m) => m.numero, w: 12 }, { t: 'Série', k: (m) => m.serie, w: 7 },
+      { t: 'Fornecedor', k: (m) => m.fornecedor, w: 40 }, { t: 'CNPJ', k: (m) => U.fmtCNPJ(m.cnpj), w: 20 },
+      { t: 'Emissão', k: (m) => U.fmtData(m.dataEmissao), w: 12 }, { t: 'Entrada', k: (m) => U.fmtData(m.dataEntrada), w: 12 },
+      { t: 'Valor (R$)', k: (m) => m.valor, w: 15, moeda: true }, { t: 'IDMOV', k: (m) => m.idmov, w: 12 },
+      { t: 'Linha no relatório', k: (m) => m.linha, w: 10 }
+    ], conf.semDocumento, { total: true, subtitulo: `Período: ${periodo} — lançados na TOTVS, mas a nota não foi encontrada na pasta.` });
+
+    const p = conf.params, r = conf.resumo;
+    const ws = wb.addWorksheet('Parâmetros', { views: [{ showGridLines: false }] });
+    ws.columns = [{ width: 42 }, { width: 70 }];
+    [
+      ['Período', periodo],
+      ['Notas consideradas por', 'Data de emissão' + (p.margemDias ? ` (incluindo ${p.margemDias} dias antes do início)` : '')],
+      ['Período dos movimentos TOTVS por', p.baseMov === 'emissao' ? 'Data de emissão' : 'Data de entrada (lançamento)'],
+      ['Tipos de movimento', [...(p.tipos || [])].join(', ') || 'Todos'],
+      ['CNPJ(s) da empresa', (p.cnpjsEmpresa || []).map(U.fmtCNPJ).join(', ') || 'Não informado'],
+      ['Relatório TOTVS', p.arquivoTotvs || ''],
+      [''],
+      ['Notas no período', r.notas], ['Recebidas', r.recebidas], ['Recebidas fora do período', r.fora],
+      ['Provavelmente recebidas (confirmar)', r.provaveis], ['NÃO recebidas', r.naoRecebidas],
+      ['Valor total não recebido', U.fmtMoeda(r.valorNaoRecebido)], ['Conferir manualmente', r.manuais],
+      ['Canceladas / emitidas pela empresa / outro destinatário', r.outras],
+      ['Movimentos TOTVS sem nota na pasta', r.semDocumento]
+    ].forEach((l) => { const row = ws.addRow(l); row.getCell(1).font = { bold: true, color: { argb: AZUL } }; });
+    return new Uint8Array(await wb.xlsx.writeBuffer());
+  }
+
+  // ---------- Relatório em PDF ----------
+  async function gerarRelatorioPdf(conf) {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+    const logo = logoDataUrl(); const tam = await tamanhoImagem(logo);
+    const W = pdf.internal.pageSize.getWidth();
+    const periodo = `${U.fmtData(conf.params.inicio)} a ${U.fmtData(conf.params.fim)}`;
+    const cabecalho = () => {
+      pdf.setFillColor(...AZUL_RGB); pdf.rect(0, 0, W, 3, 'F');
+      const h = 17; pdf.addImage(logo, formatoImg(logo), 10, 5, h * tam.w / tam.h, h, 'logo', 'FAST');
+      pdf.setTextColor(...AZUL_RGB); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
+      pdf.text('Notas fiscais não recebidas na TOTVS RM', W - 10, 12, { align: 'right' });
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(90);
+      pdf.text(`Período: ${periodo}   •   Gerado em ${new Date().toLocaleString('pt-BR')}`, W - 10, 18, { align: 'right' });
+    };
+    cabecalho();
+    const r = conf.resumo;
+    const caixas = [['Notas no período', r.notas], ['Recebidas', r.recebidas + r.fora], ['NÃO recebidas', r.naoRecebidas], ['Valor não recebido', U.fmtMoeda(r.valorNaoRecebido)], ['Conferir manualmente', r.manuais + r.provaveis], ['TOTVS sem nota', r.semDocumento]];
+    const bw = (W - 20 - 5 * 4) / 6;
+    caixas.forEach(([t, v], i) => {
+      const x = 10 + i * (bw + 4);
+      pdf.setDrawColor(210); pdf.setFillColor(i === 2 || i === 3 ? 253 : 245, i === 2 || i === 3 ? 236 : 247, i === 2 || i === 3 ? 235 : 250);
+      pdf.roundedRect(x, 25, bw, 16, 2, 2, 'FD');
+      pdf.setFontSize(8); pdf.setTextColor(90); pdf.text(t, x + 3, 30);
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(i === 2 || i === 3 ? 180 : 31, i === 2 || i === 3 ? 35 : 56, i === 2 || i === 3 ? 24 : 100);
+      pdf.text(String(v), x + 3, 38); pdf.setFont('helvetica', 'normal');
+    });
+    const nao = conf.resultado.filter((x) => x.status === S().NAO);
+    const cols = ['#', 'Fornecedor', 'CNPJ', 'Tipo', 'Nº', 'Emissão', 'Valor', 'Arquivo', 'Observação'];
+    const corpo = nao.map((x, i) => [i + 1, x.doc.emitNome, U.fmtCNPJ(x.doc.emitCnpj), siglaTipo(x.doc), x.doc.numero, colunasNotas[6].k(x), U.fmtMoeda(x.doc.valor), nomeBase(x.doc) + '.pdf', x.observacao || '']);
+    pdf.autoTable({
+      startY: 46, head: [cols], body: corpo.length ? corpo : [['', 'Nenhuma nota pendente no período. ', '', '', '', '', '', '', '']],
+      foot: corpo.length ? [['', 'Total', '', '', '', '', U.fmtMoeda(r.valorNaoRecebido), '', '']] : undefined,
+      styles: { fontSize: 7.5, cellPadding: 1.5, overflow: 'linebreak' },
+      headStyles: { fillColor: AZUL_RGB, textColor: 255, fontStyle: 'bold' }, footStyles: { fillColor: [235, 239, 246], textColor: AZUL_RGB },
+      alternateRowStyles: { fillColor: [247, 249, 252] },
+      columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 52 }, 2: { cellWidth: 30 }, 3: { cellWidth: 12 }, 4: { cellWidth: 16 }, 5: { cellWidth: 18 }, 6: { cellWidth: 24, halign: 'right' }, 7: { cellWidth: 62 } },
+      margin: { top: 24, left: 10, right: 10 },
+      didDrawPage: (data) => { if (data.pageNumber > 1) cabecalho(); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text(`Página ${data.pageNumber}`, W - 10, pdf.internal.pageSize.getHeight() - 6, { align: 'right' }); }
+    });
+    if (conf.semDocumento.length) {
+      pdf.addPage(); cabecalho();
+      pdf.setFontSize(11); pdf.setTextColor(...AZUL_RGB); pdf.setFont('helvetica', 'bold');
+      pdf.text('Movimentos de entrada na TOTVS sem nota na pasta', 10, 30); pdf.setFont('helvetica', 'normal');
+      pdf.autoTable({
+        startY: 34, head: [['#', 'Tipo mov.', 'Nº', 'Fornecedor', 'CNPJ', 'Emissão', 'Entrada', 'Valor']],
+        body: conf.semDocumento.map((m, i) => [i + 1, m.tipoMov, m.numero, m.fornecedor, U.fmtCNPJ(m.cnpj), U.fmtData(m.dataEmissao), U.fmtData(m.dataEntrada), U.fmtMoeda(m.valor)]),
+        styles: { fontSize: 7.5, cellPadding: 1.5 }, headStyles: { fillColor: AZUL_RGB, textColor: 255 }, columnStyles: { 7: { halign: 'right' } },
+        margin: { top: 24, left: 10, right: 10 }, didDrawPage: (data) => { if (data.pageNumber > 1 && data.cursor && data.cursor.y < 30) cabecalho(); }
+      });
+    }
+    return new Uint8Array(pdf.output('arraybuffer'));
+  }
+
+  // ---------- PDF de cada nota ----------
+  async function pdfDaNota(d) {
+    const pdfAnexo = d.anexos.find((a) => a.fonte === 'PDF');
+    if (pdfAnexo) {
+      const dados = pdfAnexo.origem.dados;
+      const todas = !pdfAnexo.paginas || pdfAnexo.paginas.length === pdfAnexo.totalPaginasArquivo;
+      if (todas) return { dados, gerado: false };
+      try {
+        const src = await PDFLib.PDFDocument.load(dados, { ignoreEncryption: true });
+        const novo = await PDFLib.PDFDocument.create();
+        const pags = await novo.copyPages(src, pdfAnexo.paginas);
+        pags.forEach((p) => novo.addPage(p));
+        return { dados: await novo.save(), gerado: false };
+      } catch (e) { /* cai para o espelho */ }
+    }
+    const img = d.anexos.find((a) => a.fonte === 'Imagem');
+    if (img) {
+      const canvas = await CN.codigoBarras.carregarImagem(img.origem.dados, img.origem.nome);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'landscape' : 'portrait', unit: 'mm', format: 'a4', compress: true });
+      const W = pdf.internal.pageSize.getWidth(), H = pdf.internal.pageSize.getHeight();
+      const esc = Math.min((W - 10) / canvas.width, (H - 10) / canvas.height);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', (W - canvas.width * esc) / 2, (H - canvas.height * esc) / 2, canvas.width * esc, canvas.height * esc);
+      return { dados: new Uint8Array(pdf.output('arraybuffer')), gerado: false };
+    }
+    return { dados: await espelhoDoXml(d), gerado: true };
+  }
+
+  // Quando só existe o XML: gera um espelho simples da nota (não substitui o DANFE).
+  async function espelhoDoXml(d) {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+    const W = pdf.internal.pageSize.getWidth();
+    const logo = logoDataUrl(); const tam = await tamanhoImagem(logo);
+    pdf.setFillColor(...AZUL_RGB); pdf.rect(0, 0, W, 3, 'F');
+    pdf.addImage(logo, formatoImg(logo), 10, 7, 11 * tam.w / tam.h, 11, 'logo', 'FAST');
+    pdf.setTextColor(...AZUL_RGB); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(14);
+    pdf.text(`Espelho da ${siglaTipo(d) === 'NF' ? 'NF-e' : siglaTipo(d)} nº ${d.numero}`, W - 10, 12, { align: 'right' });
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(110);
+    pdf.text('Gerado a partir do XML para conferência. Não substitui o DANFE / DANFSe.', W - 10, 17, { align: 'right' });
+    pdf.autoTable({
+      startY: 24, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 }, columnStyles: { 0: { fontStyle: 'bold', cellWidth: 48, textColor: AZUL_RGB, fillColor: [240, 243, 248] } },
+      body: [
+        ['Tipo / modelo', `${d.tipo}${d.modelo && d.modelo !== 'NFSe' ? ' — modelo ' + d.modelo : ''}`],
+        ['Número / série', `${d.numero}${d.serie ? ' / ' + d.serie : ''}`],
+        ['Data de emissão', U.fmtData(d.dataEmissao)],
+        ['Chave de acesso', d.chave ? d.chave.replace(/(\d{4})(?=\d)/g, '$1 ') : '—'],
+        ['Emitente / prestador', `${d.emitNome || ''}\nCNPJ ${U.fmtCNPJ(d.emitCnpj)}`],
+        ['Destinatário / tomador', `${d.destNome || ''}\nCNPJ ${U.fmtCNPJ(d.destCnpj)}`],
+        ['Valor total', U.fmtMoeda(d.valor)],
+        ...(d.valorLiquido != null && d.valorLiquido !== d.valor ? [['Valor líquido', U.fmtMoeda(d.valorLiquido)]] : []),
+        ...(d.descricaoServico ? [['Discriminação do serviço', d.descricaoServico.slice(0, 1500)]] : []),
+        ['Arquivo XML', d.anexos.map((a) => a.origem.caminho).join('\n')]
+      ]
+    });
+    if (d.itens && d.itens.length) {
+      pdf.autoTable({
+        startY: pdf.lastAutoTable.finalY + 6, head: [['Código', 'Descrição', 'Un.', 'Qtde', 'Valor']],
+        body: d.itens.map((i) => [i.codigo, i.descricao, i.unidade, i.quantidade == null ? '' : i.quantidade.toLocaleString('pt-BR'), U.fmtMoeda(i.valor)]),
+        styles: { fontSize: 8, cellPadding: 1.5 }, headStyles: { fillColor: AZUL_RGB, textColor: 255 }, columnStyles: { 4: { halign: 'right' } }
+      });
+    }
+    return new Uint8Array(pdf.output('arraybuffer'));
+  }
+
+  // ---------- Pacote ZIP ----------
+  async function gerarPacote(conf, aoProgresso) {
+    const zip = new JSZip();
+    const ini = U.fmtData(conf.params.inicio).replace(/\//g, '-'), fim = U.fmtData(conf.params.fim).replace(/\//g, '-');
+    aoProgresso && aoProgresso('Gerando relatório em Excel…', 0.05);
+    zip.file('Relatorio notas nao recebidas.xlsx', await gerarExcel(conf));
+    aoProgresso && aoProgresso('Gerando relatório em PDF…', 0.1);
+    zip.file('Relatorio notas nao recebidas.pdf', await gerarRelatorioPdf(conf));
+    const pasta = zip.folder('Notas nao recebidas');
+    const nao = conf.resultado.filter((r) => r.status === S().NAO);
+    const usados = new Set();
+    for (let i = 0; i < nao.length; i++) {
+      const d = nao[i].doc;
+      aoProgresso && aoProgresso(`Separando nota ${i + 1} de ${nao.length}…`, 0.1 + 0.85 * (i / Math.max(1, nao.length)));
+      let nome = nomeBase(d), n = 2;
+      while (usados.has(nome.toLowerCase())) nome = `${nomeBase(d)} (${n++})`;
+      usados.add(nome.toLowerCase());
+      try {
+        const { dados } = await pdfDaNota(d);
+        pasta.file(nome + '.pdf', dados);
+      } catch (e) { pasta.file(nome + ' - ERRO.txt', 'Não foi possível gerar o PDF: ' + e.message); }
+      const xml = d.anexos.find((a) => a.fonte === 'XML');
+      if (xml) pasta.file(nome + '.xml', xml.origem.dados);
+      await U.esperar();
+    }
+    aoProgresso && aoProgresso('Compactando…', 0.97);
+    const dados = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    return { dados, nome: `Notas nao recebidas ${ini} a ${fim}.zip` };
+  }
+
+  function baixar(dados, nome, tipo = 'application/octet-stream') {
+    const url = URL.createObjectURL(new Blob([dados], { type: tipo }));
+    const a = document.createElement('a'); a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  return { gerarExcel, gerarRelatorioPdf, gerarPacote, pdfDaNota, nomeBase, baixar, logoDataUrl, siglaTipo };
+})();
+
+</script>
+<script>
+/* ===================== js/app.js ===================== */
+/* Tela da Conferência de Notas x TOTVS RM. */
+(function () {
+  const U = CN.util, ST = CN.conferencia.STATUS;
+  const $ = (id) => document.getElementById(id);
+  const esc = U.escapeHtml;
+
+  const estado = {
+    documentos: [], cancelamentos: [], leitura: null,
+    totvs: null, movimentos: [], arquivoTotvs: '',
+    conf: null, filtroStatus: ST.NAO, busca: ''
+  };
+
+  // ---------- Preferências salvas no navegador ----------
+  const PREF = 'cn_pref';
+  const lerPref = () => { try { return JSON.parse(localStorage.getItem(PREF) || '{}'); } catch (e) { return {}; } };
+  const salvarPref = (p) => { try { localStorage.setItem(PREF, JSON.stringify({ ...lerPref(), ...p })); } catch (e) { /* ignora */ } };
+
+  function iniciar() {
+    atualizarLogo();
+    const hoje = new Date();
+    const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1), fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const p = lerPref();
+    $('dtIni').value = iso(ini); $('dtFim').value = iso(fim);
+    $('cnpjEmpresa').value = p.cnpjEmpresa != null ? p.cnpjEmpresa : CN.config.cnpjsEmpresa.join('; ');
+    $('tolerancia').value = p.tolerancia != null ? p.tolerancia : CN.config.toleranciaValor;
+    if (p.apiUrl) $('apiUrl').value = p.apiUrl;
+
+    $('inPasta').addEventListener('change', (e) => carregarNotas([...e.target.files]).finally(() => { e.target.value = ''; }));
+    $('inArquivos').addEventListener('change', (e) => carregarNotas([...e.target.files]).finally(() => { e.target.value = ''; }));
+    const area = $('areaSoltar');
+    ['dragenter', 'dragover'].forEach((ev) => area.addEventListener(ev, (e) => { e.preventDefault(); area.classList.add('ativo'); }));
+    ['dragleave', 'drop'].forEach((ev) => area.addEventListener(ev, () => area.classList.remove('ativo')));
+    area.addEventListener('drop', async (e) => { e.preventDefault(); carregarNotas(await CN.leitor.arquivosDoDrop(e.dataTransfer)); });
+
+    $('inTotvs').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) carregarTotvs(f); e.target.value = ''; });
+    $('selAba').addEventListener('change', () => usarAba(+$('selAba').value));
+    $('btnApi').addEventListener('click', buscarApi);
+    $('btnConferir').addEventListener('click', conferir);
+    $('cnpjEmpresa').addEventListener('change', () => salvarPref({ cnpjEmpresa: $('cnpjEmpresa').value }));
+    $('tolerancia').addEventListener('change', () => salvarPref({ tolerancia: $('tolerancia').value }));
+    ['dtIni', 'dtFim'].forEach((id) => $(id).addEventListener('change', verificarPronto));
+    $('busca').addEventListener('input', (e) => { estado.busca = e.target.value; desenharTabela(); });
+
+    $('btnZip').addEventListener('click', () => exportar('zip'));
+    $('btnExcel').addEventListener('click', () => exportar('excel'));
+    $('btnPdf').addEventListener('click', () => exportar('pdf'));
+
+    $('btnConfig').addEventListener('click', () => { $('logoPrevia').src = CN.exportar.logoDataUrl(); $('dlgConfig').showModal(); });
+    $('inLogo').addEventListener('change', async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const url = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(f); });
+      try { localStorage.setItem('cn_logo', url); } catch (err) { alert('Não foi possível salvar o logo neste navegador (imagem grande demais?).'); }
+      atualizarLogo(); $('logoPrevia').src = CN.exportar.logoDataUrl(); e.target.value = '';
+    });
+    $('btnLogoRemover').addEventListener('click', () => { try { localStorage.removeItem('cn_logo'); } catch (e) { /* ignora */ } atualizarLogo(); $('logoPrevia').src = CN.exportar.logoDataUrl(); });
+    verificarPronto();
+  }
+
+  function atualizarLogo() { $('logo').src = CN.exportar.logoDataUrl(); }
+
+  function progresso(id, texto, fracao) {
+    const el = $(id);
+    el.hidden = fracao == null;
+    if (fracao == null) return;
+    el.querySelector('span').style.width = Math.round(Math.min(1, fracao) * 100) + '%';
+    el.querySelector('small').textContent = texto;
+  }
+
+  const raizesEmpresa = () => $('cnpjEmpresa').value.split(/[;,\s]+/).map(U.soDigitos).filter((c) => c.length >= 8).map((c) => c.slice(0, 8));
+
+  // ---------- 1. Notas ----------
+  async function carregarNotas(files) {
+    if (!files.length) return;
+    const ctx = { raizesEmpresa: raizesEmpresa() };
+    progresso('progNotas', 'Abrindo arquivos…', 0);
+    const leitura = await CN.leitor.lerArquivos(files, (t, f) => progresso('progNotas', t, f * 0.3));
+    const st = { xml: 0, pdf: 0, paginas: 0, imagem: 0, avisos: [] };
+    const docs = [], canc = [];
+    const total = leitura.entradas.length;
+    for (let i = 0; i < total; i++) {
+      const en = leitura.entradas[i];
+      const base = 0.3 + 0.7 * (i / Math.max(1, total));
+      progresso('progNotas', `Lendo ${i + 1} de ${total}: ${en.caminho}`, base);
+      try {
+        if (en.tipo === 'xml') {
+          st.xml++;
+          const r = CN.parserXml.ler(en.dados, en);
+          docs.push(...r.documentos); canc.push(...r.cancelamentos);
+          if (r.aviso) st.avisos.push(`${en.caminho}: ${r.aviso}`);
+        } else if (en.tipo === 'pdf') {
+          st.pdf++;
+          const r = await CN.parserPdf.lerPdf(en, ctx, (p, n) => progresso('progNotas', `Lendo ${en.caminho} — página ${p} de ${n}`, base));
+          if (r.documentos.length) st.paginas += r.documentos[0].totalPaginasArquivo;
+          docs.push(...r.documentos);
+          if (r.aviso) st.avisos.push(`${en.caminho}: ${r.aviso}`);
+        } else if (en.tipo === 'imagem') {
+          st.imagem++;
+          docs.push(await CN.codigoBarras.lerImagem(en));
+        }
+      } catch (e) {
+        st.avisos.push(`${en.caminho}: erro ao ler (${e.message || e}).`);
+      }
+      if (i % 3 === 0) await U.esperar();
+    }
+    leitura.erros.forEach((e) => st.avisos.push(`${e.caminho}: ${e.erro}`));
+    estado.documentos.push(...docs); estado.cancelamentos.push(...canc);
+    const ant = estado.leitura || { xml: 0, pdf: 0, paginas: 0, imagem: 0, compactados: 0, ignorados: [], avisos: [] };
+    estado.leitura = {
+      xml: ant.xml + st.xml, pdf: ant.pdf + st.pdf, paginas: ant.paginas + st.paginas, imagem: ant.imagem + st.imagem,
+      compactados: ant.compactados + leitura.compactados, ignorados: [...ant.ignorados, ...leitura.ignorados], avisos: [...ant.avisos, ...st.avisos]
+    };
+    progresso('progNotas', '', null);
+    desenharResumoNotas();
+    verificarPronto();
+  }
+
+  function desenharResumoNotas() {
+    const l = estado.leitura;
+    const docsUnicos = CN.conferencia.unificar(estado.documentos.map((d) => ({ ...d, anexos: null })), estado.cancelamentos);
+    const semDados = estado.documentos.filter((d) => !d.numero).length;
+    const avisos = l.avisos.length + semDados;
+    $('resumoNotas').innerHTML = `
+      <p class="ok">${docsUnicos.length} nota(s) identificada(s)</p>
+      <div class="pilulas">
+        <span class="pilula">${l.xml} XML</span>
+        <span class="pilula">${l.pdf} PDF (${l.paginas} pág.)</span>
+        <span class="pilula">${l.imagem} imagem(ns)</span>
+        <span class="pilula">${l.compactados} ZIP/RAR aberto(s)</span>
+        ${estado.cancelamentos.length ? `<span class="pilula aviso">${estado.cancelamentos.length} cancelamento(s)</span>` : ''}
+        ${avisos ? `<span class="pilula aviso">${avisos} aviso(s)</span>` : ''}
+      </div>
+      ${l.avisos.length ? `<details><summary>Avisos de leitura (${l.avisos.length})</summary><ul>${l.avisos.slice(0, 300).map((a) => `<li>${esc(a)}</li>`).join('')}</ul></details>` : ''}
+      ${l.ignorados.length ? `<details><summary>Arquivos ignorados (${l.ignorados.length})</summary><ul>${l.ignorados.slice(0, 300).map((a) => `<li>${esc(a)}</li>`).join('')}</ul></details>` : ''}
+      <div class="botoes" style="justify-content:flex-start;margin-top:8px"><button class="btn mini" id="btnLimparNotas">Limpar notas</button></div>`;
+    $('btnLimparNotas').onclick = () => { estado.documentos = []; estado.cancelamentos = []; estado.leitura = null; $('resumoNotas').innerHTML = ''; verificarPronto(); };
+  }
+
+  // ---------- 2. TOTVS ----------
+  async function carregarTotvs(f) {
+    try {
+      const dados = new Uint8Array(await f.arrayBuffer());
+      $('resumoTotvs').innerHTML = '<p class="ajuda">Lendo relatório…</p>';
+      estado.totvs = await CN.totvs.lerArquivo(dados, f.name);
+      estado.arquivoTotvs = f.name;
+    } catch (e) {
+      $('resumoTotvs').innerHTML = `<p class="faltando">Não foi possível ler o relatório: ${esc(e.message || e)}</p>`;
+      return;
+    }
+    const sel = $('selAba');
+    const abas = estado.totvs.abas;
+    sel.innerHTML = abas.map((a, i) => `<option value="${i}">Aba: ${esc(a.nome)} (${a.linhas.length} linhas)</option>`).join('');
+    sel.hidden = abas.length < 2;
+    // Escolhe a aba com mais linhas de movimento reconhecidas.
+    let melhor = 0, melhorQtd = -1;
+    abas.forEach((a, i) => { const det = CN.totvs.detectarColunas(a.linhas); const q = CN.totvs.montarMovimentos(a.linhas, det.linhaCabecalho, det.mapa).length; if (q > melhorQtd) { melhor = i; melhorQtd = q; } });
+    sel.value = melhor;
+    usarAba(melhor);
+  }
+
+  function usarAba(i) {
+    const aba = estado.totvs.abas[i];
+    const det = CN.totvs.detectarColunas(aba.linhas);
+    estado.totvs.aba = aba; estado.totvs.det = det;
+    desenharMapa();
+    recalcularMovimentos();
+  }
+
+  function desenharMapa() {
+    const { det, aba } = estado.totvs;
+    const R = CN.config.rotulosCampos;
+    const opcoes = (sel) => `<option value="">(não usar)</option>` + det.cabecalho.map((c, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(c || `Coluna ${i + 1}`)}</option>`).join('');
+    $('mapaColunas').innerHTML = Object.keys(R).map((campo) =>
+      `<span class="${['numero'].includes(campo) ? 'obrig' : ''}">${R[campo]}</span><select data-campo="${campo}">${opcoes(det.mapa[campo])}</select>`).join('');
+    $('mapaColunas').querySelectorAll('select').forEach((s) => s.addEventListener('change', () => {
+      det.mapa[s.dataset.campo] = s.value === '' ? undefined : +s.value; recalcularMovimentos();
+    }));
+    const linhas = aba.linhas.slice(det.linhaCabecalho + 1, det.linhaCabecalho + 6);
+    const fmt = (v) => (v instanceof Date ? U.fmtData(U.parseData(v)) : v);
+    $('previa').innerHTML = `<table><tr>${det.cabecalho.map((c) => `<th>${esc(c)}</th>`).join('')}</tr>${linhas.map((l) => `<tr>${det.cabecalho.map((c, j) => `<td>${esc(fmt(l[j]))}</td>`).join('')}</tr>`).join('')}</table>`;
+    $('detMapa').hidden = false;
+  }
+
+  function recalcularMovimentos() {
+    const { det, aba } = estado.totvs;
+    estado.movimentos = CN.totvs.montarMovimentos(aba.linhas, det.linhaCabecalho, det.mapa);
+    desenharResumoTotvs();
+  }
+
+  function desenharResumoTotvs(origem) {
+    const movs = estado.movimentos;
+    const m = estado.totvs && estado.totvs.det ? estado.totvs.det.mapa : {};
+    const faltam = [];
+    if (origem !== 'api') {
+      if (m.numero == null && m.chave == null) faltam.push('número da nota');
+      if (m.dataEntrada == null && m.dataEmissao == null) faltam.push('data de entrada ou emissão');
+      if (m.cnpj == null) faltam.push('CNPJ do fornecedor (sem ele a busca é por número + valor/nome)');
+      if (m.tipoMov == null) faltam.push('tipo de movimento (todos os movimentos serão considerados)');
+    }
+    const datas = movs.map((x) => x.dataEntrada || x.dataEmissao).filter(Boolean).sort();
+    $('resumoTotvs').innerHTML = `
+      <p class="ok">${movs.length} nota(s)/movimento(s) lido(s)${estado.arquivoTotvs && origem !== 'api' ? ` de ${esc(estado.arquivoTotvs)}` : ' da API'}</p>
+      ${datas.length ? `<p class="ajuda">Datas no relatório: ${U.fmtData(datas[0])} a ${U.fmtData(datas[datas.length - 1])}</p>` : ''}
+      ${estado.totvs && estado.totvs.naoLidas ? `<p class="faltando">${estado.totvs.naoLidas} linha(s) do PDF não puderam ser lidas.</p>` : ''}
+      ${faltam.length ? `<p class="faltando">Coluna não encontrada: ${faltam.map(esc).join('; ')}. Ajuste em "Colunas do relatório".</p>` : ''}`;
+    // Tipos de movimento
+    const cont = new Map();
+    movs.forEach((x) => cont.set(x.tipoMovNorm || '(sem tipo)', (cont.get(x.tipoMovNorm || '(sem tipo)') || 0) + 1));
+    const padrao = new Set(CN.config.tiposMovimento.map((t) => CN.totvs.normTipo(t.codigo)));
+    const algumPadrao = [...cont.keys()].some((k) => padrao.has(k));
+    const entrada = (t) => CN.config.marcarTodasEntradas && /^1\.2\./.test(t);
+    const desc = Object.fromEntries(CN.config.tiposMovimento.map((t) => [CN.totvs.normTipo(t.codigo), t.descricao]));
+    const tipos = [...cont.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    $('tiposMov').hidden = !tipos.length;
+    $('tiposMov').innerHTML = `<h4>Tipos de movimento considerados</h4>` + tipos.map(([t, n]) =>
+      `<label><input type="checkbox" value="${esc(t)}" ${!algumPadrao || padrao.has(t) || entrada(t) ? 'checked' : ''}> ${esc(t)}${desc[t] ? ` — ${esc(desc[t])}` : ''} <small>(${n})</small></label>`).join('');
+    verificarPronto();
+  }
+
+  async function buscarApi() {
+    const url = $('apiUrl').value.trim();
+    if (!url) { alert('Informe o endereço da API.'); return; }
+    salvarPref({ apiUrl: url });
+    $('btnApi').disabled = true;
+    try {
+      const tipos = CN.config.tiposMovimento.map((t) => t.codigo);
+      // Busca com folga de 60 dias depois do fim para achar notas lançadas mais tarde.
+      estado.movimentos = await CN.totvs.buscarApi(url, { inicio: U.addDias($('dtIni').value, -Number($('margem').value || 0)), fim: U.addDias($('dtFim').value, 60), tipos, base: baseMov(), token: $('apiToken').value });
+      estado.totvs = null; estado.arquivoTotvs = 'API ' + url; $('detMapa').hidden = true;
+      desenharResumoTotvs('api');
+    } catch (e) {
+      $('resumoTotvs').innerHTML = `<p class="faltando">Erro ao buscar na API: ${esc(e.message || e)}. Se a API estiver em outro servidor, ela precisa liberar CORS.</p>`;
+    } finally { $('btnApi').disabled = false; }
+  }
+
+  const baseMov = () => document.querySelector('input[name=baseMov]:checked').value;
+
+  function verificarPronto() {
+    const falta = [];
+    if (!estado.documentos.length) falta.push('as notas da pasta');
+    if (!estado.movimentos.length) falta.push('o relatório da TOTVS');
+    if (!$('dtIni').value || !$('dtFim').value) falta.push('o período');
+    else if ($('dtIni').value > $('dtFim').value) falta.push('um período válido (início antes do fim)');
+    $('btnConferir').disabled = falta.length > 0;
+    $('faltando').textContent = falta.length ? 'Falta escolher: ' + falta.join(', ') + '.' : '';
+  }
+
+  // ---------- 3. Conferência ----------
+  function conferir() {
+    const tipos = new Set([...$('tiposMov').querySelectorAll('input:checked')].map((i) => i.value));
+    const cnpjs = $('cnpjEmpresa').value.split(/[;,\s]+/).map(U.soDigitos).filter((c) => c.length >= 8);
+    const params = {
+      inicio: $('dtIni').value, fim: $('dtFim').value, baseMov: baseMov(), margemDias: Number($('margem').value || 0),
+      tipos, cnpjsEmpresa: cnpjs, raizesEmpresa: cnpjs.map((c) => c.slice(0, 8)),
+      toleranciaValor: Number($('tolerancia').value || 0), arquivoTotvs: estado.arquivoTotvs
+    };
+    if (tipos.has('(sem tipo)')) { tipos.delete('(sem tipo)'); tipos.add(''); }
+    estado.conf = CN.conferencia.conferir(estado.documentos, estado.cancelamentos, estado.movimentos, params);
+    estado.filtroStatus = estado.conf.resumo.naoRecebidas ? ST.NAO : 'todas';
+    $('resultado').hidden = false;
+    $('periodoTxt').textContent = `— ${U.fmtData(params.inicio)} a ${U.fmtData(params.fim)}`;
+    desenharResultado();
+    $('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const classeStatus = (s) => ({ [ST.NAO]: 'st-nao', [ST.RECEBIDA]: 'st-ok', [ST.FORA]: 'st-fora', [ST.PROVAVEL]: 'st-atencao', [ST.MANUAL]: 'st-atencao' }[s] || 'st-neutro');
+
+  function desenharResultado() {
+    const r = estado.conf.resumo;
+    const k = (rot, val, filtro, cls = '', sub = '') => `<button class="kpi ${cls}" data-filtro="${esc(filtro)}"><span>${rot}</span><strong>${val}</strong>${sub ? `<small>${sub}</small>` : ''}</button>`;
+    $('kpis').innerHTML = [
+      k('Notas no período', r.notas, 'todas'),
+      k('Recebidas', r.recebidas, ST.RECEBIDA),
+      k('Recebidas fora do período', r.fora, ST.FORA),
+      k('NÃO recebidas', r.naoRecebidas, ST.NAO, r.naoRecebidas ? 'perigo' : '', U.fmtMoeda(r.valorNaoRecebido)),
+      k('Conferir manualmente', r.manuais + r.provaveis, 'conferir', r.manuais + r.provaveis ? 'atencao' : ''),
+      k('Canceladas / outras', r.outras, 'outras'),
+      k('TOTVS sem nota na pasta', r.semDocumento, 'semdoc', r.semDocumento ? 'atencao' : '')
+    ].join('');
+    $('kpis').querySelectorAll('.kpi').forEach((b) => b.addEventListener('click', () => { estado.filtroStatus = b.dataset.filtro; desenharResultado(); }));
+    const al = $('alerta');
+    al.hidden = false;
+    if (r.naoRecebidas) { al.className = 'alerta'; al.textContent = `Atenção: ${r.naoRecebidas} nota(s) não estão recebidas na TOTVS neste período (${U.fmtMoeda(r.valorNaoRecebido)}).`; }
+    else { al.className = 'alerta ok'; al.textContent = 'Todas as notas identificadas no período foram encontradas na TOTVS.'; }
+    const chips = [['todas', 'Todas'], [ST.NAO, 'Não recebidas'], ['conferir', 'Conferir'], [ST.FORA, 'Fora do período'], [ST.RECEBIDA, 'Recebidas'], ['outras', 'Canceladas / outras'], ['semdoc', 'TOTVS sem nota']];
+    $('chips').innerHTML = chips.map(([v, t]) => `<button class="chip ${estado.filtroStatus === v ? 'ativo' : ''}" data-v="${esc(v)}">${t}</button>`).join('');
+    $('chips').querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => { estado.filtroStatus = c.dataset.v; desenharResultado(); }));
+    $('btnZip').disabled = !r.naoRecebidas;
+    desenharTabela();
+  }
+
+  function desenharTabela() {
+    const f = estado.filtroStatus, b = U.normTexto(estado.busca);
+    const tab = $('tabela');
+    if (f === 'semdoc') {
+      const lista = estado.conf.semDocumento.filter((m) => !b || U.normTexto(`${m.fornecedor} ${m.cnpj} ${U.fmtCNPJ(m.cnpj)} ${m.numero}`).includes(b));
+      tab.innerHTML = `<thead><tr><th>Tipo mov.</th><th>Nº</th><th>Fornecedor</th><th>CNPJ</th><th>Emissão</th><th>Entrada</th><th class="valor">Valor</th><th>Linha</th></tr></thead><tbody>` +
+        (lista.length ? lista.map((m) => `<tr><td>${esc(m.tipoMov)}</td><td>${esc(m.numero)}</td><td>${esc(m.fornecedor)}</td><td class="nowrap">${esc(U.fmtCNPJ(m.cnpj))}</td><td>${U.fmtData(m.dataEmissao)}</td><td>${U.fmtData(m.dataEntrada)}</td><td class="valor">${U.fmtMoeda(m.valor)}</td><td>${m.linha}</td></tr>`).join('')
+          : `<tr><td colspan="8" class="vazio">Nenhum movimento sem nota.</td></tr>`) + '</tbody>';
+      return;
+    }
+    const grupos = { conferir: [ST.MANUAL, ST.PROVAVEL], outras: [ST.CANCELADA, ST.EMITIDA, ST.OUTRO_DEST] };
+    const lista = estado.conf.resultado.filter((r) => (f === 'todas' || (grupos[f] ? grupos[f].includes(r.status) : r.status === f)) &&
+      (!b || U.normTexto(`${r.doc.emitNome} ${r.doc.emitCnpj} ${U.fmtCNPJ(r.doc.emitCnpj)} ${r.doc.numero} ${r.doc.chave}`).includes(b)));
+    tab.innerHTML = `<thead><tr><th>Situação</th><th>Fornecedor</th><th>CNPJ</th><th>Tipo</th><th>Nº</th><th>Emissão</th><th class="valor">Valor</th><th>TOTVS</th><th>Arquivo</th><th>Observação</th><th></th></tr></thead><tbody>` +
+      (lista.length ? lista.map((r) => {
+        const d = r.doc, i = estado.conf.resultado.indexOf(r);
+        const emissao = d.dataEmissao ? U.fmtData(d.dataEmissao) : d.anoMesChave ? d.anoMesChave.split('-').reverse().join('/') + '*' : '—';
+        const mov = r.movimento ? `${esc(r.movimento.tipoMov)} nº ${esc(r.movimento.numero)}${r.movimento.dataEntrada ? '<br><small>' + U.fmtData(r.movimento.dataEntrada) + '</small>' : ''}` : '';
+        return `<tr><td><span class="status ${classeStatus(r.status)}">${esc(r.status)}</span></td><td>${esc(d.emitNome || '—')}</td><td class="nowrap">${esc(U.fmtCNPJ(d.emitCnpj) || '—')}</td><td class="nowrap">${esc(d.tipo)}</td><td>${esc(d.numero || '—')}</td><td class="nowrap">${emissao}</td><td class="valor">${U.fmtMoeda(d.valor)}</td><td class="nowrap">${mov}</td><td class="origem">${d.anexos.map((a) => esc(a.origem.caminho) + (a.paginas && a.totalPaginasArquivo > 1 ? ` <small>(pág. ${a.paginas.map((p) => p + 1).join(', ')})</small>` : '')).join('<br>')}</td><td class="obs">${esc(r.observacao)}</td><td><button class="btn mini" data-pdf="${i}" title="Baixar o PDF desta nota">PDF</button></td></tr>`;
+      }).join('') : `<tr><td colspan="11" class="vazio">Nenhuma nota nesta situação.</td></tr>`) + '</tbody>';
+    tab.querySelectorAll('[data-pdf]').forEach((bt) => bt.addEventListener('click', async () => {
+      const d = estado.conf.resultado[+bt.dataset.pdf].doc;
+      bt.disabled = true;
+      try { const { dados } = await CN.exportar.pdfDaNota(d); CN.exportar.baixar(dados, CN.exportar.nomeBase(d) + '.pdf', 'application/pdf'); }
+      catch (e) { alert('Não foi possível gerar o PDF: ' + e.message); } finally { bt.disabled = false; }
+    }));
+  }
+
+  async function exportar(tipo) {
+    const conf = estado.conf; if (!conf) return;
+    const ini = U.fmtData(conf.params.inicio).replace(/\//g, '-'), fim = U.fmtData(conf.params.fim).replace(/\//g, '-');
+    ['btnZip', 'btnExcel', 'btnPdf'].forEach((id) => { $(id).disabled = true; });
+    try {
+      if (tipo === 'zip') {
+        const { dados, nome } = await CN.exportar.gerarPacote(conf, (t, f) => progresso('progExport', t, f));
+        CN.exportar.baixar(dados, nome, 'application/zip');
+      } else if (tipo === 'excel') {
+        progresso('progExport', 'Gerando Excel…', 0.5);
+        CN.exportar.baixar(await CN.exportar.gerarExcel(conf), `Conferencia notas TOTVS ${ini} a ${fim}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      } else {
+        progresso('progExport', 'Gerando PDF…', 0.5);
+        CN.exportar.baixar(await CN.exportar.gerarRelatorioPdf(conf), `Notas nao recebidas ${ini} a ${fim}.pdf`, 'application/pdf');
+      }
+    } catch (e) {
+      console.error(e); alert('Erro ao gerar: ' + (e.message || e));
+    } finally {
+      progresso('progExport', '', null);
+      ['btnExcel', 'btnPdf'].forEach((id) => { $(id).disabled = false; });
+      $('btnZip').disabled = !conf.resumo.naoRecebidas;
+    }
+  }
+
+  // Exposto para testes automáticos.
+  window.CN.app = { estado, carregarNotas, carregarTotvs, conferir };
+  iniciar();
+})();
+
+</script>
+</body>
+</html>
